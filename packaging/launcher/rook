@@ -1,0 +1,42 @@
+#!/bin/sh
+# rook launcher (installed by the rook package).
+#
+# The binary and the CEF runtime live together in <prefix>/lib/rook, so the
+# launcher resolves its own location instead of hardcoding /usr/lib: that keeps
+# the same script working inside a relocated root (dpkg-deb -x), inside an
+# AppImage mount, and on a normal install.
+#
+# What it sets, and why:
+#   ROOK_CEF_RUNTIME  resources_dir_path + locales_dir_path. The host also has a
+#                    compiled-in default from the build tree, which is exactly
+#                    why the installed build must override it.
+#   LD_LIBRARY_PATH  second net for libcef.so. The binary's own rpath is
+#                    $ORIGIN/cef (set at package time), so this only matters if
+#                    that rpath was lost when the binary was rebuilt by hand.
+set -u
+
+self=$(readlink -f -- "$0" 2>/dev/null || printf '%s\n' "$0")
+bindir=$(dirname -- "$self")
+
+lib=${ROOK_LIB:-$bindir/../lib/rook}
+[ -d "$lib" ] || lib=/usr/lib/rook
+lib=$(cd -- "$lib" 2>/dev/null && pwd -P) || {
+    echo "rook: payload not found (looked for $lib)" >&2
+    echo "rook: reinstall the package, or set ROOK_LIB to the rook directory." >&2
+    exit 127
+}
+
+if [ ! -x "$lib/rook" ]; then
+    echo "rook: $lib/rook is missing or not executable" >&2
+    exit 127
+fi
+if [ ! -f "$lib/cef/libcef.so" ]; then
+    echo "rook: $lib/cef/libcef.so is missing; the package is incomplete" >&2
+    exit 127
+fi
+
+export ROOK_CEF_RUNTIME="${ROOK_CEF_RUNTIME:-$lib/cef}"
+LD_LIBRARY_PATH="$lib/cef${LD_LIBRARY_PATH:+:$LD_LIBRARY_PATH}"
+export LD_LIBRARY_PATH
+
+exec "$lib/rook" "$@"

@@ -1,0 +1,51 @@
+#!/bin/sh
+# ego-browser launcher.
+#
+# The runtime needs Node.js >= 22 (built-in WebSocket), so this shim finds a
+# suitable interpreter and `exec`s it. `exec` matters: the SDK keys its page
+# ledger on the parent pid (page-ledger.ts runtimeInstanceId), so Page labels
+# only survive between agent rounds when the runtime keeps the caller as its
+# parent instead of being re-parented under a launcher child.
+#
+# Override the interpreter with ROOK_NODE=/path/to/node.
+
+set -u
+
+here=$(CDPATH= cd -- "$(dirname -- "$0")" && pwd)
+cli="$here/../runtime/cli.js"
+
+node_major() {
+    "$1" -v 2>/dev/null | sed 's/^v//' | cut -d. -f1
+}
+
+find_node() {
+    if [ -n "${ROOK_NODE:-}" ] && [ -x "${ROOK_NODE}" ]; then
+        printf '%s\n' "$ROOK_NODE"
+        return 0
+    fi
+    candidates=$(
+        command -v node 2>/dev/null
+        printf '%s\n' /usr/local/bin/node22 /opt/node22/bin/node
+        for dir in "$HOME"/.nvm/versions/node/v2[2-9].* "$HOME"/.nvm/versions/node/v[3-9][0-9].*; do
+            [ -x "$dir/bin/node" ] && printf '%s\n' "$dir/bin/node"
+        done
+    )
+    for candidate in $candidates; do
+        [ -x "$candidate" ] || continue
+        major=$(node_major "$candidate")
+        [ -n "$major" ] || continue
+        if [ "$major" -ge 22 ] 2>/dev/null; then
+            printf '%s\n' "$candidate"
+            return 0
+        fi
+    done
+    return 1
+}
+
+node_bin=$(find_node) || {
+    echo "ego-browser: needs Node.js >= 22 for the built-in WebSocket." >&2
+    echo "ego-browser: set ROOK_NODE=/path/to/node22 and retry." >&2
+    exit 1
+}
+
+exec "$node_bin" "$cli" "$@"

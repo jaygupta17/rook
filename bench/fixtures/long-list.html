@@ -1,0 +1,61 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Invoices — 240 rows</title>
+<style>
+  :root { color-scheme: light; }
+  body { margin: 0; background: #fff; color: #14161c;
+         font: 13.5px/1.4 ui-sans-serif, -apple-system, "Segoe UI", Roboto, sans-serif; }
+  header { position: sticky; top: 0; background: #fff; border-bottom: 1px solid #e6e8ef;
+           padding: 14px 20px; display: flex; gap: 14px; align-items: center; }
+  h1 { font-size: 16px; margin: 0; letter-spacing: -.01em; }
+  .count { color: #7b8090; font-size: 12px; }
+  input[type=search] { margin-left: auto; font: inherit; padding: 6px 10px;
+           border: 1px solid #d6dae4; border-radius: 7px; width: 220px; }
+  ol { list-style: none; margin: 0; padding: 0; }
+  li.row { display: grid; grid-template-columns: 46px 1fr 92px 84px 64px 64px;
+           align-items: center; gap: 10px; height: 26px; padding: 0 20px;
+           border-bottom: 1px solid #f1f2f6; }
+  li.row:nth-child(even) { background: #fafbfd; }
+  .rank { color: #9aa0ae; font-variant-numeric: tabular-nums; font-size: 12px; }
+  .name { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .tag { display: inline-block; font-size: 11px; padding: 1px 6px; border-radius: 999px;
+         background: #eef1f8; color: #4b5060; }
+  .tag.paid { background: #e6f6ee; color: #1f7a4d; }
+  .tag.open { background: #fff4e5; color: #9a5b00; }
+  .amt { text-align: right; font-variant-numeric: tabular-nums; }
+  button { font: inherit; font-size: 12px; padding: 3px 8px; border-radius: 6px;
+           border: 1px solid #d6dae4; background: #fff; cursor: pointer; }
+</style>
+</head>
+<body>
+<header>
+  <h1>Invoices</h1>
+  <span class="count" id="count"></span>
+  <input type="search" placeholder="Filter invoices" aria-label="Filter invoices">
+</header>
+<ol id="rows"></ol>
+<script>
+  // Built in the page, no network: a long list with real interactive affordances
+  // per row, which is what an accessibility-tree snapshot has to walk.
+  const rows = document.getElementById('rows');
+  const statuses = ['paid', 'open', 'draft'];
+  let html = '';
+  for (let i = 0; i < 240; i += 1) {
+    const status = statuses[i % 3];
+    const amount = (120 + ((i * 37) % 880)) + '.' + String((i * 13) % 100).padStart(2, '0');
+    html += '<li class="row">'
+      + '<span class="rank">' + (i + 1) + '</span>'
+      + '<span class="name">Invoice ' + (48210 + i) + ' — Northwind ' + (i % 7 ? 'Retail' : 'Wholesale') + '</span>'
+      + '<span class="amt">$' + amount + '</span>'
+      + '<span><span class="tag ' + status + '">' + status + '</span></span>'
+      + '<span><button type="button">Open</button></span>'
+      + '<span><button type="button">Pay</button></span>'
+      + '</li>';
+  }
+  rows.innerHTML = html;
+  document.getElementById('count').textContent = '240 invoices · ' + new Date().toISOString().slice(0, 10);
+</script>
+</body>
+</html>

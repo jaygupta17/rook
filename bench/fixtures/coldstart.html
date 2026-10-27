@@ -1,0 +1,18 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Cold start marker</title>
+<style>
+  html, body { margin: 0; height: 100%; background: #ffffff; }
+  /* The bench's X poller watches the framebuffer for this block: it is the
+     pixel proof that the page, not just the GTK chrome, is on screen. */
+  .marker { height: 46vh; background: #0b8f6a; }
+  .copy { padding: 28px 34px; font: 15px/1.6 ui-sans-serif, system-ui, sans-serif; color: #1a1c22; }
+</style>
+</head>
+<body>
+  <div class="marker"></div>
+  <div class="copy">Cold-start fixture. No images, no network: one stylesheet, one block of colour.</div>
+</body>
+</html>

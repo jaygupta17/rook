@@ -1,0 +1,73 @@
+Rook — third-party notices
+
+Rook's own source code is licensed under the MIT licence (see LICENSE).
+This file records what Rook bundles or is built against, and whose those
+licences are. Nothing here re-licenses third-party work.
+
+1. Chromium Embedded Framework (CEF) and Chromium
+=================================================
+
+The packaged app bundles an unmodified CEF 156 binary distribution, which
+contains Chromium. Both are BSD 3-Clause. The binary distribution's own
+LICENSE.txt carries this notice:
+
+  Copyright (c) 2008-2020 Marshall A. Greenblatt. Portions Copyright (c)
+  2006-2009 Google Inc. All rights reserved.
+
+  Redistribution and use in source and binary forms, with or without
+  modification, are permitted provided that the following conditions are
+  met:
+
+     * Redistributions of source code must retain the above copyright
+  notice, this list of conditions and the following disclaimer.
+     * Redistributions in binary form must reproduce the above
+  copyright notice, this list of conditions and the following disclaimer
+  in the documentation and/or other materials provided with the
+  distribution.
+     * Neither the name of Google Inc. nor the name Chromium Embedded
+  Framework nor the names of its contributors may be used to endorse
+  or promote products derived from this software without specific prior
+  written permission.
+
+  THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
+  "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
+  LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR
+  A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT
+  OWNER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
+  SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT
+  LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE,
+  DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY
+  THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
+  (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
+  OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+
+Chromium's own copyright holders and the full set of third-party licences
+that ship inside the runtime are listed in the binary distribution's
+CREDITS.html, which is the authoritative list.
+
+The packaged app also bundles Node.js 22 (MIT, plus its bundled
+dependencies). Its licence and notices are Node's own; see
+https://nodejs.org/en/about/previous-releases.
+
+2. The ego-browser skill
+========================
+
+Rook implements the protocol of the open-source `ego-browser` agent skill by
+CitroLabs, which is MIT licensed:
+
+  MIT License
+
+  Copyright (c) 2026 CitroLabs
+
+The skill itself is not part of this repository. `scripts/build-sdk.sh` takes a
+checkout of it, applies the patches in `patches/` (a Linux clipboard
+implementation and a build-root fix), builds it, and writes the result to
+`vendor/`, which is not committed. Upstream commit: `aecc583`.
+
+3. Independence
+===============
+
+Rook is an independent project. It is not affiliated with, sponsored by or
+endorsed by CitroLabs, and it contains none of their application code. The
+name "ego-browser" appears here only to name the skill and the command Rook is
+compatible with.

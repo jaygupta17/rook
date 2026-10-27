@@ -1,0 +1,14 @@
+[Desktop Entry]
+Type=Application
+Version=1.0
+Name=Rook
+GenericName=Web Browser
+Comment=Browse in one window while agents work in isolated spaces
+Exec=rook
+TryExec=rook
+Icon=rook
+Terminal=false
+Categories=Network;WebBrowser;
+Keywords=rook;browser;web;agent;spaces;chromium;
+StartupNotify=true
+StartupWMClass=rook

@@ -1,0 +1,16 @@
+diff --git a/scripts/build.mjs b/scripts/build.mjs
+index 7505091..1fb4325 100644
+--- a/scripts/build.mjs
++++ b/scripts/build.mjs
+@@ -18,7 +18,10 @@ import resolve from "@rollup/plugin-node-resolve";
+ import typescript from "@rollup/plugin-typescript";
+ 
+ const root = dirname(dirname(fileURLToPath(import.meta.url)));
+-const repoRoot = dirname(dirname(root));
++// A vendored copy of this package has no repo around it to derive the root
++// from; EGO_BROWSER_BUILD_ROOT names the directory that holds
++// `skills/ego-browser` instead.
++const repoRoot = process.env.EGO_BROWSER_BUILD_ROOT || dirname(dirname(root));
+ const distDir = join(root, "dist");
+ const outDir = join(distDir, "out");
+ const bundledCliDir = outDir;

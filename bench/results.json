@@ -1,0 +1,2950 @@
+{
+  "discards": [],
+  "discardedRuns": 0,
+  "generatedAt": "2026-10-27T11:02:46.802Z",
+  "durationSeconds": 641.562,
+  "config": {
+    "runs": 3,
+    "idleSeconds": 60,
+    "wakeSeconds": 20,
+    "chromeIdleSeconds": 15,
+    "snapshots": 30,
+    "snapshotRuns": 3,
+    "pollTimeout": 25
+  },
+  "host": {
+    "cores": 4,
+    "model": "AMD Ryzen 9 9950X 16-Core Processor",
+    "memBytes": 8327110656,
+    "loadavg": [
+      0.13,
+      0.24,
+      0.74
+    ],
+    "kernel": "6.8.0-117-generic",
+    "node": "v22.23.4",
+    "chrome": "Google Chrome 151.0.7922.108 stable",
+    "clockTicks": 100,
+    "display": "private Xvfb per run (:95-:120)",
+    "dbus": "DBUS_SESSION_BUS_ADDRESS removed for every app measured"
+  },
+  "package": {
+    "deb": "packaging/out/rook_0.3.0~m3_amd64.deb",
+    "debBytes": 136927880,
+    "installedKb": 433276,
+    "installedBytes": 443674624,
+    "version": "0.3.0~m3",
+    "appImageBytes": 172247544
+  },
+  "metrics": [
+    {
+      "id": "cold-start",
+      "label": "Cold start to first paint",
+      "plain": "Time from double-click to the page being visible",
+      "target": 1500,
+      "unit": "ms",
+      "better": "lower",
+      "summary": {
+        "n": 3,
+        "median": 259.186773,
+        "min": 244.503737,
+        "max": 259.474928,
+        "spread": 14.971190999999976,
+        "spreadPct": 5.77621721460299,
+        "values": [
+          259.186773,
+          259.474928,
+          244.503737
+        ]
+      },
+      "pass": true,
+      "method": "exec -> first frame containing the page's own marker colour, polled from the framebuffer at ~4 ms; fresh profile and fresh X server per run. Not screenshot-mode minus a baseline: that path carries a fixed 900 ms settle.",
+      "detail": {
+        "warmProfile": {
+          "n": 3,
+          "median": 234.271716,
+          "min": 227.619706,
+          "max": 237.514031,
+          "spread": 9.89432499999998,
+          "spreadPct": 4.223439845380216,
+          "values": [
+            234.271716,
+            237.514031,
+            227.619706
+          ]
+        },
+        "windowUp": {
+          "n": 3,
+          "median": 171.928337,
+          "min": 170.718097,
+          "max": 171.9662,
+          "spread": 1.2481029999999862,
+          "spreadPct": 0.7259437401526115,
+          "values": [
+            171.9662,
+            170.718097,
+            171.928337
+          ]
+        },
+        "appLoaded": {
+          "n": 3,
+          "median": 235.492823,
+          "min": 234.052114,
+          "max": 247.383109,
+          "spread": 13.330995000000001,
+          "spreadPct": 5.660892264219875,
+          "values": [
+            247.383109,
+            235.492823,
+            234.052114
+          ]
+        }
+      }
+    },
+    {
+      "id": "idle-rss",
+      "label": "Memory, one tab open",
+      "plain": "Memory the app uses sitting idle with one tab",
+      "target": 250,
+      "unit": "MiB",
+      "better": "lower",
+      "summary": {
+        "n": 3,
+        "median": 939.97265625,
+        "min": 936.78515625,
+        "max": 945.09765625,
+        "spread": 8.3125,
+        "spreadPct": 0.8843342351215336,
+        "values": [
+          936.78515625,
+          939.97265625,
+          945.09765625
+        ]
+      },
+      "pass": false,
+      "method": "Sum of Rss over every process in the app's pid tree (/proc/<pid>/smaps_rollup), 60 s after the tab loaded. Pss is reported too: Rss double counts pages shared between processes.",
+      "detail": {
+        "pssMiB": {
+          "n": 3,
+          "median": 352.5693359375,
+          "min": 351.8671875,
+          "max": 359.16796875,
+          "spread": 7.30078125,
+          "spreadPct": 2.070736307962474,
+          "values": [
+            352.5693359375,
+            351.8671875,
+            359.16796875
+          ]
+        },
+        "fourSpacesPss": {
+          "n": 3,
+          "median": 426.673828125,
+          "min": 413.009765625,
+          "max": 427.22265625,
+          "spread": 14.212890625,
+          "spreadPct": 3.331090328989229,
+          "values": [
+            413.009765625,
+            426.673828125,
+            427.22265625
+          ]
+        }
+      }
+    },
+    {
+      "id": "space-margin",
+      "label": "Extra memory per parked space",
+      "plain": "Memory added by each agent space kept in the background",
+      "target": 120,
+      "unit": "MiB",
+      "better": "lower",
+      "summary": {
+        "n": 3,
+        "median": 129.94661458333334,
+        "min": 127.53776041666667,
+        "max": 132.015625,
+        "spread": 4.477864583333329,
+        "spreadPct": 3.4459263118868892,
+        "values": [
+          127.53776041666667,
+          132.015625,
+          129.94661458333334
+        ]
+      },
+      "pass": false,
+      "method": "(RSS with 4 spaces - RSS with 1 space) / 3, same page in every space, 60 s after load. The three parked spaces are WasHidden(true); the app reports 'parked' in its log, which the harness counts.",
+      "detail": {
+        "oneSpace": {
+          "n": 3,
+          "median": 939.97265625,
+          "min": 936.78515625,
+          "max": 945.09765625,
+          "spread": 8.3125,
+          "spreadPct": 0.8843342351215336,
+          "values": [
+            936.78515625,
+            939.97265625,
+            945.09765625
+          ]
+        },
+        "fourParked": {
+          "n": 3,
+          "median": 1334.9375,
+          "min": 1319.3984375,
+          "max": 1336.01953125,
+          "spread": 16.62109375,
+          "spreadPct": 1.2450840395149587,
+          "values": [
+            1319.3984375,
+            1336.01953125,
+            1334.9375
+          ]
+        },
+        "fourAwake": {
+          "n": 3,
+          "median": 1312.4375,
+          "min": 1312.09375,
+          "max": 1313.8828125,
+          "spread": 1.7890625,
+          "spreadPct": 0.13631601504833565,
+          "values": [
+            1313.8828125,
+            1312.09375,
+            1312.4375
+          ]
+        },
+        "awakeMargin": {
+          "n": 3,
+          "median": 124.04036458333333,
+          "min": 122.44661458333333,
+          "max": 125.69921875,
+          "spread": 3.2526041666666714,
+          "spreadPct": 2.622214290962917,
+          "values": [
+            125.69921875,
+            124.04036458333333,
+            122.44661458333333
+          ]
+        },
+        "parkedTransitions": [
+          3,
+          3,
+          3
+        ]
+      }
+    },
+    {
+      "id": "cpu-idle",
+      "label": "CPU while idle",
+      "plain": "Share of one processor core wasted while nothing is happening",
+      "target": 1,
+      "unit": "%",
+      "better": "lower",
+      "summary": {
+        "n": 3,
+        "median": 0.7483642653887833,
+        "min": 0.6983736730521949,
+        "max": 0.8314000456758314,
+        "spread": 0.13302637262363648,
+        "spreadPct": 17.775617941154344,
+        "values": [
+          0.6983736730521949,
+          0.7483642653887833,
+          0.8314000456758314
+        ]
+      },
+      "pass": true,
+      "method": "Delta of utime+stime over the whole process tree across a 60 s window, 4 spaces (3 parked, the visible one included), divided by the window: percent of one core. Kernel jiffies, so ±0.02 %.",
+      "detail": {
+        "oneTab": {
+          "n": 3,
+          "median": 0.5488234491203616,
+          "min": 0.5323035183465938,
+          "max": 0.7488470956422867,
+          "spread": 0.21654357729569285,
+          "spreadPct": 39.4559630501872,
+          "values": [
+            0.5488234491203616,
+            0.5323035183465938,
+            0.7488470956422867
+          ]
+        }
+      }
+    },
+    {
+      "id": "snapshot-p50",
+      "label": "Snapshot, median",
+      "plain": "Time for an agent to read the page it is looking at",
+      "target": 40,
+      "unit": "ms",
+      "better": "lower",
+      "summary": {
+        "n": 3,
+        "median": 64.774376,
+        "min": 64.653067,
+        "max": 68.840118,
+        "spread": 4.187051000000011,
+        "spreadPct": 6.464054551447954,
+        "values": [
+          68.840118,
+          64.774376,
+          64.653067
+        ]
+      },
+      "pass": false,
+      "method": "30 snapshots per run x 3 runs on the long list (2412 nodes), through 'ego-browser nodejs' with ROOK_BACKEND=host (bridge -> control socket -> CEF), viewport scope (the default). Each run's own p50, then median and spread across runs.",
+      "detail": {
+        "perPage": [
+          {
+            "id": "small-form",
+            "label": "small form",
+            "nodes": 21,
+            "p50": 4.757162,
+            "p95": 6.156869,
+            "perRunP50": [
+              4.866257,
+              4.910281,
+              4.573186
+            ],
+            "perRunP95": [
+              6.181896,
+              5.741517,
+              6.234987
+            ],
+            "samples": 90,
+            "fullPageP50": 4.736413,
+            "fullPageP95": 7.986886
+          },
+          {
+            "id": "long-list",
+            "label": "long list",
+            "nodes": 2412,
+            "p50": 65.88011,
+            "p95": 77.832797,
+            "perRunP50": [
+              68.840118,
+              64.774376,
+              64.653067
+            ],
+            "perRunP95": [
+              78.207123,
+              74.054429,
+              73.074773
+            ],
+            "samples": 90,
+            "fullPageP50": 70.690492,
+            "fullPageP95": 87.540325
+          },
+          {
+            "id": "heavy-dashboard",
+            "label": "heavy dashboard",
+            "nodes": 3797,
+            "p50": 141.183172,
+            "p95": 154.18581,
+            "perRunP50": [
+              148.951072,
+              136.803974,
+              134.506272
+            ],
+            "perRunP95": [
+              161.61046,
+              154.18581,
+              150.447906
+            ],
+            "samples": 90,
+            "fullPageP50": 153.798091,
+            "fullPageP95": 165.988914
+          }
+        ]
+      }
+    },
+    {
+      "id": "snapshot-p95",
+      "label": "Snapshot, p95",
+      "plain": "Time for an agent to read a heavy dashboard, slow case",
+      "target": 150,
+      "unit": "ms",
+      "better": "lower",
+      "summary": {
+        "n": 3,
+        "median": 154.18581,
+        "min": 150.447906,
+        "max": 161.61046,
+        "spread": 11.162554,
+        "spreadPct": 7.239676595401353,
+        "values": [
+          161.61046,
+          154.18581,
+          150.447906
+        ]
+      },
+      "pass": false,
+      "method": "Same samples as the p50 row; p95 of each run on the heavy dashboard (3797 nodes, 5794 snapshot lines), median and spread across runs.",
+      "detail": {
+        "heavy": {
+          "p50": 141.183172,
+          "p95": 154.18581,
+          "nodes": 3797,
+          "lines": 5794
+        },
+        "list": {
+          "p50": 65.88011,
+          "p95": 77.832797,
+          "nodes": 2412
+        },
+        "small": {
+          "p50": 4.757162,
+          "p95": 6.156869,
+          "nodes": 21
+        }
+      }
+    },
+    {
+      "id": "install-size",
+      "label": "Installed size",
+      "plain": "Disk space the package takes after installing",
+      "target": 450,
+      "unit": "MB",
+      "better": "lower",
+      "summary": {
+        "n": 1,
+        "median": 443.674624,
+        "min": 443.674624,
+        "max": 443.674624,
+        "spread": 0,
+        "spreadPct": 0,
+        "values": [
+          443.674624
+        ]
+      },
+      "pass": true,
+      "method": "dpkg's Installed-Size field of the .deb (KiB -> MB), i.e. what dpkg reports for the installed tree. The compressed .deb and the AppImage are listed for context.",
+      "detail": {
+        "debBytes": 136927880,
+        "appImageBytes": 172247544,
+        "installedKb": 433276
+      }
+    }
+  ],
+  "baselines": [
+    {
+      "id": "chrome-idle",
+      "label": "Chrome, headless, one tab",
+      "plain": "Plain Chrome with one page open, for comparison",
+      "unit": "MiB",
+      "target": null,
+      "summary": {
+        "n": 3,
+        "median": 1090.80859375,
+        "min": 1081.14453125,
+        "max": 1096.5078125,
+        "spread": 15.36328125,
+        "spreadPct": 1.4084305292447188,
+        "values": [
+          1096.5078125,
+          1090.80859375,
+          1081.14453125
+        ]
+      },
+      "extra": {
+        "aboutBlank": {
+          "n": 3,
+          "median": 1073.328125,
+          "min": 1068.2421875,
+          "max": 1077.6171875,
+          "spread": 9.375,
+          "spreadPct": 0.8734514433785102,
+          "values": [
+            1068.2421875,
+            1073.328125,
+            1077.6171875
+          ]
+        },
+        "pssMiB": {
+          "n": 3,
+          "median": 259.5673828125,
+          "min": 252.75,
+          "max": 263.5263671875,
+          "spread": 10.7763671875,
+          "spreadPct": 4.151664616229679,
+          "values": [
+            259.5673828125,
+            263.5263671875,
+            252.75
+          ]
+        }
+      },
+      "method": "google-chrome --headless=new, one page loaded, RSS over the chrome pid tree after a 20 s window."
+    },
+    {
+      "id": "chrome-cold",
+      "label": "Chrome, headless, cold start",
+      "plain": "Time for plain Chrome to produce a rendered frame",
+      "unit": "ms",
+      "target": null,
+      "summary": {
+        "n": 3,
+        "median": 328.578862,
+        "min": 306.098684,
+        "max": 347.748743,
+        "spread": 41.650059,
+        "spreadPct": 12.675818141947303,
+        "values": [
+          306.098684,
+          328.578862,
+          347.748743
+        ]
+      },
+      "extra": {
+        "onePage": {
+          "n": 3,
+          "median": 391.707851,
+          "min": 379.064432,
+          "max": 413.610633,
+          "spread": 34.546200999999996,
+          "spreadPct": 8.819379267432655,
+          "values": [
+            413.610633,
+            391.707851,
+            379.064432
+          ]
+        }
+      },
+      "method": "exec -> PNG written by --screenshot, warm profile. Headless Chrome has no window, so there is no framebuffer to poll; this is its own equivalent measurement, not the same instrument as the Rook number."
+    }
+  ],
+  "derived": {
+    "coldPaint": {
+      "n": 3,
+      "median": 259.186773,
+      "min": 244.503737,
+      "max": 259.474928,
+      "spread": 14.971190999999976,
+      "spreadPct": 5.77621721460299,
+      "values": [
+        259.186773,
+        259.474928,
+        244.503737
+      ]
+    },
+    "coldWarm": {
+      "n": 3,
+      "median": 234.271716,
+      "min": 227.619706,
+      "max": 237.514031,
+      "spread": 9.89432499999998,
+      "spreadPct": 4.223439845380216,
+      "values": [
+        234.271716,
+        237.514031,
+        227.619706
+      ]
+    },
+    "oneTab": {
+      "n": 3,
+      "median": 939.97265625,
+      "min": 936.78515625,
+      "max": 945.09765625,
+      "spread": 8.3125,
+      "spreadPct": 0.8843342351215336,
+      "values": [
+        936.78515625,
+        939.97265625,
+        945.09765625
+      ]
+    },
+    "fourParked": {
+      "n": 3,
+      "median": 1334.9375,
+      "min": 1319.3984375,
+      "max": 1336.01953125,
+      "spread": 16.62109375,
+      "spreadPct": 1.2450840395149587,
+      "values": [
+        1319.3984375,
+        1336.01953125,
+        1334.9375
+      ]
+    },
+    "fourAwake": {
+      "n": 3,
+      "median": 1312.4375,
+      "min": 1312.09375,
+      "max": 1313.8828125,
+      "spread": 1.7890625,
+      "spreadPct": 0.13631601504833565,
+      "values": [
+        1313.8828125,
+        1312.09375,
+        1312.4375
+      ]
+    },
+    "marginalParked": {
+      "n": 3,
+      "median": 129.94661458333334,
+      "min": 127.53776041666667,
+      "max": 132.015625,
+      "spread": 4.477864583333329,
+      "spreadPct": 3.4459263118868892,
+      "values": [
+        127.53776041666667,
+        132.015625,
+        129.94661458333334
+      ]
+    },
+    "marginalAwake": {
+      "n": 3,
+      "median": 124.04036458333333,
+      "min": 122.44661458333333,
+      "max": 125.69921875,
+      "spread": 3.2526041666666714,
+      "spreadPct": 2.622214290962917,
+      "values": [
+        125.69921875,
+        124.04036458333333,
+        122.44661458333333
+      ]
+    },
+    "cpuParked": {
+      "n": 3,
+      "median": 0.7483642653887833,
+      "min": 0.6983736730521949,
+      "max": 0.8314000456758314,
+      "spread": 0.13302637262363648,
+      "spreadPct": 17.775617941154344,
+      "values": [
+        0.6983736730521949,
+        0.7483642653887833,
+        0.8314000456758314
+      ]
+    },
+    "cpuOneTab": {
+      "n": 3,
+      "median": 0.5488234491203616,
+      "min": 0.5323035183465938,
+      "max": 0.7488470956422867,
+      "spread": 0.21654357729569285,
+      "spreadPct": 39.4559630501872,
+      "values": [
+        0.5488234491203616,
+        0.5323035183465938,
+        0.7488470956422867
+      ]
+    },
+    "chromeBlank": {
+      "n": 3,
+      "median": 1073.328125,
+      "min": 1068.2421875,
+      "max": 1077.6171875,
+      "spread": 9.375,
+      "spreadPct": 0.8734514433785102,
+      "values": [
+        1068.2421875,
+        1073.328125,
+        1077.6171875
+      ]
+    },
+    "chromePage": {
+      "n": 3,
+      "median": 1090.80859375,
+      "min": 1081.14453125,
+      "max": 1096.5078125,
+      "spread": 15.36328125,
+      "spreadPct": 1.4084305292447188,
+      "values": [
+        1096.5078125,
+        1090.80859375,
+        1081.14453125
+      ]
+    },
+    "fleetMiB": 652.29296875,
+    "rendererMiB": 0,
+    "contributors": [
+      {
+        "title": "The CEF runtime, counted once per process (587 MiB of the 940 MiB)",
+        "detail": "RSS sums every process in the tree, and each of the 10 processes maps the same 330 MB libcef.so. The gap between summed RSS (940 MiB) and summed Pss (353 MiB) is that double count. It is not memory the app can give back, but a budget written as \"total RSS\" pays for it once per process, so the number of processes is itself a cost."
+      },
+      {
+        "title": "One renderer process per space (130 MiB per extra parked space)",
+        "detail": "4 spaces cost 1335 MiB against 940 MiB for 1: 130 MiB per space. Parking a space (WasHidden(true)) throttles its timers but does not drop its renderer: all four awake is 1312 MiB, i.e. 23 MiB more. The per-space renderer is the cost; parking is only worth -6 % of it."
+      },
+      {
+        "title": "Snapshot cost scales with the page, not with the viewport (26 µs per element)",
+        "detail": "p50 goes from 5 ms at 21 elements to 66 ms at 2412 elements and 141 ms at 3797 elements, i.e. about 26 µs per node. Filtering to the viewport does not avoid that work: the same call without the filter (`scope: \"full_page\"`) costs 71 ms instead of 66 ms on the long list and 154 ms instead of 141 ms on the dashboard, because Accessibility.getFullAXTree reads the whole document before anything is filtered out. The host socket is not the cost: the same call against the bridge's own headless Chrome, with no app process in between, takes 74 ms against 66 ms here."
+      }
+    ]
+  },
+  "raw": {
+    "cold": {
+      "cold": [
+        {
+          "label": "cold profile #1",
+          "paintMs": 259.186773,
+          "windowMs": 171.9662,
+          "loadedMs": 247.383109,
+          "pollSamples": 50,
+          "pollerTimedOut": false,
+          "display": ":96"
+        },
+        {
+          "label": "cold profile #2",
+          "paintMs": 259.474928,
+          "windowMs": 170.718097,
+          "loadedMs": 235.492823,
+          "pollSamples": 49,
+          "pollerTimedOut": false,
+          "display": ":96"
+        },
+        {
+          "label": "cold profile #3",
+          "paintMs": 244.503737,
+          "windowMs": 171.928337,
+          "loadedMs": 234.052114,
+          "pollSamples": 49,
+          "pollerTimedOut": false,
+          "display": ":96"
+        }
+      ],
+      "warm": [
+        {
+          "label": "warm profile #1",
+          "paintMs": 234.271716,
+          "windowMs": 156.724749,
+          "loadedMs": 207.544754,
+          "pollSamples": 47,
+          "pollerTimedOut": false,
+          "display": ":96"
+        },
+        {
+          "label": "warm profile #2",
+          "paintMs": 237.514031,
+          "windowMs": 167.690181,
+          "loadedMs": 214.479013,
+          "pollSamples": 46,
+          "pollerTimedOut": false,
+          "display": ":96"
+        },
+        {
+          "label": "warm profile #3",
+          "paintMs": 227.619706,
+          "windowMs": 158.763763,
+          "loadedMs": 203.875912,
+          "pollSamples": 45,
+          "pollerTimedOut": false,
+          "display": ":96"
+        }
+      ],
+      "url": "http://127.0.0.1:42719/coldstart.html"
+    },
+    "idle": {
+      "oneTab": [
+        {
+          "label": "idle-1tab-0",
+          "spaces": 1,
+          "awake": false,
+          "windowSeconds": 60.12862616,
+          "rssKb": 959268,
+          "pssKb": 361031,
+          "pids": 10,
+          "cpuSeconds": 0.33,
+          "cpuPercent": 0.5488234491203616,
+          "userSeconds": 0.19999999999999998,
+          "systemSeconds": 0.13,
+          "trace": [
+            {
+              "atMs": 10018,
+              "rssKb": 937816
+            },
+            {
+              "atMs": 20039,
+              "rssKb": 937832
+            },
+            {
+              "atMs": 30056,
+              "rssKb": 939936
+            },
+            {
+              "atMs": 40079,
+              "rssKb": 939936
+            },
+            {
+              "atMs": 50102,
+              "rssKb": 939936
+            },
+            {
+              "atMs": 60117,
+              "rssKb": 959268
+            }
+          ],
+          "parkedTransitions": 0,
+          "awakeTransitions": 0,
+          "roles": [
+            {
+              "role": "cef child (zygote fork)",
+              "procs": 8,
+              "rssKb": 556064,
+              "pssKb": 158354
+            },
+            {
+              "role": "browser",
+              "procs": 1,
+              "rssKb": 291320,
+              "pssKb": 162820
+            },
+            {
+              "role": "utility:network",
+              "procs": 1,
+              "rssKb": 111884,
+              "pssKb": 39857
+            }
+          ],
+          "detail": [
+            {
+              "pid": 875716,
+              "comm": "rook",
+              "role": "browser",
+              "rssKb": 291320,
+              "pssKb": 162820
+            },
+            {
+              "pid": 875771,
+              "comm": "rook",
+              "role": "cef child (zygote fork)",
+              "rssKb": 121312,
+              "pssKb": 34109
+            },
+            {
+              "pid": 875830,
+              "comm": "rook",
+              "role": "cef child (zygote fork)",
+              "rssKb": 117696,
+              "pssKb": 51985
+            },
+            {
+              "pid": 875773,
+              "comm": "rook",
+              "role": "utility:network",
+              "rssKb": 111884,
+              "pssKb": 39857
+            },
+            {
+              "pid": 875829,
+              "comm": "rook",
+              "role": "cef child (zygote fork)",
+              "rssKb": 78396,
+              "pssKb": 24080
+            },
+            {
+              "pid": 875743,
+              "comm": "rook",
+              "role": "cef child (zygote fork)",
+              "rssKb": 75928,
+              "pssKb": 13460
+            },
+            {
+              "pid": 875742,
+              "comm": "rook",
+              "role": "cef child (zygote fork)",
+              "rssKb": 75536,
+              "pssKb": 15591
+            },
+            {
+              "pid": 875776,
+              "comm": "rook",
+              "role": "cef child (zygote fork)",
+              "rssKb": 47236,
+              "pssKb": 8901
+            },
+            {
+              "pid": 875775,
+              "comm": "rook",
+              "role": "cef child (zygote fork)",
+              "rssKb": 20204,
+              "pssKb": 6342
+            },
+            {
+              "pid": 875747,
+              "comm": "rook",
+              "role": "cef child (zygote fork)",
+              "rssKb": 19756,
+              "pssKb": 3886
+            }
+          ]
+        },
+        {
+          "label": "idle-1tab-1",
+          "spaces": 1,
+          "awake": false,
+          "windowSeconds": 60.116078322,
+          "rssKb": 962532,
+          "pssKb": 360312,
+          "pids": 10,
+          "cpuSeconds": 0.32,
+          "cpuPercent": 0.5323035183465938,
+          "userSeconds": 0.20999999999999996,
+          "systemSeconds": 0.10999999999999999,
+          "trace": [
+            {
+              "atMs": 10021,
+              "rssKb": 940784
+            },
+            {
+              "atMs": 20037,
+              "rssKb": 940812
+            },
+            {
+              "atMs": 30056,
+              "rssKb": 942712
+            },
+            {
+              "atMs": 40076,
+              "rssKb": 942712
+            },
+            {
+              "atMs": 50093,
+              "rssKb": 942712
+            },
+            {
+              "atMs": 60105,
+              "rssKb": 962532
+            }
+          ],
+          "parkedTransitions": 0,
+          "awakeTransitions": 0,
+          "roles": [
+            {
+              "role": "cef child (zygote fork)",
+              "procs": 8,
+              "rssKb": 559012,
+              "pssKb": 157921
+            },
+            {
+              "role": "browser",
+              "procs": 1,
+              "rssKb": 291548,
+              "pssKb": 162531
+            },
+            {
+              "role": "utility:network",
+              "procs": 1,
+              "rssKb": 111972,
+              "pssKb": 39860
+            }
+          ],
+          "detail": [
+            {
+              "pid": 879774,
+              "comm": "rook",
+              "role": "browser",
+              "rssKb": 291548,
+              "pssKb": 162531
+            },
+            {
+              "pid": 879827,
+              "comm": "rook",
+              "role": "cef child (zygote fork)",
+              "rssKb": 121344,
+              "pssKb": 33614
+            },
+            {
+              "pid": 879888,
+              "comm": "rook",
+              "role": "cef child (zygote fork)",
+              "rssKb": 118136,
+              "pssKb": 51825
+            },
+            {
+              "pid": 879829,
+              "comm": "rook",
+              "role": "utility:network",
+              "rssKb": 111972,
+              "pssKb": 39860
+            },
+            {
+              "pid": 879887,
+              "comm": "rook",
+              "role": "cef child (zygote fork)",
+              "rssKb": 78824,
+              "pssKb": 24109
+            },
+            {
+              "pid": 879800,
+              "comm": "rook",
+              "role": "cef child (zygote fork)",
+              "rssKb": 76988,
+              "pssKb": 15793
+            },
+            {
+              "pid": 879801,
+              "comm": "rook",
+              "role": "cef child (zygote fork)",
+              "rssKb": 76512,
+              "pssKb": 13493
+            },
+            {
+              "pid": 879835,
+              "comm": "rook",
+              "role": "cef child (zygote fork)",
+              "rssKb": 47244,
+              "pssKb": 8865
+            },
+            {
+              "pid": 879831,
+              "comm": "rook",
+              "role": "cef child (zygote fork)",
+              "rssKb": 20208,
+              "pssKb": 6337
+            },
+            {
+              "pid": 879803,
+              "comm": "rook",
+              "role": "cef child (zygote fork)",
+              "rssKb": 19756,
+              "pssKb": 3885
+            }
+          ]
+        },
+        {
+          "label": "idle-1tab-2",
+          "spaces": 1,
+          "awake": false,
+          "windowSeconds": 60.092374346999996,
+          "rssKb": 967780,
+          "pssKb": 367788,
+          "pids": 10,
+          "cpuSeconds": 0.45,
+          "cpuPercent": 0.7488470956422867,
+          "userSeconds": 0.28,
+          "systemSeconds": 0.17,
+          "trace": [
+            {
+              "atMs": 10012,
+              "rssKb": 937980
+            },
+            {
+              "atMs": 20024,
+              "rssKb": 938004
+            },
+            {
+              "atMs": 30045,
+              "rssKb": 939868
+            },
+            {
+              "atMs": 40057,
+              "rssKb": 939868
+            },
+            {
+              "atMs": 50069,
+              "rssKb": 939868
+            },
+            {
+              "atMs": 60081,
+              "rssKb": 967780
+            }
+          ],
+          "parkedTransitions": 0,
+          "awakeTransitions": 0,
+          "roles": [
+            {
+              "role": "cef child (zygote fork)",
+              "procs": 8,
+              "rssKb": 556044,
+              "pssKb": 157373
+            },
+            {
+              "role": "browser",
+              "procs": 1,
+              "rssKb": 299764,
+              "pssKb": 170527
+            },
+            {
+              "role": "utility:network",
+              "procs": 1,
+              "rssKb": 111972,
+              "pssKb": 39888
+            }
+          ],
+          "detail": [
+            {
+              "pid": 883598,
+              "comm": "rook",
+              "role": "browser",
+              "rssKb": 299764,
+              "pssKb": 170527
+            },
+            {
+              "pid": 883656,
+              "comm": "rook",
+              "role": "cef child (zygote fork)",
+              "rssKb": 121176,
+              "pssKb": 33239
+            },
+            {
+              "pid": 883715,
+              "comm": "rook",
+              "role": "cef child (zygote fork)",
+              "rssKb": 117524,
+              "pssKb": 51816
+            },
+            {
+              "pid": 883657,
+              "comm": "rook",
+              "role": "utility:network",
+              "rssKb": 111972,
+              "pssKb": 39888
+            },
+            {
+              "pid": 883714,
+              "comm": "rook",
+              "role": "cef child (zygote fork)",
+              "rssKb": 78268,
+              "pssKb": 24032
+            },
+            {
+              "pid": 883627,
+              "comm": "rook",
+              "role": "cef child (zygote fork)",
+              "rssKb": 76116,
+              "pssKb": 15742
+            },
+            {
+              "pid": 883628,
+              "comm": "rook",
+              "role": "cef child (zygote fork)",
+              "rssKb": 75952,
+              "pssKb": 13469
+            },
+            {
+              "pid": 883670,
+              "comm": "rook",
+              "role": "cef child (zygote fork)",
+              "rssKb": 47084,
+              "pssKb": 8847
+            },
+            {
+              "pid": 883660,
+              "comm": "rook",
+              "role": "cef child (zygote fork)",
+              "rssKb": 20160,
+              "pssKb": 6341
+            },
+            {
+              "pid": 883630,
+              "comm": "rook",
+              "role": "cef child (zygote fork)",
+              "rssKb": 19764,
+              "pssKb": 3887
+            }
+          ]
+        }
+      ],
+      "fourParked": [
+        {
+          "label": "idle-4parked-0",
+          "spaces": 4,
+          "awake": false,
+          "windowSeconds": 60.139724077,
+          "rssKb": 1351064,
+          "pssKb": 422922,
+          "pids": 13,
+          "cpuSeconds": 0.42000000000000004,
+          "cpuPercent": 0.6983736730521949,
+          "userSeconds": 0.26,
+          "systemSeconds": 0.15999999999999998,
+          "trace": [
+            {
+              "atMs": 10020,
+              "rssKb": 1336512
+            },
+            {
+              "atMs": 20044,
+              "rssKb": 1336540
+            },
+            {
+              "atMs": 30068,
+              "rssKb": 1342300
+            },
+            {
+              "atMs": 40091,
+              "rssKb": 1342300
+            },
+            {
+              "atMs": 50109,
+              "rssKb": 1342300
+            },
+            {
+              "atMs": 60122,
+              "rssKb": 1351064
+            }
+          ],
+          "parkedTransitions": 3,
+          "awakeTransitions": 0,
+          "roles": [
+            {
+              "role": "cef child (zygote fork)",
+              "procs": 11,
+              "rssKb": 934248,
+              "pssKb": 216875
+            },
+            {
+              "role": "browser",
+              "procs": 1,
+              "rssKb": 301784,
+              "pssKb": 165659
+            },
+            {
+              "role": "utility:network",
+              "procs": 1,
+              "rssKb": 115032,
+              "pssKb": 40388
+            }
+          ],
+          "detail": [
+            {
+              "pid": 888104,
+              "comm": "rook",
+              "role": "browser",
+              "rssKb": 301784,
+              "pssKb": 165659
+            },
+            {
+              "pid": 888157,
+              "comm": "rook",
+              "role": "cef child (zygote fork)",
+              "rssKb": 143828,
+              "pssKb": 51775
+            },
+            {
+              "pid": 888297,
+              "comm": "rook",
+              "role": "cef child (zygote fork)",
+              "rssKb": 118088,
+              "pssKb": 26630
+            },
+            {
+              "pid": 888287,
+              "comm": "rook",
+              "role": "cef child (zygote fork)",
+              "rssKb": 118064,
+              "pssKb": 26599
+            },
+            {
+              "pid": 888330,
+              "comm": "rook",
+              "role": "cef child (zygote fork)",
+              "rssKb": 117872,
+              "pssKb": 26533
+            },
+            {
+              "pid": 888220,
+              "comm": "rook",
+              "role": "cef child (zygote fork)",
+              "rssKb": 117512,
+              "pssKb": 26499
+            },
+            {
+              "pid": 888159,
+              "comm": "rook",
+              "role": "utility:network",
+              "rssKb": 115032,
+              "pssKb": 40388
+            },
+            {
+              "pid": 888387,
+              "comm": "rook",
+              "role": "cef child (zygote fork)",
+              "rssKb": 78516,
+              "pssKb": 15980
+            },
+            {
+              "pid": 888131,
+              "comm": "rook",
+              "role": "cef child (zygote fork)",
+              "rssKb": 76228,
+              "pssKb": 11817
+            },
+            {
+              "pid": 888130,
+              "comm": "rook",
+              "role": "cef child (zygote fork)",
+              "rssKb": 76140,
+              "pssKb": 15082
+            },
+            {
+              "pid": 888162,
+              "comm": "rook",
+              "role": "cef child (zygote fork)",
+              "rssKb": 48048,
+              "pssKb": 7067
+            },
+            {
+              "pid": 888161,
+              "comm": "rook",
+              "role": "cef child (zygote fork)",
+              "rssKb": 20192,
+              "pssKb": 6241
+            },
+            {
+              "pid": 888133,
+              "comm": "rook",
+              "role": "cef child (zygote fork)",
+              "rssKb": 19760,
+              "pssKb": 2652
+            }
+          ]
+        },
+        {
+          "label": "idle-4parked-1",
+          "spaces": 4,
+          "awake": false,
+          "windowSeconds": 60.131144793,
+          "rssKb": 1368084,
+          "pssKb": 436914,
+          "pids": 13,
+          "cpuSeconds": 0.45000000000000007,
+          "cpuPercent": 0.7483642653887833,
+          "userSeconds": 0.30000000000000004,
+          "systemSeconds": 0.14999999999999997,
+          "trace": [
+            {
+              "atMs": 10019,
+              "rssKb": 1340100
+            },
+            {
+              "atMs": 20043,
+              "rssKb": 1340184
+            },
+            {
+              "atMs": 30059,
+              "rssKb": 1347652
+            },
+            {
+              "atMs": 40084,
+              "rssKb": 1347652
+            },
+            {
+              "atMs": 50103,
+              "rssKb": 1347652
+            },
+            {
+              "atMs": 60117,
+              "rssKb": 1368084
+            }
+          ],
+          "parkedTransitions": 3,
+          "awakeTransitions": 0,
+          "roles": [
+            {
+              "role": "cef child (zygote fork)",
+              "procs": 11,
+              "rssKb": 937708,
+              "pssKb": 217268
+            },
+            {
+              "role": "browser",
+              "procs": 1,
+              "rssKb": 315908,
+              "pssKb": 179711
+            },
+            {
+              "role": "utility:network",
+              "procs": 1,
+              "rssKb": 114468,
+              "pssKb": 39935
+            }
+          ],
+          "detail": [
+            {
+              "pid": 892282,
+              "comm": "rook",
+              "role": "browser",
+              "rssKb": 315908,
+              "pssKb": 179711
+            },
+            {
+              "pid": 892335,
+              "comm": "rook",
+              "role": "cef child (zygote fork)",
+              "rssKb": 143836,
+              "pssKb": 51783
+            },
+            {
+              "pid": 892513,
+              "comm": "rook",
+              "role": "cef child (zygote fork)",
+              "rssKb": 118060,
+              "pssKb": 26708
+            },
+            {
+              "pid": 892486,
+              "comm": "rook",
+              "role": "cef child (zygote fork)",
+              "rssKb": 118052,
+              "pssKb": 26614
+            },
+            {
+              "pid": 892463,
+              "comm": "rook",
+              "role": "cef child (zygote fork)",
+              "rssKb": 117884,
+              "pssKb": 26568
+            },
+            {
+              "pid": 892397,
+              "comm": "rook",
+              "role": "cef child (zygote fork)",
+              "rssKb": 117336,
+              "pssKb": 26596
+            },
+            {
+              "pid": 892339,
+              "comm": "rook",
+              "role": "utility:network",
+              "rssKb": 114468,
+              "pssKb": 39935
+            },
+            {
+              "pid": 892560,
+              "comm": "rook",
+              "role": "cef child (zygote fork)",
+              "rssKb": 78544,
+              "pssKb": 16003
+            },
+            {
+              "pid": 892309,
+              "comm": "rook",
+              "role": "cef child (zygote fork)",
+              "rssKb": 78132,
+              "pssKb": 11851
+            },
+            {
+              "pid": 892308,
+              "comm": "rook",
+              "role": "cef child (zygote fork)",
+              "rssKb": 77904,
+              "pssKb": 15169
+            },
+            {
+              "pid": 892341,
+              "comm": "rook",
+              "role": "cef child (zygote fork)",
+              "rssKb": 47980,
+              "pssKb": 7088
+            },
+            {
+              "pid": 892340,
+              "comm": "rook",
+              "role": "cef child (zygote fork)",
+              "rssKb": 20172,
+              "pssKb": 6235
+            },
+            {
+              "pid": 892311,
+              "comm": "rook",
+              "role": "cef child (zygote fork)",
+              "rssKb": 19808,
+              "pssKb": 2653
+            }
+          ]
+        },
+        {
+          "label": "idle-4parked-2",
+          "spaces": 4,
+          "awake": false,
+          "windowSeconds": 60.139520391,
+          "rssKb": 1366976,
+          "pssKb": 437476,
+          "pids": 13,
+          "cpuSeconds": 0.4999999999999999,
+          "cpuPercent": 0.8314000456758314,
+          "userSeconds": 0.31000000000000005,
+          "systemSeconds": 0.19,
+          "trace": [
+            {
+              "atMs": 10023,
+              "rssKb": 1337960
+            },
+            {
+              "atMs": 20047,
+              "rssKb": 1337980
+            },
+            {
+              "atMs": 30069,
+              "rssKb": 1344144
+            },
+            {
+              "atMs": 40086,
+              "rssKb": 1344144
+            },
+            {
+              "atMs": 50103,
+              "rssKb": 1344144
+            },
+            {
+              "atMs": 60118,
+              "rssKb": 1366976
+            }
+          ],
+          "parkedTransitions": 3,
+          "awakeTransitions": 0,
+          "roles": [
+            {
+              "role": "cef child (zygote fork)",
+              "procs": 11,
+              "rssKb": 935684,
+              "pssKb": 217158
+            },
+            {
+              "role": "browser",
+              "procs": 1,
+              "rssKb": 316268,
+              "pssKb": 179982
+            },
+            {
+              "role": "utility:network",
+              "procs": 1,
+              "rssKb": 115024,
+              "pssKb": 40336
+            }
+          ],
+          "detail": [
+            {
+              "pid": 896297,
+              "comm": "rook",
+              "role": "browser",
+              "rssKb": 316268,
+              "pssKb": 179982
+            },
+            {
+              "pid": 896348,
+              "comm": "rook",
+              "role": "cef child (zygote fork)",
+              "rssKb": 143676,
+              "pssKb": 51787
+            },
+            {
+              "pid": 896411,
+              "comm": "rook",
+              "role": "cef child (zygote fork)",
+              "rssKb": 118108,
+              "pssKb": 26639
+            },
+            {
+              "pid": 896477,
+              "comm": "rook",
+              "role": "cef child (zygote fork)",
+              "rssKb": 118104,
+              "pssKb": 26634
+            },
+            {
+              "pid": 896526,
+              "comm": "rook",
+              "role": "cef child (zygote fork)",
+              "rssKb": 118076,
+              "pssKb": 26596
+            },
+            {
+              "pid": 896500,
+              "comm": "rook",
+              "role": "cef child (zygote fork)",
+              "rssKb": 118068,
+              "pssKb": 26654
+            },
+            {
+              "pid": 896350,
+              "comm": "rook",
+              "role": "utility:network",
+              "rssKb": 115024,
+              "pssKb": 40336
+            },
+            {
+              "pid": 896587,
+              "comm": "rook",
+              "role": "cef child (zygote fork)",
+              "rssKb": 78520,
+              "pssKb": 15952
+            },
+            {
+              "pid": 896324,
+              "comm": "rook",
+              "role": "cef child (zygote fork)",
+              "rssKb": 76800,
+              "pssKb": 11862
+            },
+            {
+              "pid": 896323,
+              "comm": "rook",
+              "role": "cef child (zygote fork)",
+              "rssKb": 76448,
+              "pssKb": 15109
+            },
+            {
+              "pid": 896366,
+              "comm": "rook",
+              "role": "cef child (zygote fork)",
+              "rssKb": 47912,
+              "pssKb": 7032
+            },
+            {
+              "pid": 896354,
+              "comm": "rook",
+              "role": "cef child (zygote fork)",
+              "rssKb": 20160,
+              "pssKb": 6237
+            },
+            {
+              "pid": 896326,
+              "comm": "rook",
+              "role": "cef child (zygote fork)",
+              "rssKb": 19812,
+              "pssKb": 2656
+            }
+          ]
+        }
+      ],
+      "fourAwake": [
+        {
+          "label": "idle-4awake-0",
+          "spaces": 4,
+          "awake": true,
+          "windowSeconds": 20.048354928000002,
+          "rssKb": 1345416,
+          "pssKb": 412270,
+          "pids": 13,
+          "cpuSeconds": 0.010000000000000009,
+          "cpuPercent": 0.0498794042499406,
+          "userSeconds": 0.010000000000000009,
+          "systemSeconds": 0,
+          "trace": [
+            {
+              "atMs": 10019,
+              "rssKb": 1345392
+            },
+            {
+              "atMs": 20035,
+              "rssKb": 1345416
+            }
+          ],
+          "parkedTransitions": 3,
+          "awakeTransitions": 3,
+          "roles": [
+            {
+              "role": "cef child (zygote fork)",
+              "procs": 11,
+              "rssKb": 940568,
+              "pssKb": 218164
+            },
+            {
+              "role": "browser",
+              "procs": 1,
+              "rssKb": 290324,
+              "pssKb": 154164
+            },
+            {
+              "role": "utility:network",
+              "procs": 1,
+              "rssKb": 114524,
+              "pssKb": 39942
+            }
+          ],
+          "detail": [
+            {
+              "pid": 900413,
+              "comm": "rook",
+              "role": "browser",
+              "rssKb": 290324,
+              "pssKb": 154164
+            },
+            {
+              "pid": 900467,
+              "comm": "rook",
+              "role": "cef child (zygote fork)",
+              "rssKb": 143760,
+              "pssKb": 51729
+            },
+            {
+              "pid": 900615,
+              "comm": "rook",
+              "role": "cef child (zygote fork)",
+              "rssKb": 119808,
+              "pssKb": 27142
+            },
+            {
+              "pid": 900581,
+              "comm": "rook",
+              "role": "cef child (zygote fork)",
+              "rssKb": 119600,
+              "pssKb": 27046
+            },
+            {
+              "pid": 900630,
+              "comm": "rook",
+              "role": "cef child (zygote fork)",
+              "rssKb": 119568,
+              "pssKb": 26970
+            },
+            {
+              "pid": 900529,
+              "comm": "rook",
+              "role": "cef child (zygote fork)",
+              "rssKb": 117824,
+              "pssKb": 26415
+            },
+            {
+              "pid": 900469,
+              "comm": "rook",
+              "role": "utility:network",
+              "rssKb": 114524,
+              "pssKb": 39942
+            },
+            {
+              "pid": 900681,
+              "comm": "rook",
+              "role": "cef child (zygote fork)",
+              "rssKb": 78428,
+              "pssKb": 15937
+            },
+            {
+              "pid": 900440,
+              "comm": "rook",
+              "role": "cef child (zygote fork)",
+              "rssKb": 76964,
+              "pssKb": 11806
+            },
+            {
+              "pid": 900439,
+              "comm": "rook",
+              "role": "cef child (zygote fork)",
+              "rssKb": 76924,
+              "pssKb": 15208
+            },
+            {
+              "pid": 900476,
+              "comm": "rook",
+              "role": "cef child (zygote fork)",
+              "rssKb": 47716,
+              "pssKb": 7020
+            },
+            {
+              "pid": 900471,
+              "comm": "rook",
+              "role": "cef child (zygote fork)",
+              "rssKb": 20212,
+              "pssKb": 6243
+            },
+            {
+              "pid": 900442,
+              "comm": "rook",
+              "role": "cef child (zygote fork)",
+              "rssKb": 19764,
+              "pssKb": 2648
+            }
+          ]
+        },
+        {
+          "label": "idle-4awake-1",
+          "spaces": 4,
+          "awake": true,
+          "windowSeconds": 20.049315131,
+          "rssKb": 1343584,
+          "pssKb": 412562,
+          "pids": 13,
+          "cpuSeconds": 0.029999999999999916,
+          "cpuPercent": 0.14963104626758195,
+          "userSeconds": 0.030000000000000027,
+          "systemSeconds": 0,
+          "trace": [
+            {
+              "atMs": 10018,
+              "rssKb": 1343564
+            },
+            {
+              "atMs": 20035,
+              "rssKb": 1343584
+            }
+          ],
+          "parkedTransitions": 3,
+          "awakeTransitions": 3,
+          "roles": [
+            {
+              "role": "cef child (zygote fork)",
+              "procs": 11,
+              "rssKb": 938800,
+              "pssKb": 218158
+            },
+            {
+              "role": "browser",
+              "procs": 1,
+              "rssKb": 290580,
+              "pssKb": 154581
+            },
+            {
+              "role": "utility:network",
+              "procs": 1,
+              "rssKb": 114204,
+              "pssKb": 39823
+            }
+          ],
+          "detail": [
+            {
+              "pid": 901864,
+              "comm": "rook",
+              "role": "browser",
+              "rssKb": 290580,
+              "pssKb": 154581
+            },
+            {
+              "pid": 901918,
+              "comm": "rook",
+              "role": "cef child (zygote fork)",
+              "rssKb": 143748,
+              "pssKb": 51775
+            },
+            {
+              "pid": 902037,
+              "comm": "rook",
+              "role": "cef child (zygote fork)",
+              "rssKb": 119704,
+              "pssKb": 27083
+            },
+            {
+              "pid": 902062,
+              "comm": "rook",
+              "role": "cef child (zygote fork)",
+              "rssKb": 119612,
+              "pssKb": 27061
+            },
+            {
+              "pid": 902091,
+              "comm": "rook",
+              "role": "cef child (zygote fork)",
+              "rssKb": 119368,
+              "pssKb": 27039
+            },
+            {
+              "pid": 901980,
+              "comm": "rook",
+              "role": "cef child (zygote fork)",
+              "rssKb": 118016,
+              "pssKb": 26482
+            },
+            {
+              "pid": 901921,
+              "comm": "rook",
+              "role": "utility:network",
+              "rssKb": 114204,
+              "pssKb": 39823
+            },
+            {
+              "pid": 902149,
+              "comm": "rook",
+              "role": "cef child (zygote fork)",
+              "rssKb": 78392,
+              "pssKb": 15943
+            },
+            {
+              "pid": 901891,
+              "comm": "rook",
+              "role": "cef child (zygote fork)",
+              "rssKb": 76352,
+              "pssKb": 11813
+            },
+            {
+              "pid": 901890,
+              "comm": "rook",
+              "role": "cef child (zygote fork)",
+              "rssKb": 75888,
+              "pssKb": 15029
+            },
+            {
+              "pid": 901926,
+              "comm": "rook",
+              "role": "cef child (zygote fork)",
+              "rssKb": 47760,
+              "pssKb": 7044
+            },
+            {
+              "pid": 901922,
+              "comm": "rook",
+              "role": "cef child (zygote fork)",
+              "rssKb": 20152,
+              "pssKb": 6237
+            },
+            {
+              "pid": 901893,
+              "comm": "rook",
+              "role": "cef child (zygote fork)",
+              "rssKb": 19808,
+              "pssKb": 2652
+            }
+          ]
+        },
+        {
+          "label": "idle-4awake-2",
+          "spaces": 4,
+          "awake": true,
+          "windowSeconds": 20.051703921,
+          "rssKb": 1343936,
+          "pssKb": 411637,
+          "pids": 13,
+          "cpuSeconds": 0.030000000000000027,
+          "cpuPercent": 0.1496132204933529,
+          "userSeconds": 0.020000000000000018,
+          "systemSeconds": 0.009999999999999981,
+          "trace": [
+            {
+              "atMs": 10021,
+              "rssKb": 1343916
+            },
+            {
+              "atMs": 20038,
+              "rssKb": 1343936
+            }
+          ],
+          "parkedTransitions": 3,
+          "awakeTransitions": 3,
+          "roles": [
+            {
+              "role": "cef child (zygote fork)",
+              "procs": 11,
+              "rssKb": 939560,
+              "pssKb": 217963
+            },
+            {
+              "role": "browser",
+              "procs": 1,
+              "rssKb": 290076,
+              "pssKb": 153885
+            },
+            {
+              "role": "utility:network",
+              "procs": 1,
+              "rssKb": 114300,
+              "pssKb": 39789
+            }
+          ],
+          "detail": [
+            {
+              "pid": 903953,
+              "comm": "rook",
+              "role": "browser",
+              "rssKb": 290076,
+              "pssKb": 153885
+            },
+            {
+              "pid": 904001,
+              "comm": "rook",
+              "role": "cef child (zygote fork)",
+              "rssKb": 143920,
+              "pssKb": 51828
+            },
+            {
+              "pid": 904157,
+              "comm": "rook",
+              "role": "cef child (zygote fork)",
+              "rssKb": 119744,
+              "pssKb": 27090
+            },
+            {
+              "pid": 904128,
+              "comm": "rook",
+              "role": "cef child (zygote fork)",
+              "rssKb": 119564,
+              "pssKb": 26965
+            },
+            {
+              "pid": 904190,
+              "comm": "rook",
+              "role": "cef child (zygote fork)",
+              "rssKb": 119508,
+              "pssKb": 26986
+            },
+            {
+              "pid": 904068,
+              "comm": "rook",
+              "role": "cef child (zygote fork)",
+              "rssKb": 117752,
+              "pssKb": 26396
+            },
+            {
+              "pid": 904009,
+              "comm": "rook",
+              "role": "utility:network",
+              "rssKb": 114300,
+              "pssKb": 39789
+            },
+            {
+              "pid": 904253,
+              "comm": "rook",
+              "role": "cef child (zygote fork)",
+              "rssKb": 78396,
+              "pssKb": 15917
+            },
+            {
+              "pid": 903980,
+              "comm": "rook",
+              "role": "cef child (zygote fork)",
+              "rssKb": 76656,
+              "pssKb": 11819
+            },
+            {
+              "pid": 903979,
+              "comm": "rook",
+              "role": "cef child (zygote fork)",
+              "rssKb": 76408,
+              "pssKb": 15067
+            },
+            {
+              "pid": 904016,
+              "comm": "rook",
+              "role": "cef child (zygote fork)",
+              "rssKb": 47664,
+              "pssKb": 7008
+            },
+            {
+              "pid": 904011,
+              "comm": "rook",
+              "role": "cef child (zygote fork)",
+              "rssKb": 20196,
+              "pssKb": 6241
+            },
+            {
+              "pid": 903982,
+              "comm": "rook",
+              "role": "cef child (zygote fork)",
+              "rssKb": 19752,
+              "pssKb": 2646
+            }
+          ]
+        }
+      ],
+      "url": "http://127.0.0.1:42719/small-form.html"
+    },
+    "snapshots": {
+      "pages": [
+        {
+          "id": "small-form",
+          "file": "small-form.html",
+          "label": "small form",
+          "fullIterations": 30,
+          "url": "http://127.0.0.1:42719/small-form.html",
+          "nodes": 21,
+          "snapshotLines": 26,
+          "viewport": {
+            "n": 90,
+            "median": 4.788576,
+            "min": 4.254486,
+            "max": 6.723748,
+            "spread": 2.4692619999999996,
+            "spreadPct": 51.56568466283087,
+            "values": [
+              5.50915,
+              6.32766,
+              6.181896,
+              4.977927,
+              5.30841,
+              4.885014,
+              4.664436,
+              4.428983,
+              4.65994,
+              4.492363,
+              5.547863,
+              5.815936,
+              6.156869,
+              5.897931,
+              5.566457,
+              5.557069,
+              5.624747,
+              4.508964,
+              4.370584,
+              4.368059,
+              4.694814,
+              4.757162,
+              4.893188,
+              4.356347,
+              4.866257,
+              4.682221,
+              4.714913,
+              4.584487,
+              4.596087,
+              5.276131,
+              5.125836,
+              5.196319,
+              4.586109,
+              4.839166,
+              5.394694,
+              5.688126,
+              6.125229,
+              5.073298,
+              5.741517,
+              5.307099,
+              4.851399,
+              4.733969,
+              5.354447,
+              5.292181,
+              4.910281,
+              4.828757,
+              5.339419,
+              4.625175,
+              4.713779,
+              4.562495,
+              5.207982,
+              5.081423,
+              4.573918,
+              4.950556,
+              4.634741,
+              4.393948,
+              5.009489,
+              4.449262,
+              4.544832,
+              4.398506,
+              6.723748,
+              5.623072,
+              6.234987,
+              6.113306,
+              5.426063,
+              4.891706,
+              4.617269,
+              4.539764,
+              5.018494,
+              4.458148,
+              4.494096,
+              4.459841,
+              4.376735,
+              4.889662,
+              4.454893,
+              4.42227,
+              4.708059,
+              4.557226,
+              4.546666,
+              4.55986,
+              4.356347,
+              4.399438,
+              4.81999,
+              4.254486,
+              4.876988,
+              4.687199,
+              4.573186,
+              4.582904,
+              4.515235,
+              4.610777
+            ]
+          },
+          "viewportP50": 4.757162,
+          "viewportP95": 6.156869,
+          "viewportSamples": 90,
+          "perRunP50": [
+            4.866257,
+            4.910281,
+            4.573186
+          ],
+          "perRunP95": [
+            6.181896,
+            5.741517,
+            6.234987
+          ],
+          "full": {
+            "n": 30,
+            "median": 4.7406465,
+            "min": 4.074947,
+            "max": 8.16414,
+            "spread": 4.089193,
+            "spreadPct": 86.25812956102084,
+            "values": [
+              8.16414,
+              5.946542,
+              4.940518,
+              6.580868,
+              7.986886,
+              5.858067,
+              5.018483,
+              4.682232,
+              6.098349,
+              4.364131,
+              4.399198,
+              4.562185,
+              4.253253,
+              5.635085,
+              5.800928,
+              5.126107,
+              4.669757,
+              4.312735,
+              4.560682,
+              4.809531,
+              4.736413,
+              4.616596,
+              6.650148,
+              4.51733,
+              4.590528,
+              4.074947,
+              4.685537,
+              5.442333,
+              4.74488,
+              4.48579
+            ]
+          },
+          "fullP50": 4.736413,
+          "fullP95": 7.986886,
+          "fullSamples": 30
+        },
+        {
+          "id": "long-list",
+          "file": "long-list.html",
+          "label": "long list",
+          "fullIterations": 30,
+          "url": "http://127.0.0.1:42719/long-list.html",
+          "nodes": 2412,
+          "snapshotLines": 2170,
+          "viewport": {
+            "n": 90,
+            "median": 65.989135,
+            "min": 60.965712,
+            "max": 88.982253,
+            "spread": 28.016540999999997,
+            "spreadPct": 42.45629375199417,
+            "values": [
+              71.005455,
+              75.038955,
+              68.840118,
+              71.259516,
+              66.375814,
+              88.982253,
+              68.996973,
+              67.954268,
+              70.611785,
+              64.594799,
+              72.517946,
+              77.832797,
+              75.864721,
+              78.207123,
+              67.98721,
+              78.191274,
+              65.88011,
+              69.358253,
+              65.16353,
+              67.77522,
+              66.677393,
+              75.86904,
+              64.328026,
+              65.643154,
+              66.312135,
+              67.286971,
+              69.321885,
+              77.646187,
+              62.920126,
+              62.977251,
+              62.816127,
+              64.167594,
+              62.218191,
+              66.09816,
+              68.245546,
+              61.927443,
+              66.272078,
+              63.333021,
+              66.537117,
+              75.281901,
+              65.766265,
+              65.081476,
+              71.517711,
+              64.143568,
+              66.173042,
+              64.678195,
+              62.249461,
+              73.092296,
+              66.130893,
+              61.21976,
+              64.269816,
+              74.054429,
+              61.547007,
+              61.303157,
+              66.426229,
+              61.453811,
+              60.965712,
+              70.600592,
+              64.774376,
+              70.470056,
+              66.689425,
+              65.144383,
+              68.853139,
+              61.486712,
+              64.160008,
+              65.634075,
+              64.533182,
+              78.453736,
+              63.547725,
+              64.465255,
+              61.551635,
+              62.860319,
+              62.062939,
+              73.074773,
+              62.550305,
+              65.595272,
+              62.023244,
+              66.752643,
+              61.315288,
+              71.138726,
+              64.170449,
+              61.686259,
+              65.441673,
+              61.45922,
+              67.703193,
+              67.239922,
+              66.835849,
+              64.653067,
+              65.596134,
+              65.858047
+            ]
+          },
+          "viewportP50": 65.88011,
+          "viewportP95": 77.832797,
+          "viewportSamples": 90,
+          "perRunP50": [
+            68.840118,
+            64.774376,
+            64.653067
+          ],
+          "perRunP95": [
+            78.207123,
+            74.054429,
+            73.074773
+          ],
+          "full": {
+            "n": 30,
+            "median": 70.7447745,
+            "min": 64.252454,
+            "max": 92.212588,
+            "spread": 27.960133999999996,
+            "spreadPct": 39.52254311023353,
+            "values": [
+              80.713796,
+              73.192556,
+              71.299469,
+              67.534307,
+              75.057198,
+              75.900899,
+              68.623188,
+              72.676734,
+              68.317953,
+              64.252454,
+              70.690492,
+              66.767983,
+              64.778334,
+              69.246933,
+              72.934308,
+              66.689937,
+              69.785006,
+              70.799057,
+              65.277404,
+              64.364116,
+              78.066077,
+              87.540325,
+              87.10824,
+              92.212588,
+              74.28753,
+              71.568956,
+              72.469433,
+              69.030896,
+              66.701647,
+              64.626419
+            ]
+          },
+          "fullP50": 70.690492,
+          "fullP95": 87.540325,
+          "fullSamples": 30
+        },
+        {
+          "id": "heavy-dashboard",
+          "file": "heavy-dashboard.html",
+          "label": "heavy dashboard",
+          "fullIterations": 30,
+          "url": "http://127.0.0.1:42719/heavy-dashboard.html",
+          "nodes": 3797,
+          "snapshotLines": 5794,
+          "viewport": {
+            "n": 90,
+            "median": 141.2904675,
+            "min": 128.114172,
+            "max": 163.794124,
+            "spread": 35.679952000000014,
+            "spreadPct": 25.252908162399574,
+            "values": [
+              150.591773,
+              145.330262,
+              145.843399,
+              149.909458,
+              150.988811,
+              145.370307,
+              144.924127,
+              147.693313,
+              146.706003,
+              152.136472,
+              141.637654,
+              141.43847,
+              161.61046,
+              149.988525,
+              151.946896,
+              141.397763,
+              151.083819,
+              153.939288,
+              155.239948,
+              163.794124,
+              151.642061,
+              135.900437,
+              148.889134,
+              142.658327,
+              143.097434,
+              143.009849,
+              148.951072,
+              150.377217,
+              151.06888,
+              152.67255,
+              142.941928,
+              158.056781,
+              149.505844,
+              137.870434,
+              154.18581,
+              140.291285,
+              138.005017,
+              152.201401,
+              133.666053,
+              128.273324,
+              149.635478,
+              129.370351,
+              132.172991,
+              144.84388,
+              138.942152,
+              135.904019,
+              131.664251,
+              138.198371,
+              131.740647,
+              135.729269,
+              132.57607,
+              135.489328,
+              135.255036,
+              129.936166,
+              132.626203,
+              130.059268,
+              146.031877,
+              136.803974,
+              139.686314,
+              138.200715,
+              150.447906,
+              146.970785,
+              137.92828,
+              146.907817,
+              143.104302,
+              141.582064,
+              148.239195,
+              137.437115,
+              136.995164,
+              143.558146,
+              136.847434,
+              129.654544,
+              141.183172,
+              138.081358,
+              128.992017,
+              129.494654,
+              131.086952,
+              130.57619,
+              133.837133,
+              132.798977,
+              130.002129,
+              130.030042,
+              134.506272,
+              128.114172,
+              130.487373,
+              136.579348,
+              132.753651,
+              150.771013,
+              131.604988,
+              130.729377
+            ]
+          },
+          "viewportP50": 141.183172,
+          "viewportP95": 154.18581,
+          "viewportSamples": 90,
+          "perRunP50": [
+            148.951072,
+            136.803974,
+            134.506272
+          ],
+          "perRunP95": [
+            161.61046,
+            154.18581,
+            150.447906
+          ],
+          "full": {
+            "n": 30,
+            "median": 153.9227855,
+            "min": 143.672054,
+            "max": 167.358446,
+            "spread": 23.686391999999984,
+            "spreadPct": 15.388489704794214,
+            "values": [
+              167.358446,
+              159.032442,
+              149.045709,
+              148.756165,
+              149.378405,
+              147.768492,
+              152.955313,
+              144.784511,
+              147.736482,
+              155.532939,
+              159.651267,
+              158.084145,
+              160.827523,
+              156.552959,
+              158.118379,
+              153.798091,
+              148.450948,
+              154.587127,
+              149.907261,
+              154.04748,
+              146.947505,
+              156.121577,
+              157.895398,
+              143.907508,
+              143.672054,
+              159.657728,
+              146.166945,
+              153.384872,
+              165.988914,
+              159.09563
+            ]
+          },
+          "fullP50": 153.798091,
+          "fullP95": 165.988914,
+          "fullSamples": 30
+        }
+      ],
+      "standalone": [
+        {
+          "id": "small-form",
+          "p50": 6.706975,
+          "p95": 8.588279,
+          "samples": 10
+        },
+        {
+          "id": "long-list",
+          "p50": 74.36099,
+          "p95": 84.479583,
+          "samples": 10
+        },
+        {
+          "id": "heavy-dashboard",
+          "p50": 146.50847,
+          "p95": 160.290014,
+          "samples": 10
+        }
+      ],
+      "loadavg": [
+        0.99,
+        0.35,
+        0.85
+      ]
+    },
+    "chrome": {
+      "coldBlank": [
+        {
+          "ms": 334.705643,
+          "code": 0,
+          "bytes": 4829
+        },
+        {
+          "ms": 332.379172,
+          "code": 0,
+          "bytes": 4829
+        },
+        {
+          "ms": 324.295003,
+          "code": 0,
+          "bytes": 4829
+        }
+      ],
+      "coldPage": [
+        {
+          "ms": 413.610633,
+          "code": 0,
+          "bytes": 24122
+        },
+        {
+          "ms": 391.707851,
+          "code": 0,
+          "bytes": 24122
+        },
+        {
+          "ms": 379.064432,
+          "code": 0,
+          "bytes": 24122
+        }
+      ],
+      "warmBlank": [
+        {
+          "ms": 306.098684,
+          "code": 0,
+          "bytes": 4829
+        },
+        {
+          "ms": 328.578862,
+          "code": 0,
+          "bytes": 4829
+        },
+        {
+          "ms": 347.748743,
+          "code": 0,
+          "bytes": 4829
+        }
+      ],
+      "idle": [
+        {
+          "label": "about-blank",
+          "runs": [
+            {
+              "label": "about-blank-0",
+              "windowSeconds": 15.063977706,
+              "rssKb": 1093880,
+              "pssKb": 254943,
+              "pids": 12,
+              "cpuPercent": 0,
+              "trace": [
+                {
+                  "atMs": 7530,
+                  "rssKb": 1093836
+                },
+                {
+                  "atMs": 15051,
+                  "rssKb": 1093880
+                }
+              ],
+              "roles": [
+                {
+                  "role": "renderer (own process)",
+                  "procs": 3,
+                  "rssKb": 410392,
+                  "pssKb": 116965
+                },
+                {
+                  "role": "browser",
+                  "procs": 3,
+                  "rssKb": 222416,
+                  "pssKb": 58839
+                },
+                {
+                  "role": "cef child (zygote fork)",
+                  "procs": 3,
+                  "rssKb": 163896,
+                  "pssKb": 18151
+                },
+                {
+                  "role": "gpu",
+                  "procs": 1,
+                  "rssKb": 129072,
+                  "pssKb": 32986
+                },
+                {
+                  "role": "utility:network",
+                  "procs": 1,
+                  "rssKb": 113204,
+                  "pssKb": 22226
+                },
+                {
+                  "role": "utility:storage",
+                  "procs": 1,
+                  "rssKb": 54900,
+                  "pssKb": 5776
+                }
+              ]
+            },
+            {
+              "label": "about-blank-1",
+              "windowSeconds": 15.063271215,
+              "rssKb": 1099088,
+              "pssKb": 255360,
+              "pids": 12,
+              "cpuPercent": 0.06638664243157232,
+              "trace": [
+                {
+                  "atMs": 7521,
+                  "rssKb": 1099040
+                },
+                {
+                  "atMs": 15043,
+                  "rssKb": 1099088
+                }
+              ],
+              "roles": [
+                {
+                  "role": "renderer (own process)",
+                  "procs": 3,
+                  "rssKb": 413432,
+                  "pssKb": 117332
+                },
+                {
+                  "role": "browser",
+                  "procs": 3,
+                  "rssKb": 222040,
+                  "pssKb": 58759
+                },
+                {
+                  "role": "cef child (zygote fork)",
+                  "procs": 3,
+                  "rssKb": 165676,
+                  "pssKb": 18213
+                },
+                {
+                  "role": "gpu",
+                  "procs": 1,
+                  "rssKb": 129408,
+                  "pssKb": 33114
+                },
+                {
+                  "role": "utility:network",
+                  "procs": 1,
+                  "rssKb": 113044,
+                  "pssKb": 22215
+                },
+                {
+                  "role": "utility:storage",
+                  "procs": 1,
+                  "rssKb": 55488,
+                  "pssKb": 5727
+                }
+              ]
+            },
+            {
+              "label": "about-blank-2",
+              "windowSeconds": 15.047356344,
+              "rssKb": 1103480,
+              "pssKb": 255730,
+              "pids": 12,
+              "cpuPercent": 0,
+              "trace": [
+                {
+                  "atMs": 7516,
+                  "rssKb": 1103468
+                },
+                {
+                  "atMs": 15035,
+                  "rssKb": 1103480
+                }
+              ],
+              "roles": [
+                {
+                  "role": "renderer (own process)",
+                  "procs": 3,
+                  "rssKb": 414336,
+                  "pssKb": 117201
+                },
+                {
+                  "role": "browser",
+                  "procs": 3,
+                  "rssKb": 223604,
+                  "pssKb": 59254
+                },
+                {
+                  "role": "cef child (zygote fork)",
+                  "procs": 3,
+                  "rssKb": 167620,
+                  "pssKb": 18253
+                },
+                {
+                  "role": "gpu",
+                  "procs": 1,
+                  "rssKb": 129336,
+                  "pssKb": 33101
+                },
+                {
+                  "role": "utility:network",
+                  "procs": 1,
+                  "rssKb": 112952,
+                  "pssKb": 22150
+                },
+                {
+                  "role": "utility:storage",
+                  "procs": 1,
+                  "rssKb": 55632,
+                  "pssKb": 5771
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "label": "small-form",
+          "runs": [
+            {
+              "label": "small-form-0",
+              "windowSeconds": 15.042893869,
+              "rssKb": 1122824,
+              "pssKb": 265797,
+              "pids": 12,
+              "cpuPercent": 0.06647657084523974,
+              "trace": [
+                {
+                  "atMs": 7518,
+                  "rssKb": 1123156
+                },
+                {
+                  "atMs": 15031,
+                  "rssKb": 1122824
+                }
+              ],
+              "roles": [
+                {
+                  "role": "renderer (own process)",
+                  "procs": 3,
+                  "rssKb": 435868,
+                  "pssKb": 127799
+                },
+                {
+                  "role": "browser",
+                  "procs": 3,
+                  "rssKb": 222800,
+                  "pssKb": 58023
+                },
+                {
+                  "role": "cef child (zygote fork)",
+                  "procs": 3,
+                  "rssKb": 162696,
+                  "pssKb": 18043
+                },
+                {
+                  "role": "gpu",
+                  "procs": 1,
+                  "rssKb": 130860,
+                  "pssKb": 33622
+                },
+                {
+                  "role": "utility:network",
+                  "procs": 1,
+                  "rssKb": 114412,
+                  "pssKb": 22477
+                },
+                {
+                  "role": "utility:storage",
+                  "procs": 1,
+                  "rssKb": 56188,
+                  "pssKb": 5833
+                }
+              ]
+            },
+            {
+              "label": "small-form-1",
+              "windowSeconds": 15.052005198000002,
+              "rssKb": 1116988,
+              "pssKb": 269851,
+              "pids": 12,
+              "cpuPercent": 0.1328726620600521,
+              "trace": [
+                {
+                  "atMs": 7518,
+                  "rssKb": 1117004
+                },
+                {
+                  "atMs": 15040,
+                  "rssKb": 1116988
+                }
+              ],
+              "roles": [
+                {
+                  "role": "renderer (own process)",
+                  "procs": 3,
+                  "rssKb": 422728,
+                  "pssKb": 120639
+                },
+                {
+                  "role": "browser",
+                  "procs": 3,
+                  "rssKb": 235076,
+                  "pssKb": 69274
+                },
+                {
+                  "role": "cef child (zygote fork)",
+                  "procs": 3,
+                  "rssKb": 159320,
+                  "pssKb": 17940
+                },
+                {
+                  "role": "gpu",
+                  "procs": 1,
+                  "rssKb": 130716,
+                  "pssKb": 33702
+                },
+                {
+                  "role": "utility:network",
+                  "procs": 1,
+                  "rssKb": 113788,
+                  "pssKb": 22413
+                },
+                {
+                  "role": "utility:storage",
+                  "procs": 1,
+                  "rssKb": 55360,
+                  "pssKb": 5883
+                }
+              ]
+            },
+            {
+              "label": "small-form-2",
+              "windowSeconds": 15.053444588,
+              "rssKb": 1107092,
+              "pssKb": 258816,
+              "pids": 12,
+              "cpuPercent": 0.13285995695591968,
+              "trace": [
+                {
+                  "atMs": 7517,
+                  "rssKb": 1107492
+                },
+                {
+                  "atMs": 15037,
+                  "rssKb": 1107092
+                }
+              ],
+              "roles": [
+                {
+                  "role": "renderer (own process)",
+                  "procs": 3,
+                  "rssKb": 423404,
+                  "pssKb": 120696
+                },
+                {
+                  "role": "browser",
+                  "procs": 3,
+                  "rssKb": 223140,
+                  "pssKb": 58227
+                },
+                {
+                  "role": "cef child (zygote fork)",
+                  "procs": 3,
+                  "rssKb": 159700,
+                  "pssKb": 18009
+                },
+                {
+                  "role": "gpu",
+                  "procs": 1,
+                  "rssKb": 130660,
+                  "pssKb": 33695
+                },
+                {
+                  "role": "utility:network",
+                  "procs": 1,
+                  "rssKb": 114232,
+                  "pssKb": 22349
+                },
+                {
+                  "role": "utility:storage",
+                  "procs": 1,
+                  "rssKb": 55956,
+                  "pssKb": 5840
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  }
+}

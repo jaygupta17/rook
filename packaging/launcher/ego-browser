@@ -1,0 +1,39 @@
+#!/bin/sh
+# ego-browser launcher (installed by the rook package).
+#
+# Runs the bundled Node 22 interpreter on the bundled bridge CLI:
+#   node /usr/lib/rook/runtime/cli.js <args>
+# The distro's node is irrelevant (and Ubuntu 24.04 ships 18, which cannot run
+# the bridge: it needs the built-in WebSocket).
+#
+# `exec` matters. The SDK keys its page ledger on its parent pid, so the runtime
+# has to stay a child of the caller; a wrapper process in between would break
+# Page labels between agent rounds.
+set -u
+
+self=$(readlink -f -- "$0" 2>/dev/null || printf '%s\n' "$0")
+bindir=$(dirname -- "$self")
+
+lib=${ROOK_LIB:-$bindir/../lib/rook}
+[ -d "$lib" ] || lib=/usr/lib/rook
+lib=$(cd -- "$lib" 2>/dev/null && pwd -P) || {
+    echo "ego-browser: payload not found (looked for $lib)" >&2
+    exit 127
+}
+
+node=${ROOK_NODE:-$lib/node}
+if [ ! -x "$node" ]; then
+    echo "ego-browser: bundled Node runtime missing at $node" >&2
+    echo "ego-browser: set ROOK_NODE=/path/to/node22 to override." >&2
+    exit 127
+fi
+
+# The CLI looks for the SDK at $EGO_BROWSER_SDK_PATH first, then at
+# <package root>/dist/out/index.js. A package that ships the SDK puts it in
+# sdk/, so point the CLI there; a user-supplied path always wins.
+if [ -z "${EGO_BROWSER_SDK_PATH:-}" ] && [ -f "$lib/sdk/index.js" ]; then
+    EGO_BROWSER_SDK_PATH="$lib/sdk/index.js"
+    export EGO_BROWSER_SDK_PATH
+fi
+
+exec "$node" "$lib/runtime/cli.js" "$@"

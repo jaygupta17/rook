@@ -1,0 +1,740 @@
+diff --git a/src/clipboard.test.mjs b/src/clipboard.test.mjs
+index 4fef835..0985a8a 100644
+--- a/src/clipboard.test.mjs
++++ b/src/clipboard.test.mjs
+@@ -3,12 +3,17 @@ import assert from "node:assert/strict";
+ import { EventEmitter } from "node:events";
+ import { PassThrough } from "node:stream";
+ 
++import { chmod, mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
++import { tmpdir } from "node:os";
++import { join } from "node:path";
++
+ import {
+   __testing,
+   ClipboardRestoreError,
+   withTemporaryClipboardContent,
+   withTemporaryClipboardText,
+ } from "../dist/src/clipboard.js";
++import { selectLinuxClipboardBackend } from "../dist/src/linux-clipboard.js";
+ 
+ test("temporary clipboard text is restored after the action", async () => {
+   const events = [];
+@@ -173,11 +178,113 @@ test("clipboard transactions are serialized within one runtime", async () => {
+ 
+ test("paste explains the supported clipboard platforms", async () => {
+   await assert.rejects(
+-    () => __testing.beginNativeClipboardTransaction("temporary", "linux"),
+-    /requires macOS or Windows clipboard support.*insertText/,
++    () => __testing.beginNativeClipboardTransaction("temporary", "sunos"),
++    /requires macOS, Windows or Linux clipboard support.*insertText/,
+   );
+ });
+ 
++test("linux paste names the packages to install when no tool is on PATH", async () => {
++  const dir = await mkdtemp(join(tmpdir(), "ego-clipboard-empty-"));
++  try {
++    await assert.rejects(
++      () =>
++        __testing.beginLinuxClipboardTransaction("temporary", {
++          env: { PATH: dir, DISPLAY: ":0" },
++        }),
++      (error) => {
++        assert.match(error.message, /clipboard tool on PATH/);
++        assert.match(error.message, /wl-clipboard/);
++        assert.match(error.message, /xclip or xsel/);
++        assert.match(error.message, /apt install xclip/);
++        assert.match(error.message, /insertText/);
++        return true;
++      },
++    );
++  } finally {
++    await rm(dir, { recursive: true, force: true });
++  }
++});
++
++test("linux paste without DISPLAY explains the missing X server", async () => {
++  const dir = await fakeClipboardTools({ xclip: true });
++  try {
++    assert.throws(
++      () => selectLinuxClipboardBackend({ PATH: dir }),
++      /DISPLAY is not set/,
++    );
++  } finally {
++    await rm(dir, { recursive: true, force: true });
++  }
++});
++
++test("linux paste prefers wl-clipboard on a Wayland session", async () => {
++  const dir = await fakeClipboardTools({ xclip: true, wl: true });
++  try {
++    assert.equal(
++      selectLinuxClipboardBackend({
++        PATH: dir,
++        WAYLAND_DISPLAY: "wayland-0",
++        DISPLAY: ":0",
++      }).packageName,
++      "wl-clipboard",
++    );
++    assert.equal(
++      selectLinuxClipboardBackend({ PATH: dir, DISPLAY: ":0" }).packageName,
++      "xclip",
++    );
++  } finally {
++    await rm(dir, { recursive: true, force: true });
++  }
++});
++
++test("linux paste publishes HTML and restores the previous clipboard", async () => {
++  const dir = await fakeClipboardTools({ xclip: true });
++  const state = join(dir, "clipboard.txt");
++  const log = join(dir, "calls.log");
++  try {
++    await writeFile(state, "original", "utf8");
++    await writeFile(log, "", "utf8");
++    const env = { PATH: dir, DISPLAY: ":0" };
++    const transaction = await __testing.beginLinuxClipboardTransaction(
++      { text: "Name\tStatus", html: "<table><tr><td>Name</td></tr></table>" },
++      { env },
++    );
++    // Only one representation can be served on Linux: HTML wins when present.
++    assert.equal(
++      await readFile(state, "utf8"),
++      "<table><tr><td>Name</td></tr></table>",
++    );
++    assert.match(await readFile(log, "utf8"), /-i -quiet -t text\/html/);
++
++    assert.equal(await transaction.finish(), "restored");
++    assert.equal(await readFile(state, "utf8"), "original");
++    await assert.rejects(
++      () => transaction.finish(),
++      /already finished/,
++    );
++  } finally {
++    await rm(dir, { recursive: true, force: true });
++  }
++});
++
++test("linux paste does not clobber a clipboard another app took over", async () => {
++  const dir = await fakeClipboardTools({ xclip: true });
++  const state = join(dir, "clipboard.txt");
++  try {
++    await writeFile(state, "original", "utf8");
++    const transaction = await __testing.beginLinuxClipboardTransaction(
++      "temporary",
++      { env: { PATH: dir, DISPLAY: ":0" } },
++    );
++    assert.equal(await readFile(state, "utf8"), "temporary");
++    await writeFile(state, "someone else", "utf8");
++    assert.equal(await transaction.finish(), "changed");
++    assert.equal(await readFile(state, "utf8"), "someone else");
++  } finally {
++    await rm(dir, { recursive: true, force: true });
++  }
++});
++
+ test("Windows HTML clipboard offsets count UTF-8 bytes", () => {
+   const fragment = "<b>世界 🙂</b>";
+   const payload = __testing.windowsHtmlClipboardFormat(fragment);
+@@ -312,3 +419,59 @@ test("Windows clipboard restore errors keep the host's message", async () => {
+ 
+   await assert.rejects(() => transaction.finish(), /OpenClipboard failed/);
+ });
++
++/**
++ * Stand-in clipboard commands on PATH. `xclip` logs its arguments and keeps the
++ * selection file up to date; it stays in the foreground, like `xclip -quiet`,
++ * until the caller kills it.
++ */
++async function fakeClipboardTools({ xclip = false, wl = false } = {}) {
++  const dir = await mkdtemp(join(tmpdir(), "ego-clipboard-tools-"));
++  const state = join(dir, "clipboard.txt");
++  const log = join(dir, "calls.log");
++  const writeScript = async (name, body) => {
++    const path = join(dir, name);
++    await writeFile(path, `#!/bin/sh\n${body}\n`, "utf8");
++    await chmod(path, 0o755);
++  };
++  if (xclip) {
++    await writeScript(
++      "xclip",
++      [
++        'echo "$@" >> "' + log + '"',
++        'case " $* " in',
++        '  *" -o "*)',
++        '    [ -f "' + state + '" ] || exit 1',
++        '    cat "' + state + '" ;;',
++        "  *)",
++        '    payload=$(mktemp)',
++        '    cat > "$payload"',
++        '    mv "$payload" "' + state + '"',
++        "    while :; do sleep 0.05; done ;;",
++        "esac",
++      ].join("\n"),
++    );
++  }
++  if (wl) {
++    await writeScript(
++      "wl-paste",
++      [
++        'case " $* " in',
++        '  *"--type text/html"*)',
++        '    [ -f "' + state + '.html" ] || exit 1',
++        '    cat "' + state + '.html" ;;',
++        "  *)",
++        '    [ -f "' + state + '" ] || exit 1',
++        '    cat "' + state + '" ;;',
++        "esac",
++      ].join("\n"),
++    );
++    await writeScript(
++      "wl-copy",
++      [
++        'if [ "$1" = "--type" ]; then cat > "' + state + '.html"; else cat > "' + state + '"; fi',
++      ].join("\n"),
++    );
++  }
++  return dir;
++}
+diff --git a/src/clipboard.ts b/src/clipboard.ts
+index ce08092..bd18574 100644
+--- a/src/clipboard.ts
++++ b/src/clipboard.ts
+@@ -6,6 +6,8 @@ import {
+ import { win32 } from "node:path";
+ import type { Writable } from "node:stream";
+ 
++import { beginLinuxClipboardTransaction } from "./linux-clipboard.js";
++
+ export type ClipboardTransactionStatus = "restored" | "changed";
+ 
+ export type ClipboardTransaction = {
+@@ -117,9 +119,12 @@ function beginNativeClipboardTransaction(
+ ): Promise<ClipboardTransaction> {
+   if (platform === "darwin") return beginDarwinClipboardTransaction(input);
+   if (platform === "win32") return beginWin32ClipboardTransaction(input);
++  // Linux has no bundled scripting bridge, so the transaction drives whichever
++  // clipboard utility the desktop provides; see `linux-clipboard.ts`.
++  if (platform === "linux") return beginLinuxClipboardTransaction(input);
+   return Promise.reject(
+     new Error(
+-      "page.keyboard.paste requires macOS or Windows clipboard support; use page.keyboard.insertText() for plain text",
++      `page.keyboard.paste requires macOS, Windows or Linux clipboard support; use page.keyboard.insertText() for plain text on ${platform}`,
+     ),
+   );
+ }
+@@ -668,6 +673,7 @@ const WIN32_CLIPBOARD_HOST_COMMAND = Buffer.from(
+ ).toString("base64");
+ 
+ export const __testing = {
++  beginLinuxClipboardTransaction,
+   beginNativeClipboardTransaction,
+   beginWin32ClipboardTransaction,
+   windowsHtmlClipboardFormat,
+diff --git a/src/linux-clipboard.ts b/src/linux-clipboard.ts
+new file mode 100644
+index 0000000..0f235e8
+--- /dev/null
++++ b/src/linux-clipboard.ts
+@@ -0,0 +1,501 @@
++import { spawn, type ChildProcess } from "node:child_process";
++import { accessSync, constants as fsConstants } from "node:fs";
++import { delimiter, join } from "node:path";
++
++/**
++ * Linux clipboard transactions.
++ *
++ * macOS and Windows keep the previous clipboard inside a short-lived native
++ * host process (see `clipboard.ts`). Linux has no scripting bridge that ships
++ * with every desktop, but every desktop does ship *some* clipboard utility, and
++ * the X11 selection protocol works the same way for all of them: the process
++ * that sets a selection keeps serving it until another client takes it over. So
++ * a transaction here is
++ *
++ *   1. read the current clipboard with the read half of the tool,
++ *   2. become the selection owner with the temporary content,
++ *   3. let the caller press `Control+V`,
++ *   4. read it back: if the selection is still ours, publish the saved content.
++ *
++ * Only one representation is published per paste (`text/html` when the content
++ * carries `html`, otherwise UTF-8 text), because `xclip`, `wl-copy` and `xsel`
++ * each serve a single target. That is the one behavioural difference from
++ * macOS and Windows, which publish text and HTML at the same time.
++ */
++
++export type LinuxClipboardContent = { text: string; html?: string };
++
++export type LinuxClipboardTransaction = {
++  finish(): Promise<"restored" | "changed">;
++};
++
++export type LinuxClipboardOptions = {
++  /** Defaults to `process.env`; tests point PATH at a directory of stand-ins. */
++  env?: NodeJS.ProcessEnv;
++  /** How long to wait for a published selection to read back. */
++  handshakeTimeoutMs?: number;
++  /** How long any single clipboard command may run. */
++  commandTimeoutMs?: number;
++};
++
++type ClipboardSnapshot = { text?: string; html?: string };
++type ClipboardTarget = "text" | "html";
++
++type ClipboardOwner = {
++  /** True while the temporary content is still on the clipboard. */
++  owns(): boolean;
++  /** Stop serving the selection; used once a restore replaced it. */
++  release(): void;
++  /** Collected diagnostics, used only to explain a failed publish. */
++  detail(): string;
++};
++
++type LinuxClipboardBackend = {
++  /** The desktop package that provides these commands. */
++  packageName: string;
++  supportsHtml: boolean;
++  read(target: ClipboardTarget): Promise<string | null>;
++  publish(
++    target: ClipboardTarget,
++    payload: string,
++    options?: { persist?: boolean },
++  ): Promise<ClipboardOwner>;
++};
++
++const COMMAND_TIMEOUT_MS = 5_000;
++const HANDSHAKE_TIMEOUT_MS = 2_000;
++const HANDSHAKE_INTERVAL_MS = 40;
++
++/**
++ * Start a transaction that holds `input` on the Linux clipboard until the
++ * returned transaction finishes. Rejects with an actionable error when the
++ * desktop provides no clipboard utility at all.
++ */
++export async function beginLinuxClipboardTransaction(
++  input: string | LinuxClipboardContent,
++  options: LinuxClipboardOptions = {},
++): Promise<LinuxClipboardTransaction> {
++  const env = options.env ?? process.env;
++  const backend = selectLinuxClipboardBackend(env, {
++    commandTimeoutMs: options.commandTimeoutMs ?? COMMAND_TIMEOUT_MS,
++  });
++  const handshakeTimeoutMs = options.handshakeTimeoutMs ?? HANDSHAKE_TIMEOUT_MS;
++  const content = normalizeContent(input);
++  const target: ClipboardTarget =
++    content.html !== undefined && backend.supportsHtml ? "html" : "text";
++  const payload = target === "html" ? content.html! : content.text;
++
++  const previous = await snapshotClipboard(backend);
++  const owner = await publishAndVerify(
++    backend,
++    target,
++    payload,
++    handshakeTimeoutMs,
++  );
++
++  let finished = false;
++  return {
++    async finish() {
++      if (finished) throw new Error("clipboard transaction already finished");
++      finished = true;
++
++      let stillOurs = owner.owns();
++      if (stillOurs) {
++        const current = await backend.read(target).catch(() => null);
++        if (current !== null && current !== payload) stillOurs = false;
++      }
++      if (!stillOurs) {
++        // Another application took the selection; restoring would destroy it.
++        owner.release();
++        return "changed";
++      }
++
++      try {
++        await restoreClipboard(backend, previous, handshakeTimeoutMs);
++        return "restored";
++      } finally {
++        owner.release();
++      }
++    },
++  };
++}
++
++/**
++ * The clipboard tool this desktop would use: Wayland first on a Wayland
++ * session, then X11. `wl-clipboard` needs both `wl-paste` and `wl-copy`.
++ */
++export function selectLinuxClipboardBackend(
++  env: NodeJS.ProcessEnv = process.env,
++  options: { commandTimeoutMs?: number } = {},
++): LinuxClipboardBackend {
++  const commandTimeoutMs = options.commandTimeoutMs ?? COMMAND_TIMEOUT_MS;
++  const wayland =
++    typeof env.WAYLAND_DISPLAY === "string" && env.WAYLAND_DISPLAY.trim() !== "";
++
++  const candidates = [
++    {
++      packageName: "wl-clipboard",
++      commands: ["wl-paste", "wl-copy"],
++      waylandOnly: true,
++      build: (commands: Map<string, string>) =>
++        wlClipboardBackend(commands, commandTimeoutMs),
++    },
++    {
++      packageName: "xclip",
++      commands: ["xclip"],
++      waylandOnly: false,
++      build: (commands: Map<string, string>) =>
++        xclipBackend(commands, commandTimeoutMs),
++    },
++    {
++      packageName: "xsel",
++      commands: ["xsel"],
++      waylandOnly: false,
++      build: (commands: Map<string, string>) =>
++        xselBackend(commands, commandTimeoutMs),
++    },
++  ];
++  // XWayland's clipboard lags behind the compositor's own selection, so on a
++  // Wayland session `wl-clipboard` wins even when `xclip` is installed too.
++  if (!wayland) candidates.push(candidates.shift()!);
++
++  for (const candidate of candidates) {
++    const commands = new Map<string, string>();
++    let complete = true;
++    for (const command of candidate.commands) {
++      const found = findExecutable(command, env);
++      if (!found) {
++        complete = false;
++        break;
++      }
++      commands.set(command, found);
++    }
++    if (!complete) continue;
++    if (!candidate.waylandOnly && !hasDisplay(env)) {
++      throw new Error(
++        `page.keyboard.paste found ${candidate.packageName} but DISPLAY is not set, so it has no X server to talk to; ` +
++          "start the browser from a desktop session, or use page.keyboard.insertText() for plain text",
++      );
++    }
++    return candidate.build(commands);
++  }
++  throw new Error(unavailableMessage(env));
++}
++
++function hasDisplay(env: NodeJS.ProcessEnv): boolean {
++  return typeof env.DISPLAY === "string" && env.DISPLAY.trim() !== "";
++}
++
++function unavailableMessage(env: NodeJS.ProcessEnv): string {
++  const wayland =
++    typeof env.WAYLAND_DISPLAY === "string" && env.WAYLAND_DISPLAY.trim() !== "";
++  const packages = wayland
++    ? "wl-clipboard (Wayland), xclip or xsel (X11)"
++    : "xclip or xsel (X11), or wl-clipboard (Wayland)";
++  return (
++    "page.keyboard.paste needs a Linux clipboard tool on PATH and found none: " +
++    `install ${packages}; for example "sudo apt install xclip", ` +
++    "or use page.keyboard.insertText() for plain text"
++  );
++}
++
++function normalizeContent(
++  input: string | LinuxClipboardContent,
++): LinuxClipboardContent {
++  if (typeof input === "string") return { text: input };
++  if (input.html === undefined) return { text: input.text };
++  return { text: input.text, html: input.html };
++}
++
++/** Read both representations; a clipboard without one of them yields null. */
++async function snapshotClipboard(
++  backend: LinuxClipboardBackend,
++): Promise<ClipboardSnapshot> {
++  const text = await backend.read("text").catch(() => null);
++  const html = backend.supportsHtml
++    ? await backend.read("html").catch(() => null)
++    : null;
++  const snapshot: ClipboardSnapshot = {};
++  if (text !== null && text !== "") snapshot.text = text;
++  // xclip answers any requested target with the data it holds, so a plain text
++  // clipboard reads back as HTML too. Keep the richer value only when it really
++  // is a different representation.
++  if (html !== null && html !== "" && html !== text) snapshot.html = html;
++  return snapshot;
++}
++
++/** Publish again after the paste; a clipboard that was empty stays empty. */
++async function restoreClipboard(
++  backend: LinuxClipboardBackend,
++  previous: ClipboardSnapshot,
++  handshakeTimeoutMs: number,
++): Promise<void> {
++  const target: ClipboardTarget =
++    previous.html !== undefined && backend.supportsHtml ? "html" : "text";
++  const payload = target === "html" ? previous.html! : (previous.text ?? "");
++  const owner = await publishAndVerify(
++    backend,
++    target,
++    payload,
++    handshakeTimeoutMs,
++    { persist: true },
++  );
++  // The restored value must outlive this process, so the owner is left serving.
++  void owner;
++}
++
++async function publishAndVerify(
++  backend: LinuxClipboardBackend,
++  target: ClipboardTarget,
++  payload: string,
++  handshakeTimeoutMs: number,
++  options: { persist?: boolean } = {},
++): Promise<ClipboardOwner> {
++  const owner = await backend.publish(target, payload, options);
++  const deadline = Date.now() + handshakeTimeoutMs;
++  while (Date.now() < deadline) {
++    const current = await backend.read(target).catch(() => null);
++    if (current === payload) return owner;
++    if (!owner.owns()) {
++      const detail = owner.detail().trim();
++      throw new Error(
++        `could not put the temporary content on the clipboard with ${backend.packageName}${
++          detail ? `: ${detail}` : ""
++        }`,
++      );
++    }
++    await sleep(HANDSHAKE_INTERVAL_MS);
++  }
++  owner.release();
++  throw new Error(
++    `the clipboard set by ${backend.packageName} did not become readable within ${handshakeTimeoutMs} ms; ` +
++      "is another application holding the selection?",
++  );
++}
++
++function sleep(ms: number): Promise<void> {
++  return new Promise((resolve) => setTimeout(resolve, ms));
++}
++
++type ToolResult = { code: number | null; stdout: string; stderr: string };
++
++/** Run a short-lived clipboard command; never rejects on a non-zero exit. */
++function runTool(
++  command: string,
++  args: string[],
++  timeoutMs: number,
++): Promise<ToolResult> {
++  return new Promise((resolve) => {
++    const child = spawn(command, args, {
++      stdio: ["pipe", "pipe", "pipe"],
++      windowsHide: true,
++    });
++    let stdout = "";
++    let stderr = "";
++    child.stdout?.setEncoding("utf8");
++    child.stderr?.setEncoding("utf8");
++    child.stdout?.on("data", (chunk) => {
++      if (stdout.length < 4_000_000) stdout += chunk;
++    });
++    child.stderr?.on("data", (chunk) => {
++      if (stderr.length < 16_384) stderr += chunk;
++    });
++    child.stdin?.on("error", () => {});
++    const timer = setTimeout(() => child.kill("SIGKILL"), timeoutMs);
++    child.once("error", (error) => {
++      clearTimeout(timer);
++      resolve({ code: null, stdout, stderr: String(error.message) });
++    });
++    child.once("close", (code) => {
++      clearTimeout(timer);
++      resolve({ code, stdout, stderr });
++    });
++    child.stdin?.end("", "utf8");
++  });
++}
++
++async function readTarget(
++  command: string,
++  args: string[],
++  timeoutMs: number,
++): Promise<string | null> {
++  const result = await runTool(command, args, timeoutMs);
++  // A clipboard without an owner, or without the requested target, is normal:
++  // both mean "there is nothing of this kind to restore".
++  if (result.code !== 0) return null;
++  return result.stdout;
++}
++
++/**
++ * Own the selection from a foreground child process, where an exit is the exact
++ * "another application took the clipboard" signal (`xclip -quiet`).
++ */
++function foregroundOwner(
++  command: string,
++  args: string[],
++  payload: string,
++  options: { persist?: boolean },
++): ClipboardOwner {
++  const child: ChildProcess = spawn(command, args, {
++    stdio: ["pipe", "ignore", "pipe"],
++    windowsHide: true,
++    detached: true,
++  });
++  let stderr = "";
++  child.stderr?.setEncoding("utf8");
++  child.stderr?.on("data", (chunk) => {
++    if (stderr.length < 4_096) stderr += chunk;
++  });
++  child.stdin?.on("error", () => {});
++  child.stdin?.end(payload, "utf8");
++  // The clipboard outlives this process whatever happens to the transaction, so
++  // the pipe must not keep the Node event loop alive.
++  unrefChild(child);
++  return {
++    owns: () => child.exitCode === null && child.signalCode === null,
++    release: () => {
++      if (options.persist) return;
++      try {
++        child.kill("SIGTERM");
++      } catch {
++        // Already gone.
++      }
++    },
++    detail: () => stderr,
++  };
++}
++
++/**
++ * Own the selection with a tool that daemonizes itself (`wl-copy`, `xsel`). The
++ * parent exits as soon as the selection is claimed, so ownership is inferred
++ * from the read-back comparison in `finish()`.
++ */
++function forkedOwner(
++  command: string,
++  args: string[],
++  payload: string,
++): ClipboardOwner {
++  const child = spawn(command, args, {
++    stdio: ["pipe", "ignore", "ignore"],
++    windowsHide: true,
++    detached: true,
++  });
++  child.stdin?.on("error", () => {});
++  child.stdin?.end(payload, "utf8");
++  unrefChild(child);
++  return {
++    owns: () => true,
++    release: () => {
++      // The daemonized owner exits by itself when another client takes the
++      // selection, which the restore in `finish()` does.
++    },
++    detail: () => "",
++  };
++}
++
++/**
++ * Let the clipboard owner outlive this process. A spawned child normally keeps
++ * the Node event loop alive, which would hang every CLI round that pasted.
++ */
++function unrefChild(child: ChildProcess): void {
++  child.unref();
++  const unref = (stream: unknown) => {
++    if (stream && typeof (stream as { unref?: () => void }).unref === "function") {
++      (stream as { unref: () => void }).unref();
++    }
++  };
++  unref(child.stdin);
++  unref(child.stdout);
++  unref(child.stderr);
++}
++
++function wlClipboardBackend(
++  commands: Map<string, string>,
++  commandTimeoutMs: number,
++): LinuxClipboardBackend {
++  return {
++    packageName: "wl-clipboard",
++    supportsHtml: true,
++    read: (target) =>
++      readTarget(
++        commands.get("wl-paste")!,
++        target === "html"
++          ? ["--no-newline", "--type", "text/html"]
++          : ["--no-newline"],
++        commandTimeoutMs,
++      ),
++    publish: async (target, payload) =>
++      forkedOwner(
++        commands.get("wl-copy")!,
++        target === "html" ? ["--type", "text/html"] : [],
++        payload,
++      ),
++  };
++}
++
++function xclipBackend(
++  commands: Map<string, string>,
++  commandTimeoutMs: number,
++): LinuxClipboardBackend {
++  const xclip = commands.get("xclip")!;
++  const selection = ["-selection", "clipboard"];
++  return {
++    packageName: "xclip",
++    supportsHtml: true,
++    read: (target) =>
++      readTarget(
++        xclip,
++        target === "html"
++          ? [...selection, "-o", "-t", "text/html"]
++          : [...selection, "-o"],
++        commandTimeoutMs,
++      ),
++    // `-quiet` keeps xclip in the foreground, where it stays until another
++    // client takes the selection: that exit is the "clipboard changed" signal.
++    publish: async (target, payload, options = {}) =>
++      foregroundOwner(
++        xclip,
++        target === "html"
++          ? [...selection, "-i", "-quiet", "-t", "text/html"]
++          : [...selection, "-i", "-quiet"],
++        payload,
++        options,
++      ),
++  };
++}
++
++function xselBackend(
++  commands: Map<string, string>,
++  commandTimeoutMs: number,
++): LinuxClipboardBackend {
++  const xsel = commands.get("xsel")!;
++  return {
++    packageName: "xsel",
++    // xsel only speaks plain text; the HTML representation of the content is
++    // dropped and its text is pasted instead.
++    supportsHtml: false,
++    read: () =>
++      readTarget(xsel, ["--clipboard", "--output"], commandTimeoutMs),
++    publish: async (_target, payload) =>
++      forkedOwner(xsel, ["--clipboard", "--input"], payload),
++  };
++}
++
++/** First executable named `command` on PATH, or null. */
++export function findExecutable(
++  command: string,
++  env: NodeJS.ProcessEnv = process.env,
++): string | null {
++  const path = env.PATH ?? "";
++  for (const directory of path.split(delimiter)) {
++    if (!directory) continue;
++    const candidate = join(directory, command);
++    try {
++      accessSync(candidate, fsConstants.X_OK);
++      return candidate;
++    } catch {
++      // Not here; keep looking.
++    }
++  }
++  return null;
++}

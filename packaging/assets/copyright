@@ -1,0 +1,46 @@
+Format: https://www.debian.org/doc/packaging-manuals/copyright-format/1.0/
+Upstream: Rook (Linux build)
+
+Files: *
+Copyright: 2026 Jay Gupta
+License: MIT
+ Permission is hereby granted, free of charge, to any person obtaining a copy
+ of this software and associated documentation files (the "Software"), to deal
+ in the Software without restriction, including without limitation the rights
+ to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+ copies of the Software, and to permit persons to whom the Software is
+ furnished to do so, subject to the following conditions:
+ .
+ The above copyright notice and this permission notice shall be included in all
+ copies or substantial portions of the Software.
+ .
+ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+ IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+ FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+ AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+ LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+ SOFTWARE.
+
+Files: usr/lib/rook/sdk/*
+Copyright: 2026 CitroLabs
+License: MIT
+ The ego-browser agent skill, built from an upstream checkout with the patches
+ in patches/ applied. MIT licensed; its own LICENSE and NOTICE text travels
+ with the upstream source, not with this package. This package includes none of
+ the ego-lite application.
+
+Comment:
+ This package bundles two unmodified third-party binaries, taken from their
+ upstream releases and only stripped of symbol tables:
+ .
+   usr/lib/rook/cef/   Chromium Embedded Framework 156 / Chromium 156,
+                           BSD-3-Clause. See https://github.com/chromiumembedded/cef
+                           and https://www.chromium.org/ .
+   usr/lib/rook/node   Node.js 22, MIT plus its bundled dependencies.
+                           See https://nodejs.org/ .
+ .
+ Their licences and copyright notices are those of their respective authors;
+ nothing here re-licenses them. The Rook icon (assets/rook.svg) is original
+ artwork drawn for this package. The full attribution is in
+ /usr/share/doc/rook/NOTICE.

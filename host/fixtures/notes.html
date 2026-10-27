@@ -1,0 +1,61 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Notes — two tabs, one space</title>
+<style>
+  :root { color-scheme: light; }
+  body {
+    margin: 0; background: #fff; color: #1a1c22;
+    font-family: ui-sans-serif, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+    -webkit-font-smoothing: antialiased;
+  }
+  .sheet { max-width: 680px; margin: 0 auto; padding: 56px 36px 64px; }
+  .crumb { font-size: 12px; color: #8b90a0; letter-spacing: .04em; }
+  h1 { font-size: 34px; line-height: 1.15; margin: 14px 0 10px; letter-spacing: -.02em; }
+  .byline { font-size: 13px; color: #7b8090; margin-bottom: 30px; }
+  p { font-size: 15.5px; line-height: 1.68; color: #33363f; margin: 0 0 18px; }
+  h2 { font-size: 18px; margin: 34px 0 10px; letter-spacing: -.01em; }
+  ul { margin: 0 0 18px 20px; padding: 0; }
+  li { font-size: 15px; line-height: 1.7; color: #33363f; margin-bottom: 4px; }
+  .quote { border-left: 3px solid #d8dce6; padding: 2px 0 2px 16px; color: #52575f;
+           font-style: italic; margin: 24px 0; }
+  code { background: #f1f3f7; border-radius: 5px; padding: 1px 5px; font-size: 13px; }
+  .foot { margin-top: 40px; padding-top: 18px; border-top: 1px solid #eceef3;
+          font-size: 12.5px; color: #8b90a0; }
+</style>
+</head>
+<body>
+<div class="sheet">
+  <div class="crumb">Notes &middot; shell</div>
+  <h1>Two tabs, one space</h1>
+  <div class="byline">Second tab in the same space &middot; real HTTP response from 127.0.0.1</div>
+
+  <p>This page exists so the tab strip has something ordinary in it: a second document,
+     its own title, its own scroll position, loaded in the same space as the storage probe
+     next door.</p>
+
+  <h2>What the shell is doing here</h2>
+  <p>Every tab gets its own <code>CefBrowser</code> parented into a drawing area that is
+     pinned to the X root visual. The tab strip, sidebar and toolbar are plain GTK3 widgets;
+     the page is Chromium 156, unmodified.</p>
+
+  <div class="quote">Spaces are the product. Tabs are the thing you actually click.</div>
+
+  <ul>
+    <li>Switching tabs hides one browser and shows the other (<code>WasHidden</code> keeps parked tabs cheap).</li>
+    <li>Switching spaces swaps the whole strip; each space owns a request context.</li>
+    <li>Closing the last tab in a space gives you a new tab page, not a broken window.</li>
+  </ul>
+
+  <h2>What it does not do yet</h2>
+  <p>No drag-to-reorder, no tab tearing, no find-in-page, no history menu. The bridge that
+     gives agents their bindings lands in M2 behind the <code>ControlServer</code> seam; this
+     build only wires the delegate.</p>
+
+  <div class="foot">Rendered by CEF 156. If you can read this, the GTK drawing area is carrying
+     a real compositor surface, not a screenshot.</div>
+</div>
+</body>
+</html>

@@ -1,0 +1,141 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Operations dashboard</title>
+<style>
+  :root { color-scheme: light; --line: #e6e8ef; --ink: #14161c; --muted: #6b7280; }
+  body { margin: 0; background: #f6f7fb; color: var(--ink);
+         font: 13px/1.45 ui-sans-serif, -apple-system, "Segoe UI", Roboto, sans-serif; }
+  header { display: flex; align-items: center; gap: 16px; padding: 14px 22px;
+           background: #fff; border-bottom: 1px solid var(--line); }
+  header h1 { font-size: 16px; margin: 0; }
+  header .pill { font-size: 11.5px; padding: 3px 9px; border-radius: 999px;
+                 background: #e6f6ee; color: #1f7a4d; }
+  header nav { margin-left: auto; display: flex; gap: 4px; }
+  header nav a { color: #4b5060; text-decoration: none; padding: 6px 10px; border-radius: 7px; }
+  header nav a.on { background: #eef1f8; color: #14161c; font-weight: 600; }
+  main { padding: 18px 22px 40px; }
+  .stats { display: grid; grid-template-columns: repeat(6, 1fr); gap: 12px; }
+  .card { background: #fff; border: 1px solid var(--line); border-radius: 10px; padding: 12px 14px; }
+  .card .k { font-size: 11px; letter-spacing: .08em; text-transform: uppercase; color: var(--muted); }
+  .card .v { font-size: 22px; font-weight: 650; letter-spacing: -.02em; margin-top: 4px; }
+  .card .d { font-size: 11.5px; color: #1f7a4d; margin-top: 2px; }
+  .card .d.down { color: #b3261e; }
+  .charts { display: grid; grid-template-columns: 1.6fr 1fr; gap: 12px; margin-top: 12px; }
+  .panel { background: #fff; border: 1px solid var(--line); border-radius: 10px; padding: 12px 14px; }
+  .panel h2 { font-size: 13px; margin: 0 0 10px; }
+  .legend { display: flex; gap: 14px; font-size: 11.5px; color: var(--muted); margin-top: 8px; }
+  .swatch { display: inline-block; width: 9px; height: 9px; border-radius: 2px; margin-right: 5px; }
+  table { width: 100%; border-collapse: collapse; margin-top: 12px; background: #fff;
+          border: 1px solid var(--line); border-radius: 10px; overflow: hidden; }
+  thead th { text-align: left; font-size: 11px; letter-spacing: .06em; text-transform: uppercase;
+             color: var(--muted); padding: 9px 12px; background: #fafbfd; border-bottom: 1px solid var(--line); }
+  tbody td { padding: 7px 12px; border-bottom: 1px solid #f3f4f8; }
+  tbody tr:last-child td { border-bottom: 0; }
+  .badge { font-size: 11px; padding: 2px 7px; border-radius: 999px; font-weight: 600; }
+  .badge.ok { background: #e6f6ee; color: #1f7a4d; }
+  .badge.warn { background: #fff4e5; color: #9a5b00; }
+  .badge.bad { background: #fdeaea; color: #b3261e; }
+  td.num { text-align: right; font-variant-numeric: tabular-nums; }
+  button { font: inherit; font-size: 11.5px; padding: 3px 9px; border-radius: 6px;
+           border: 1px solid #d6dae4; background: #fff; cursor: pointer; }
+</style>
+</head>
+<body>
+<header>
+  <h1>Operations</h1>
+  <span class="pill">live</span>
+  <nav>
+    <a href="#overview" class="on">Overview</a>
+    <a href="#queues">Queues</a>
+    <a href="#workers">Workers</a>
+    <a href="#alerts">Alerts</a>
+  </nav>
+</header>
+<main>
+  <section class="stats" id="stats"></section>
+  <section class="charts">
+    <div class="panel">
+      <h2>Requests per minute</h2>
+      <svg id="bars" viewBox="0 0 720 220" width="100%" height="220" role="img" aria-label="Requests per minute"></svg>
+      <div class="legend">
+        <span><span class="swatch" style="background:#2b5cff"></span>served</span>
+        <span><span class="swatch" style="background:#f0a020"></span>queued</span>
+        <span><span class="swatch" style="background:#b3261e"></span>failed</span>
+      </div>
+    </div>
+    <div class="panel">
+      <h2>p95 latency</h2>
+      <svg id="line" viewBox="0 0 380 220" width="100%" height="220" role="img" aria-label="p95 latency"></svg>
+    </div>
+  </section>
+  <table>
+    <thead>
+      <tr><th>Service</th><th>Region</th><th>Status</th><th>Replicas</th><th>p95</th><th>Errors</th><th>Owner</th><th></th></tr>
+    </thead>
+    <tbody id="rows"></tbody>
+  </table>
+</main>
+<script>
+  // No network and no external assets: every number is derived from the index.
+  const stats = [
+    ['Requests', '48.2k', '+4.1%', 0],
+    ['p95 latency', '212 ms', '-8 ms', 0],
+    ['Error rate', '0.42%', '+0.06%', 1],
+    ['Queue depth', '1,284', '-320', 0],
+    ['Saturation', '61%', '+3%', 1],
+    ['Deploys', '17', '+2', 0],
+  ];
+  document.getElementById('stats').innerHTML = stats.map(([k, v, d, down]) =>
+    `<div class="card"><div class="k">${k}</div><div class="v">${v}</div>` +
+    `<div class="d${down ? ' down' : ''}">${d} vs last hour</div></div>`).join('');
+
+  let bars = '';
+  for (let i = 0; i < 60; i += 1) {
+    const x = 8 + i * 11.8;
+    const h = 40 + ((i * 53) % 150);
+    bars += `<rect x="${x.toFixed(1)}" y="${(200 - h).toFixed(1)}" width="8" height="${h}" fill="#2b5cff" rx="1"></rect>`;
+    if (i % 5 === 0) {
+      const h2 = 6 + ((i * 17) % 22);
+      bars += `<rect x="${x.toFixed(1)}" y="${(200 - h2).toFixed(1)}" width="8" height="${h2}" fill="#f0a020" rx="1"></rect>`;
+      bars += `<circle cx="${(x + 4).toFixed(1)}" cy="${(198 - ((i * 29) % 60)).toFixed(1)}" r="1.8" fill="#b3261e"></circle>`;
+    }
+    if (i % 10 === 0) {
+      bars += `<text x="${x.toFixed(1)}" y="214" font-size="9" fill="#8b90a0">${i}m</text>`;
+    }
+  }
+  document.getElementById('bars').innerHTML = bars;
+
+  const points = Array.from({ length: 38 }, (_, i) => `${8 + i * 9.8},${200 - (30 + ((i * 71) % 150))}`).join(' ');
+  document.getElementById('line').innerHTML =
+    `<polyline points="${points}" fill="none" stroke="#2b5cff" stroke-width="2"></polyline>` +
+    Array.from({ length: 38 }, (_, i) =>
+      `<circle cx="${(8 + i * 9.8).toFixed(1)}" cy="${(200 - (30 + ((i * 71) % 150))).toFixed(1)}" r="2" fill="#2b5cff"></circle>`).join('') +
+    `<line x1="8" y1="200" x2="372" y2="200" stroke="#e6e8ef"></line>`;
+
+  const regions = ['eu-west-1', 'us-east-1', 'ap-south-1', 'us-west-2'];
+  const owners = ['platform', 'payments', 'search', 'identity', 'billing', 'growth'];
+  const names = ['edge-router', 'checkout-api', 'catalog', 'session', 'ledger', 'experiments',
+    'media-proxy', 'notifier', 'scheduler', 'search-index', 'pricing', 'webhooks'];
+  let rows = '';
+  for (let i = 0; i < 300; i += 1) {
+    const name = names[i % names.length] + '-' + String(10 + (i % 90));
+    const region = regions[i % regions.length];
+    const state = i % 11 === 0 ? 'bad' : i % 4 === 0 ? 'warn' : 'ok';
+    const label = state === 'bad' ? 'degraded' : state === 'warn' ? 'scaling' : 'healthy';
+    rows += '<tr>'
+      + `<td><a href="#svc-${i}">${name}</a></td>`
+      + `<td>${region}</td>`
+      + `<td><span class="badge ${state}">${label}</span></td>`
+      + `<td class="num">${2 + (i % 9)}</td>`
+      + `<td class="num">${120 + ((i * 31) % 240)} ms</td>`
+      + `<td class="num">${((i * 7) % 40) / 100}%</td>`
+      + `<td>${owners[i % owners.length]}</td>`
+      + `<td><button type="button">Inspect</button></td>`
+      + '</tr>';
+  }
+  document.getElementById('rows').innerHTML = rows;
+</script>
+</body>
+</html>

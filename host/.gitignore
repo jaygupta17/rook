@@ -1,0 +1,9 @@
+# build output
+build/
+build-*/
+cef-runtime/
+
+# QA writes logs and profiles here; the screenshot the top-level README shows
+# is tracked, so the rule has to exclude file names, not the directory.
+artifacts/*
+!artifacts/m1-shell.png

@@ -1,0 +1,30 @@
+# --- build output -----------------------------------------------------------
+host/build/
+host/build-*/
+host/cef-runtime/
+
+# --- packaged artefacts and their staging trees -----------------------------
+packaging/out/
+packaging/work/
+
+# --- benchmark scratch (results.json and report.* are tracked) --------------
+bench/work/
+
+# --- the patched SDK build --------------------------------------------------
+# Not part of this repository: scripts/build-sdk.sh --upstream <checkout>
+# regenerates it from an ego-browser checkout, with patches/ applied.
+vendor/
+node_modules/
+
+# --- QA output --------------------------------------------------------------
+# Logs, profiles and every other capture stay local; the screenshot the README
+# shows is tracked.
+artifacts/*
+!artifacts/host-demo.png
+host/artifacts/*
+!host/artifacts/m1-shell.png
+
+# --- editor / OS noise ------------------------------------------------------
+.DS_Store
+*.swp
+*~
