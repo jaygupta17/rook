@@ -1,0 +1,4 @@
+before=ORIGINAL-CLIP
+textarea "standalone pasted text"
+ce_html "<b>standalone bold</b>"
+exit=0

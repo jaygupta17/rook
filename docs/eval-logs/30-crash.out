@@ -1,0 +1,10 @@
+app_pid=2172242
+cli_pid=2188461
+killing bridge 2188461
+app_alive=yes
+backend: host (auto)
+=== new round after bridge kill ===
+tabs [{"targetId":"E58061493FA7E8CFF9EF4631971F83BC","page":{"spaceId":27,"targetId":"E58061493FA7E8CFF9EF4631971F83BC","openedBy":"unknown"},"title":"Clipboard","url":"http://127.0.0.1:8781/clip.html","active":true,"openedBy":"unknown"}]
+recovered p1 Clipboard TEXTAREA
+recover_exit=0
+=0

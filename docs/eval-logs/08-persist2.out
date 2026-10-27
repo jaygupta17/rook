@@ -1,0 +1,24 @@
+=== launch 1 ===
+app_ready_ms=233
+=== round 1: sign in inside an agent space ===
+space 8 result PRIVATE-OK
+cookie sid=ok-123
+round1_exit=0
+while_running_rows=0
+=== close 1 ===
+closing window 2097155
+app_close_ms=108
+after_close_rows=1
+127.0.0.1|sid|13437676014784104
+=== launch 2 ===
+app_ready_ms=220
+=== round 2: same space name after relaunch ===
+spaces after relaunch []
+new space id 9 pages [{"label":"p1","spaceId":9,"mouse":{},"keyboard":{}}] tabs [{"targetId":"6CF9357A89FDE05DA1303896C8D5C0C7","label":"p1","page":{"label":"p1","spaceId":9,"mouse":{},"keyboard":{}},"title":"about:blank","url":"about:blank","active":true,"openedBy":"agent"}]
+result PRIVATE-OK
+cookie sid=ok-123
+round2_exit=0
+=== round 3: a different space must not share the cookie ===
+other result PRIVATE-DENIED
+other cookie ""
+round3_exit=0

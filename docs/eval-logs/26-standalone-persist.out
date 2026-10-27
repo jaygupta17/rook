@@ -1,0 +1,10 @@
+=== standalone login ===
+result PRIVATE-OK cookie sid=ok-123
+login_exit=0
+=== standalone second process, same Chrome alive ===
+result PRIVATE-OK cookie "sid=ok-123"
+second_exit=0
+=== shutdown chrome, then same space name ===
+ego-browser: stopped browser for Default
+result PRIVATE-OK cookie "sid=ok-123"
+after_shutdown_exit=0

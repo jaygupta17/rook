@@ -1,0 +1,3 @@
+pages []
+p1_error page label not found: p1. Managed Pages in task space 1: none. task.page(label) only refers to an existing Page; create one with await task.newPage()
+tabs [{"title":"Private area","url":"http://127.0.0.1:8781/private.html"}]

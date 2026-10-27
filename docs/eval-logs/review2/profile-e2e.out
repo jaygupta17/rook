@@ -1,0 +1,23 @@
+ ok  the app speaks protocol 3
+ ok  round 1 (space A) ran through the CLI
+ ok  space A starts signed out
+ ok  space A signs in on the fixture
+ ok  a second profile can be created through the runtime
+ ok  round 2 (spaces B and C) ran through the CLI
+ ok  space B, in the same profile, is already signed in as A
+ ok  space C, in the second profile, is signed out
+ ok  the CLI's profiles() lists both profiles with one default
+ ok  every profile is in the shape the SDK requires
+ ok  task.handOff() reached the app
+ ok  a click during handoff is refused
+ ok  the refusal carries the exact ego code
+     the SDK saw: "Control of this task space is with the user, either through task.handOff() or a takeover in the browser, so browser commands are paused."
+ ok  round 4 (takeover) ran through the CLI
+ ok  the refused click was not counted
+ ok  the same click works after takeOverTaskSpace()
+ ok  the app reports the space as agent-owned after the takeover
+ ok  space A lives in the app's default profile
+ ok  space C really lives in the second profile
+ ok  the two profiles read different storage directories
+
+PROFILE E2E PASSED (20 checks)

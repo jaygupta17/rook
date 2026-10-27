@@ -1,0 +1,61 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Session</title>
+<style>
+  :root { color-scheme: light; }
+  body {
+    margin: 0; background: #f7f8fb; color: #14161c;
+    font-family: ui-sans-serif, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  }
+  .wrap { max-width: 760px; margin: 0 auto; padding: 46px 34px 36px; }
+  .eyebrow { font-size: 12px; letter-spacing: .14em; text-transform: uppercase; color: #7a8090; font-weight: 600; }
+  h1 { font-size: 29px; margin: 10px 0 8px; letter-spacing: -.015em; }
+  p.lead { color: #525866; margin: 0 0 24px; font-size: 15px; line-height: 1.55; max-width: 62ch; }
+  .rows { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 24px; }
+  .row { background: #fff; border: 1px solid #e6e9ef; border-radius: 11px; padding: 15px 17px; }
+  .k { font-size: 11px; color: #7a8090; text-transform: uppercase; letter-spacing: .1em; font-weight: 700; }
+  .v { font-size: 17px; font-weight: 650; margin-top: 6px; word-break: break-all; }
+  label { display: block; font-size: 11px; font-weight: 700; color: #4b5263;
+          letter-spacing: .08em; text-transform: uppercase; margin-bottom: 6px; }
+  input { box-sizing: border-box; width: min(560px, 92%); font: inherit; font-size: 20px;
+          padding: 12px 14px; border: 2px solid #c9cedb; border-radius: 8px; background: #fff; }
+  input:focus { outline: 3px solid #5b6cff; outline-offset: 1px; border-color: #5b6cff; }
+  footer { margin-top: 26px; color: #8a90a0; font-size: 12.5px; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="eyebrow">Rook &middot; session probe</div>
+  <h1 id="session">Signed out</h1>
+  <p class="lead">This page shows what the browser's storage really holds for the origin.
+     One space signs in; another space of the same profile must already be signed in, and a
+     space in another profile must not be.</p>
+  <div class="rows">
+    <div class="row"><div class="k">localStorage: rook-login</div><div class="v" id="ls">&mdash;</div></div>
+    <div class="row"><div class="k">document.cookie</div><div class="v" id="ck">&mdash;</div></div>
+  </div>
+  <label for="note">Type here</label>
+  <input id="note" type="text" autofocus autocomplete="off" spellcheck="false">
+  <footer>One <code>CefRequestContext</code> per profile, under
+     <code>~/.local/share/rook/profiles/&lt;profile&gt;</code>.</footer>
+</div>
+<script>
+  function read() {
+    var ls = null;
+    try { ls = localStorage.getItem('rook-login'); } catch (e) { ls = '(blocked)'; }
+    var ck = document.cookie || '';
+    document.getElementById('ls').textContent = ls === null ? '(none)' : ls;
+    document.getElementById('ck').textContent = ck === '' ? '(none)' : ck;
+    document.getElementById('session').textContent =
+      ls === null ? 'Signed out' : 'Signed in \u00b7 ' + ls;
+    document.title = ls === null ? 'Session \u00b7 signed out' : 'Session \u00b7 ' + ls;
+    return { ls: ls, ck: ck };
+  }
+  window.__session = read;
+  read();
+</script>
+</body>
+</html>

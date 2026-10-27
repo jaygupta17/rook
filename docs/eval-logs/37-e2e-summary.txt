@@ -1,0 +1,7 @@
+== E2E Summary ==
+  Passed:   69/69  (100%)
+  Total time: 186.9s
+--- host (final pass) ---
+== E2E Summary ==
+  Passed:   69/69  (100%)
+  Total time: 209.1s

@@ -1,0 +1,62 @@
+== viewport snapshot ==
+[p1 "Outer iframe page" | space "iframe"(12): 1 managed, 0 untracked — p1* "Outer iframe page"]
+root
+  heading "Outer iframe page"
+    text "Outer iframe page"
+  paragraph
+    text "outer ready"
+  iframe "cross origin frame" [ref=1, loc=css:#frame]
+    root
+      heading "Frame content"
+        text "Frame content"
+      paragraph
+        text "FRAME-LOADED"
+      labeltext
+        text "Frame input"
+      textbox "Frame input" [ref=2, loc=css:#frame-input]
+        generic
+      button "Frame button" [ref=3, loc=css:#frame-btn]
+        text "Frame button"
+      paragraph
+        text "not clicked"
+frame_ref 1 button_ref 3
+== subtree at frame ref ==
+[p1 "Outer iframe page" | space "iframe"(12): 1 managed, 0 untracked — p1* "Outer iframe page"]
+root
+  iframe "cross origin frame" [ref=1, loc=css:#frame]
+    root
+      heading "Frame content"
+        text "Frame content"
+      paragraph
+        text "FRAME-LOADED"
+      labeltext
+        text "Frame input"
+      textbox "Frame input" [ref=2, loc=css:#frame-input]
+        generic
+      button "Frame button" [ref=3, loc=css:#frame-btn]
+        text "Frame button"
+      paragraph
+        text "not clicked"
+== after click ==
+[p1 "Outer iframe page" | space "iframe"(12): 1 managed, 0 untracked — p1* "Outer iframe page"]
+root
+  heading "Outer iframe page"
+    text "Outer iframe page"
+  paragraph
+    text "outer ready"
+  iframe "cross origin frame" [ref=1, loc=css:#frame]
+    root
+      heading "Frame content"
+        text "Frame content"
+      paragraph
+        text "FRAME-LOADED"
+      labeltext
+        text "Frame input"
+      textbox "Frame input" [ref=2, loc=css:#frame-input]
+        generic
+      button "Frame button" [ref=3, loc=css:#frame-btn]
+        text "Frame button"
+      paragraph
+        text "CLICKED-IN-FRAME"
+frame_result top-cannot-read
+exit=0

@@ -1,0 +1,16 @@
+--- packaging/VERSION ---
+0.3.0~m3
+--- packaging/out ---
+total 297M
+-rw-r--r-- 1 user user 132M Oct 27 15:27 rook_0.3.0~m3_amd64.deb
+-rwxr-xr-x 1 user user 165M Oct 27 15:27 rook-0.3.0~m3-x86_64.AppImage
+--- deb control Version ---
+0.3.0~m3
+--- build-tree host banner ---
+Rook (Linux) — native shell, M4
+
+usage: ./host/build/bin/rook [rook options] [--cef-switch ...]
+--- old deb host banner ---
+Rook (Linux) — native shell, M3
+
+usage: /tmp/opencode/rook-eval/root/usr/lib/rook/rook [rook options] [--cef-switch ...]

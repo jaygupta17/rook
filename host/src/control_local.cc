@@ -31,10 +31,12 @@ class LocalControlServer : public ControlServer {
 
   void PushCdpError(const std::string& browser_id,
                     int code,
-                    const std::string& message) override {
+                    const std::string& message,
+                    const std::string& reason) override {
     (void)browser_id;
     (void)code;
     (void)message;
+    (void)reason;
   }
 
   void PushEvent(const std::string& method, const std::string& params_json) override {

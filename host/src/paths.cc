@@ -1,14 +1,18 @@
 #include "paths.h"
 
+#include <dirent.h>
 #include <limits.h>
 #include <sys/stat.h>
 #include <unistd.h>
 
+#include <algorithm>
 #include <cctype>
 #include <cerrno>
 #include <cstdio>
 #include <cstdlib>
 #include <cstring>
+#include <utility>
+#include <vector>
 
 namespace rook {
 namespace {
@@ -125,6 +129,87 @@ bool MakeDirs(const std::string& path) {
 bool FileExists(const std::string& path) {
   struct stat st {};
   return ::stat(path.c_str(), &st) == 0;
+}
+
+namespace {
+
+bool RemoveTreeInner(const std::string& path, int depth) {
+  struct stat st {};
+  if (::lstat(path.c_str(), &st) != 0) {
+    return errno == ENOENT;
+  }
+  if (!S_ISDIR(st.st_mode)) {
+    return ::unlink(path.c_str()) == 0 || errno == ENOENT;
+  }
+  if (depth > 32) {
+    return false;  // a symlink loop, not a directory tree
+  }
+  DIR* dir = ::opendir(path.c_str());
+  if (dir == nullptr) {
+    return false;
+  }
+  bool ok = true;
+  struct dirent* entry = nullptr;
+  while ((entry = ::readdir(dir)) != nullptr) {
+    const std::string name(entry->d_name);
+    if (name == "." || name == "..") {
+      continue;
+    }
+    if (!RemoveTreeInner(JoinPath(path, name), depth + 1)) {
+      ok = false;
+    }
+  }
+  ::closedir(dir);
+  if (!ok) {
+    return false;
+  }
+  return ::rmdir(path.c_str()) == 0 || errno == ENOENT;
+}
+
+}  // namespace
+
+bool RemoveTree(const std::string& path) { return RemoveTreeInner(path, 0); }
+
+std::vector<std::string> ChildDirs(const std::string& path) {
+  std::vector<std::string> out;
+  DIR* dir = ::opendir(path.c_str());
+  if (dir == nullptr) {
+    return out;
+  }
+  struct dirent* entry = nullptr;
+  while ((entry = ::readdir(dir)) != nullptr) {
+    const std::string name(entry->d_name);
+    if (name == "." || name == "..") {
+      continue;
+    }
+    struct stat st {};
+    const std::string full = JoinPath(path, name);
+    if (::lstat(full.c_str(), &st) == 0 && S_ISDIR(st.st_mode)) {
+      out.push_back(name);
+    }
+  }
+  ::closedir(dir);
+  std::sort(out.begin(), out.end());
+  return out;
+}
+
+std::vector<std::string> ChildNames(const std::string& path) {
+  std::vector<std::string> out;
+  DIR* dir = ::opendir(path.c_str());
+  if (dir == nullptr) {
+    return out;
+  }
+  struct dirent* entry = nullptr;
+  while ((entry = ::readdir(dir)) != nullptr) {
+    const std::string name(entry->d_name);
+    if (name == "." || name == "..") {
+      continue;
+    }
+    out.push_back(name);
+  }
+  ::closedir(dir);
+  std::sort(out.begin(), out.end());
+  return out;
 }
 
 long long FileSize(const std::string& path) {

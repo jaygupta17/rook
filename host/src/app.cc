@@ -71,10 +71,13 @@ void ApplyCefSettings(CefSettings* settings,
   CefString(&settings->resources_dir_path) = runtime;
   CefString(&settings->locales_dir_path) = runtime + "/locales";
 
-  // Every request context must live inside root_cache_path. The profile dir is
-  // the root; the user ("You") space is the profile itself, agent spaces are
-  // direct children (see Shell::CreateSpace).
-  CefString(&settings->root_cache_path) = options.profile_dir;
+  // CEF rejects a context whose cache_path is outside root_cache_path (it falls
+  // back to in-memory storage, measured) and only accepts a direct child, so
+  // the root is <data>/rook/profiles and every profile is one of its direct
+  // children. CEF keeps its own (unused) global context in <root>/Default and
+  // writes its component data there; Shell::LoadProfiles skips those entries
+  // and only ever creates tabs in a profile's context.
+  CefString(&settings->root_cache_path) = options.profiles_root;
   CefString(&settings->cache_path) = options.profile_dir;
 
   CefString(&settings->accept_language_list) = "en-US,en";

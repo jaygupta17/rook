@@ -1,0 +1,8 @@
+Rook 0.4.0-M4 build tree, private Xvfb :122, fresh HOME/data/state.
+method: summed RSS over app+CEF children; PSS from /proc/<pid>/smaps_rollup; CPU = sum utime+stime over 5 s.
+
+one tab (You/new tab), 12 processes:
+rss_mib=870 pss_mib=195 idle_cpu_pct=0.40
+
+three spaces (mem-A form, mem-B /big, mem-C docs.python.org), 15 processes:
+rss_mib=1312 pss_mib=296 idle_cpu_pct=0.00

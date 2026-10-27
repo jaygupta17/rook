@@ -77,10 +77,82 @@ need_tool() {
   command -v "$1" >/dev/null 2>&1 || die "missing build tool: $1${2:+ ($2)}"
 }
 
-version() {
-  if [ -n "${ROOK_VERSION:-}" ]; then printf '%s\n' "$ROOK_VERSION"; return; fi
-  if [ -f "$pkg_dir/VERSION" ]; then head -1 "$pkg_dir/VERSION" | tr -d ' \n'; return; fi
-  printf '0.0.0\n'
+# --- version -----------------------------------------------------------------
+#
+# The host binary is the source of truth. It embeds the string it prints in its
+# start-up banner -- "[rook] rook 0.4.0-M4 (CEF ...)" -- and returns the same
+# value from the control socket's getInfo, so the release number is read out of
+# the binary rather than trusted from a file that someone forgets to bump.
+#
+# The "-M4" milestone marker is dropped: a Debian version cannot carry a
+# milestone, and the old "~m3" trick (~ sorts below the release) is exactly how
+# a stale 0.3.0~m3 package could sit next to 0.3.0 and look current. A package
+# is named after the release: rook_0.4.0_amd64.deb, rook-0.4.0-x86_64.AppImage.
+#
+# EGO_VERSION or ROOK_VERSION overrides for a throwaway build loop;
+# packaging/VERSION is the fallback when there is no binary to read yet, and the
+# default is the release this branch ships as.
+rook_version=""
+rook_version_from=""
+
+host_banner_version() {
+  [ -x "$ROOK_HOST_BIN" ] || return 1
+  command -v strings >/dev/null 2>&1 || return 1
+  # The banner literal is a standalone string in .rodata; require the whole
+  # line to be a version so dotted quads (127.0.0.1, CEF's 156.0.8078.48) and
+  # other constants in the binary cannot be mistaken for it.
+  strings -n 3 "$ROOK_HOST_BIN" 2>/dev/null \
+    | grep -aE '^[0-9]+\.[0-9]+\.[0-9]+(-[A-Za-z0-9.]+)?$' \
+    | head -1
+}
+
+release_of() { local v="${1%%~*}"; printf '%s' "${v%%-*}"; }
+
+# Sets rook_version and rook_version_from. Called, not subshelled, so the origin
+# survives into the build log.
+rook_resolve_version() {
+  rook_version=""
+  if [ -n "${EGO_VERSION:-}" ]; then
+    rook_version="$EGO_VERSION"; rook_version_from="EGO_VERSION"
+  elif [ -n "${ROOK_VERSION:-}" ]; then
+    rook_version="$ROOK_VERSION"; rook_version_from="ROOK_VERSION"
+  else
+    local banner
+    if banner=$(host_banner_version) && [ -n "$banner" ]; then
+      rook_version=$(release_of "$banner")
+      rook_version_from="host banner ($banner)"
+    elif [ -f "$pkg_dir/VERSION" ]; then
+      rook_version=$(head -1 "$pkg_dir/VERSION" | tr -d ' \n')
+      rook_version_from="packaging/VERSION"
+    else
+      rook_version="0.4.0"; rook_version_from="default"
+    fi
+  fi
+}
+
+# The artefact name, the control file's Version field and the string the app
+# prints have to be the same release; a package that disagrees with itself is
+# the failure this release exists to fix.
+check_version() { # $1 = version the caller is about to ship
+  local v="$1" banner release
+  case "$v" in
+    "") die "empty version" ;;
+    *"~m"*|*-M[0-9]*) die "version $v carries a milestone suffix; ship the release ($(release_of "$v"))" ;;
+  esac
+  if banner=$(host_banner_version) && [ -n "$banner" ]; then
+    release=$(release_of "$banner")
+    if [ "$release" != "$v" ] && [ "${ROOK_ALLOW_VERSION_MISMATCH:-0}" != "1" ]; then
+      die "this package is $v but the host binary in $ROOK_HOST_BIN reports $banner (release $release); rebuild the host, or set ROOK_ALLOW_VERSION_MISMATCH=1 for a throwaway build"
+    fi
+    step "in-app" "banner reports $banner; shipped as $v"
+  else
+    warn "no version string found in $ROOK_HOST_BIN; cannot check what the app will print"
+  fi
+  [ -f "$pkg_dir/VERSION" ] || return 0
+  local want
+  want=$(head -1 "$pkg_dir/VERSION" | tr -d ' \n')
+  [ "$want" = "$v" ] ||
+    warn "packaging/VERSION says $want, shipping $v; update it so the fallback stays honest"
 }
 
 preflight() {

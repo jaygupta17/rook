@@ -1,0 +1,53 @@
+[rook] sandbox: enabled (user namespaces)
+
+(rook:2518567): dbind-WARNING **: 18:57:40.204: Couldn't connect to accessibility bus: Failed to connect to socket /tmp/opencode/rook-host-e2e/run/at-spi/bus_122: No such file or directory
+[rook] extra switch: --password-store=basic
+
+(rook:1): dbind-WARNING **: 18:57:40.226: Couldn't connect to accessibility bus: Failed to connect to socket /tmp/opencode/rook
+(rook:2518575): dbind-WARNING **: 18:57:40.226: Couldn't connect to accessibility bus: Failed to connect to socket /tmp/opencod-host-e2e/run/at-spi/bus_122: No such file or directory
+e/rook-host-e2e/run/at-spi/bus_122: No such file or directory
+
+(rook:2518567): Gtk-WARNING **: 18:57:40.260: gtk_disable_setlocale() must be called before gtk_init()
+[2518567:2518586:1027/185740.274937:ERROR:dbus/bus.cc:405] Failed to connect to the bus: Could not parse server address: Unknown address type (examples of valid types are "tcp" and on UNIX "unix")
+[2518567:2518586:1027/185740.275442:ERROR:dbus/bus.cc:405] Failed to connect to the bus: Could not parse server address: Unknown address type (examples of valid types are "tcp" and on UNIX "unix")
+[2518567:2518586:1027/185740.275463:ERROR:dbus/bus.cc:405] Failed to connect to the bus: Could not parse server address: Unknown address type (examples of valid types are "tcp" and on UNIX "unix")
+[2518567:2518586:1027/185740.290516:ERROR:dbus/bus.cc:405] Failed to connect to the bus: Could not parse server address: Unknown address type (examples of valid types are "tcp" and on UNIX "unix")
+[rook] rook 0.4.0-M4 (CEF 156.0.14+g4fa4ab5+chromium-156.0.8078.48), profiles in /tmp/opencode/rook-review2/data/rook/profiles
+[rook] profiles: 1 (default default, 0 registered name(s))
+[rook] chrome shortcut grabs on 0x800003: installed
+[rook] window xid 0x800003
+[rook] profile default context created (/tmp/opencode/rook-review2/data/rook/profiles/default)
+[rook] active tab tb1 (New tab)
+[rook] active tab tb1 (New tab)
+[rook] tab tb1 -> file:///tmp/opencode/rook-review2/data/rook/shell/new-tab.html
+[rook] active tab tb1 (New tab)
+[rook] active tab tb1 (New tab)
+[rook] shell up: 1 space(s), 1 profile(s), default profile default, data /tmp/opencode/rook-review2/data
+[control] listening on /tmp/opencode/rook-review2/run/rook-1000.sock (mode 0600, JSON-RPC 2.0)
+[2518567:2518567:1027/185740.474724:ERROR:dbus/object_proxy.cc:572] Failed to call method: org.freedesktop.DBus.NameHasOwner: object_path= /org/freedesktop/DBus: unknown error type: 
+[2518567:2518567:1027/185740.474798:ERROR:dbus/object_proxy.cc:572] Failed to call method: org.freedesktop.DBus.NameHasOwner: object_path= /org/freedesktop/DBus: unknown error type: 
+[2518567:2518586:1027/185740.474797:ERROR:dbus/bus.cc:405] Failed to connect to the bus: Could not parse server address: Unknown address type (examples of valid types are "tcp" and on UNIX "unix")
+[2518567:2518586:1027/185740.474847:ERROR:dbus/bus.cc:405] Failed to connect to the bus: Could not parse server address: Unknown address type (examples of valid types are "tcp" and on UNIX "unix")
+[2518567:2518567:1027/185740.476515:ERROR:dbus/object_proxy.cc:572] Failed to call method: org.freedesktop.DBus.NameHasOwner: object_path= /org/freedesktop/DBus: unknown error type: 
+[2518567:2518586:1027/185740.476567:ERROR:dbus/bus.cc:405] Failed to connect to the bus: Could not parse server address: Unknown address type (examples of valid types are "tcp" and on UNIX "unix")
+[2518567:2518567:1027/185740.479052:ERROR:dbus/object_proxy.cc:572] Failed to call method: org.freedesktop.DBus.NameHasOwner: object_path= /org/freedesktop/DBus: unknown error type: 
+[2518567:2518567:1027/185740.479087:ERROR:dbus/object_proxy.cc:572] Failed to call method: org.freedesktop.DBus.NameHasOwner: object_path= /org/freedesktop/DBus: unknown error type: 
+[2518567:2518586:1027/185740.479253:ERROR:dbus/bus.cc:405] Failed to connect to the bus: Could not parse server address: Unknown address type (examples of valid types are "tcp" and on UNIX "unix")
+[2518567:2518567:1027/185740.479286:ERROR:dbus/object_proxy.cc:572] Failed to call method: org.freedesktop.DBus.NameHasOwner: object_path= /org/freedesktop/DBus: unknown error type: 
+[2518567:2518567:1027/185740.480090:ERROR:dbus/object_proxy.cc:572] Failed to call method: org.freedesktop.DBus.NameHasOwner: object_path= /org/freedesktop/DBus: unknown error type: 
+[2518567:2518586:1027/185740.480314:ERROR:dbus/bus.cc:405] Failed to connect to the bus: Could not parse server address: Unknown address type (examples of valid types are "tcp" and on UNIX "unix")
+[2518567:2518567:1027/185740.490754:ERROR:dbus/object_proxy.cc:572] Failed to call method: org.freedesktop.DBus.NameHasOwner: object_path= /org/freedesktop/DBus: unknown error type: 
+[2518567:2518586:1027/185740.490809:ERROR:dbus/bus.cc:405] Failed to connect to the bus: Could not parse server address: Unknown address type (examples of valid types are "tcp" and on UNIX "unix")
+[rook] tab tb1 browser ready (xid 0xe00003)
+[2518567:2518567:1027/185740.508907:ERROR:dbus/object_proxy.cc:572] Failed to call method: org.freedesktop.DBus.NameHasOwner: object_path= /org/freedesktop/DBus: unknown error type: 
+[rook] tab tb1 loaded (http 200) file:///tmp/opencode/rook-review2/data/rook/shell/new-tab.html
+[event] tab.updated {"spaceId":"sp1","tabId":"tb1","url":"http://127.0.0.1:8781/form.html"}
+[event] tab.updated {"spaceId":"sp1","tabId":"tb1","title":"Profile form"}
+[rook] tab tb1 loaded (http 200) http://127.0.0.1:8781/form.html
+Warning: maxDynamicUniformBuffersPerPipelineLayout artificially reduced from 500000 to 16 to fit dynamic offset allocation limit.
+Warning: maxDynamicStorageBuffersPerPipelineLayout artificially reduced from 500000 to 16 to fit dynamic offset allocation limit.
+[2518567:2518567:1027/190040.309104:ERROR:services/on_device_model/public/cpp/service_client.cc:37] Unexpected on_device_model service disconnect; reason: 1, description: Error loading backend.
+[event] tab.closed {"spaceId":"sp1","tabId":"tb1"}
+[rook] message loop returned (exit 0), tearing down
+[control] socket /tmp/opencode/rook-review2/run/rook-1000.sock removed
+[rook] CefShutdown finished

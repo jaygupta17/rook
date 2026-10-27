@@ -1,0 +1,6 @@
+=== login in a fresh space via server Set-Cookie ===
+space 7 cookie sid=ok-123
+result PRIVATE-OK
+login_exit=0
+immediately rows=0
+after 15s rows=0 mtime=2026-10-27 15:40:44.498339575 +0000

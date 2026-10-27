@@ -1,12 +1,15 @@
 # Rook
 
 A native agent browser for Linux. You browse in one window; agents work in
-isolated spaces behind it.
+spaces behind it.
 
-Rook is a GTK3 window around the stock Chromium engine (CEF 156). Each agent
-space is its own `CefRequestContext` with its own cookies, storage and cache, so
-a session an agent drives never sees the cookies of the space you are using. A
-handoff moves a space between you and the agent without copying anything.
+Rook is a GTK3 window around the stock Chromium engine (CEF 156). A **profile**
+is the isolation boundary — one `CefRequestContext`, one storage directory — and
+a **space** is a set of tabs inside a profile. So an agent space works in the
+session you are signed in to (same profile), while a space in another profile is
+a stranger to it. A handoff gives a space to you outright: the window reveals it,
+the keyboard is yours, and the agent's commands are refused until it takes the
+space back.
 
 It speaks the contract of CitroLabs' open-source `ego-browser` agent skill: the
 same skill and CLI drive a real browser on Linux, against either Rook itself or
@@ -84,7 +87,7 @@ is not running you get an error naming the socket, never a silent fallback.
 ## How it works
 
 ```
-GTK3 window ── CefBrowser per tab ── CefRequestContext per space
+GTK3 window ── CefBrowser per tab ── CefRequestContext per profile
      │
      └─ control socket  $XDG_RUNTIME_DIR/rook-<uid>.sock   (mode 0600)
               │  newline-delimited JSON-RPC 2.0: createSpace, createTab, cdp.send, …
@@ -102,6 +105,29 @@ are announced to the SDK with the opener the app actually recorded.
 
 The same bridge runs against a stock Chrome (`standalone`), which is how the
 whole surface is developed and tested without the app in the way.
+
+A snapshot's first line states its scope (`full page`, `viewport only` or
+`subtree`), how many nodes the viewport left out, and whether the result was cut
+short - so a clipped tree cannot be mistaken for the whole page. The tree below
+it drops wrapper rows that carry no name, ref or readable descendant, does not
+print a link's URL twice, and cuts very long text with a marker that says how to
+read the rest.
+
+### After an app restart
+
+The app numbers its spaces from `sp1` at every launch, so a saved `hostSpaceId`
+(id `sp2`, say) names whatever space the next run happens to create at that
+number - which is how resuming `alpha` used to land on `beta`'s tab. Each record
+in `spaces.json` is therefore stamped with the app run that created it
+(`getInfo.pid` plus the process start time), and a record from an earlier run is
+never re-pointed at its old id.
+
+Resuming such a space (by name, or `useTaskSpace(id)`) creates it again under
+the same name, reopens the tabs the record remembered by URL, and leaves its
+profile's storage directory in place — a profile owns the storage, so cookies
+and logins come back with the space. `listTaskSpaces()` keeps listing the space
+so `taskSpace("name")` can find it. If the app is not running, resuming fails
+with the socket error and nothing is written.
 
 The `ego-browser` SDK itself needs one Linux fix: upstream refuses
 `page.keyboard.paste` outside macOS and Windows.
@@ -157,9 +183,20 @@ what an agent waiting on the page feels.
   mount is `nosuid`) and uses unprivileged user namespaces; a machine with
   neither runs unsandboxed after printing one warning. `ROOK_NO_SANDBOX=0`
   turns that case into a refusal (exit 4) instead of a warning.
-- **One profile.** `listProfiles()` reports a single entry and
-  `createTaskSpace(name, otherProfileId)` is refused with
-  `EGO_PROFILE_NOT_FOUND`.
+- **A profile is the isolation boundary, not a space.** `listProfiles()` reports
+  the app's profiles — `default` / "You" plus any `createProfile()` adds — and
+  `createTaskSpace(name, profileId)` puts a space in one. Two spaces of one
+  profile share cookies, `localStorage` and the cache; that is what lets an agent
+  work in your session. A space in another profile has its own storage. Standalone
+  Chrome is the other way round: there a task space is a browser *context* of one
+  Chrome profile, so its spaces are isolated from each other, and a profile is a
+  separate Chrome with its own user-data directory.
+- **A handoff is exclusive, and it is the app's.** While a space is handed off,
+  every agent mutation — `cdp.send`, create/close/activate tab, navigate,
+  highlight — is refused with `EGO_TASK_SPACE_USER_IN_CONTROL`; the bridge's
+  control-channel reads (`listTaskSpaces`, `listTabs`) keep answering, and a page
+  read through raw CDP does not, because the app refuses every `cdp.send` to a
+  handed-off space. `takeOverTaskSpace()` takes the space back.
 - **Three UI languages.** en-US, en-GB and hi; other locales fall back to
   English chrome. Content languages are unaffected.
 - **No crash signal.** A dead renderer shows up as a dead DevTools session
@@ -183,7 +220,8 @@ Then the checks, in order of cost:
 
 ```sh
 host/scripts/qa.sh          # sandbox decision, shell, screenshots, control channel
-npm test                    # CLI + host-backend + a real-browser smoke test
+npm test                    # CLI + host-backend + space-resume + a real-browser smoke test
+node test/profile-e2e.mjs   # profiles and handoff through the CLI, against the real app
 packaging/build-deb.sh      # -> packaging/out/rook_<version>_<arch>.deb
 packaging/verify-deb.sh     # unpack, render, one agent round, dependency audit
 ```

@@ -1,0 +1,5 @@
+takeover 4 agent [{"title":"Profile form","url":"http://127.0.0.1:8781/form.html"}]
+user_value "USER-WROTE-THIS"
+agent_click allowed {}
+checked true
+owners [{"id":1,"taskId":"persist-A","name":"persist-A","createdBy":"agent","ownership":"agent","profileId":"default","profileName":"You","recentTabTitles":["Private area"]},{"id":2,"taskId":"persist-B","name":"persist-B","createdBy":"agent","ownership":"agent","profileId":"default","profileName":"You","recentTabTitles":["Private area"]},{"id":3,"taskId":"persist-C","name":"persist-C","createdBy":"agent","ownership":"agent","profileId":"work","profileName":"Work","recentTabTitles":["Denied"]},{"id":4,"taskId":"handoff","name":"handoff","createdBy":"agent","ownership":"agent","profileId":"default","profileName":"You","recentTabTitles":["Profile form"]}]

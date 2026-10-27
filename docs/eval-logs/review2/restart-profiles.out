@@ -1,0 +1,5 @@
+spaces [{"id":1,"name":"persist-A","profileId":"default","tabs":["Private area"]},{"id":2,"name":"persist-B","profileId":"default","tabs":["Private area"]},{"id":3,"name":"persist-C","profileId":"work","tabs":["Denied"]}]
+A 1 undefined [{"title":"Private area","url":"http://127.0.0.1:8781/private.html"}]
+A result PRIVATE-OK cookie "sid=ok-123"
+B result PRIVATE-OK cookie "sid=ok-123"
+C result PRIVATE-DENIED cookie ""

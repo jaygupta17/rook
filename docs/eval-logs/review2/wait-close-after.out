@@ -1,0 +1,12 @@
+APP version=0.4.0-M4 protocol=3
+CASE control {"waitStartedAt":"252ms","to_error_ms":1202,"result":"error","code":null,"message":"page.waitForSelector timed out after 1200ms: #never"}
+CASE-EVENT tab-close closed sp3/tb4
+CASE tab-close {"waitStartedAt":"218ms","to_error_ms":410,"result":"error","code":null,"message":"Target closed: the page's renderer went away (Inspector detached: Render process gone.)"}
+CASE-EVENT space-close closed sp4
+CASE space-close {"waitStartedAt":"226ms","to_error_ms":410,"result":"error","code":null,"message":"Target closed: the page's renderer went away (Inspector detached: Render process gone.)"}
+CASE-EVENT tab-close-busy closed sp5/tb8
+CASE tab-close-busy {"waitStartedAt":"224ms","to_error_ms":410,"result":"error","code":null,"message":"Target closed: the page's renderer went away (Inspector detached: Render process gone.)"}
+CASE close-in-process {"waitStartedAt":"287ms","to_error_ms":3003,"result":"error","code":null,"message":"page.waitForSelector timed out after 3000ms: #never"}
+CASE-EVENT app-kill killed pid 2610683
+CASE app-kill {"waitStartedAt":"276ms","to_error_ms":429,"result":"error","code":null,"message":"Target closed: the Rook app is no longer running (control connection lost)"}
+DONE appLog=/tmp/rook-wait-close-OxUN8A/app.log

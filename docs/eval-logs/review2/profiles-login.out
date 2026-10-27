@@ -1,0 +1,4 @@
+A 1 PRIVATE-OK sid=ok-123
+B 2 PRIVATE-OK "sid=ok-123"
+C 3 work PRIVATE-DENIED ""
+profiles [{"id":"default","name":"You","isDefault":true},{"id":"work","name":"Work","isDefault":false}]

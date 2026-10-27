@@ -1,0 +1,21 @@
+=== standalone: login round ===
+space 3 result PRIVATE-OK
+cookie sid=ok-123
+login_exit=0
+=== standalone: resume in a second process, browser still running ===
+same-browser result PRIVATE-OK
+same-browser cookie "sid=ok-123"
+resume_exit=0
+=== standalone: shutdown chrome, then resume ===
+ego-browser: stopped browser for Default
+Error: {"id":2,"method":"Target.attachToTarget","params":{"targetId":"AB140814EB7C1E6E30551A392A0F2182","flatten":true}} (CDP WebSocket error: Received network error or non-101 status code.)
+    at buildEgoError (file:///tmp/opencode/rook-eval/root/usr/lib/rook/sdk/index.js:449:19)
+    at handleSendError (file:///tmp/opencode/rook-eval/root/usr/lib/rook/sdk/index.js:8893:26)
+    at file:///tmp/opencode/rook-eval/root/usr/lib/rook/sdk/index.js:8119:56
+    at guardNativeCallback (file:///tmp/opencode/rook-eval/root/usr/lib/rook/sdk/index.js:8104:9)
+    at EgoRuntime.dispatchCdpSendError [as onSendCDPMessageError] (file:///tmp/opencode/rook-eval/root/usr/lib/rook/sdk/index.js:8119:5)
+    at file:///tmp/opencode/rook-eval/root/usr/lib/rook/runtime/bridge.js:485:37
+    at node:internal/process/task_queues:149:7
+    at AsyncResource.runInAsyncScope (node:async_hooks:214:14)
+    at AsyncResource.runMicrotask (node:internal/process/task_queues:146:8)
+after_shutdown_exit=1

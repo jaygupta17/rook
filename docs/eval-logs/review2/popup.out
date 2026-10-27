@@ -1,0 +1,4 @@
+popup p2 http://127.0.0.1:8781/popup-child.html {"popups":[{"label":"p2","targetId":"8137ABCFCDBD82952251F7A6F8A73473"}]}
+opener_in_child null
+opener_return window.open returned: null
+child_result CHILD-CLICKED

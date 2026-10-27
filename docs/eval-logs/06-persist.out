@@ -1,0 +1,34 @@
+=== before restart: is the space still signed in? ===
+Error: page label not found: p1. Managed Pages in task space 4: none. task.page(label) only refers to an existing Page; create one with await task.newPage()
+    at [describeMissingPage] (file:///tmp/opencode/rook-eval/root/usr/lib/rook/sdk/index.js:18532:16)
+    at async file:///tmp/opencode/rook-eval/root/usr/lib/rook/sdk/index.js:19401:19
+    at async #resolve (file:///tmp/opencode/rook-eval/root/usr/lib/rook/sdk/index.js:19398:23)
+    at async Page.goto (file:///tmp/opencode/rook-eval/root/usr/lib/rook/sdk/index.js:18863:22)
+    at async file://script.mjs:3:1
+before_exit=1
+=== closing the app window ===
+window=2097155
+app exited after 5100ms
+at-spi
+dbus-1
+dconf
+doc
+gvfs
+gvfsd
+rook-1000.sock
+=== relaunching ===
+relaunch_socket_ms=1 pid=2116773
+=== after restart ===
+spaces []
+resumed 5 pages [{"label":"p1","spaceId":5,"mouse":{},"keyboard":{}}] tabs [{"targetId":"F484F96A1ABA85A17F7344C972489E03","label":"p1","page":{"label":"p1","spaceId":5,"mouse":{},"keyboard":{}},"title":"about:blank","url":"about:blank","active":true,"openedBy":"agent"}]
+after PRIVATE-DENIED
+cookie 
+[p1 "Denied" | space "login-space"(5): 1 managed, 0 untracked — p1* "Denied"]
+root
+  heading "Denied"
+    text "Denied"
+  paragraph
+    text "PRIVATE-DENIED"
+  paragraph
+    text "no cookie"
+after_exit=0

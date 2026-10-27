@@ -4,6 +4,7 @@ import { egoError } from "./errors.js";
  * Snapshot v1: Accessibility tree -> indented text tree + refs.
  *
  * Grammar (snapshot-result.test.mjs:9-90):
+ *   snapshot scope=<full page|viewport only|subtree>, <n> lines, <m> refs[, <k> nodes outside the viewport not shown - pass {scope:"full_page"} ...][, truncated at <n> characters]
  *   root
  *     role "name" [ref=N, loc=css:...]
  *       text "..."
@@ -11,6 +12,14 @@ import { egoError } from "./errors.js";
  *     root
  *       button "Frame action" [ref=M]
  * 2 spaces per level, names JSON-quoted, metadata only in a `[ref=...]` block.
+ *
+ * The first line is a scope header, not a tree node. It deliberately sits above
+ * `root`: the harness locates the tree by its `root` line and keeps everything
+ * above it verbatim (vendor/ego-browser/src/snapshot-result.ts:51-76), so the
+ * header survives compaction untouched; putting the same words on the `root`
+ * line instead would make `compactSnapshotContent` bail out of compaction (it
+ * looks for a line that is exactly `root`). `docs/eval-logs/rounds/snapshot-header-parse.mjs`
+ * proves both.
  *
  * Every ref carries a real `backendNodeId` and, for nodes that live in a child
  * frame, the real `frameId` of the frame that owns the node:
@@ -57,6 +66,27 @@ const INTERACTIVE_ROLES = new Set([
 
 const SKIPPED_ROLES = new Set(["inlinetextbox"]);
 
+/**
+ * Roles that exist only to wrap their children. A wrapper with no name, no ref
+ * and nothing named underneath it is pure indentation, so it is not printed.
+ */
+function isWrapperRole(role) {
+  return role === "generic" || role === "none" || role === "presentation" || role.startsWith("layout");
+}
+
+/**
+ * Deepest indentation printed, in levels (2 spaces each). The tree grammar the
+ * SDK parses needs two spaces per level, so the clamp keeps that shape and only
+ * stops counting past this depth; a page nested 20 levels deep otherwise pays
+ * for the same level over and over.
+ */
+const MAX_INDENT_DEPTH = 8;
+
+/** Longer text nodes are cut, with a marker saying where the rest is. */
+const MAX_TEXT_LENGTH = 240;
+
+const EMPTY_RENDER = { lines: [], named: false };
+
 /** connection -> (OOPIF targetId -> Promise<sessionId>) */
 const OOPIF_SESSIONS = new WeakMap();
 
@@ -89,6 +119,8 @@ export async function captureSnapshot({ connection, targetId, attach, options = 
     refs: [],
     refsByNode: new Map(),
     nextRefId: 1,
+    /** Nodes the viewport filter left out, so the header can say it did. */
+    clipped: 0,
     viewportScope: scope === "only_within_viewport",
     topViewport: normalizeViewport(metricsResult?.result?.value),
     /** frameId -> Promise<{nodes, byNodeId, rootNode, ownerByBackend} | null> */
@@ -101,12 +133,12 @@ export async function captureSnapshot({ connection, targetId, attach, options = 
     viewports: new Map(),
   };
 
-  const lines = ["root"];
+  const body = ["root"];
   let renderedSubtree = false;
   if (scope === "subtree" && Number.isSafeInteger(options.root)) {
     const found = await findSubtreeRoot(options.root, state);
     if (found) {
-      lines.push(...(await renderNode(found.node, 1, undefined, found.context, true)));
+      body.push(...(await renderNode(found.node, 1, undefined, found.context, true, "")).lines);
       renderedSubtree = true;
     }
   }
@@ -117,8 +149,8 @@ export async function captureSnapshot({ connection, targetId, attach, options = 
     if (!mainContext.entry || mainContext.entry.nodes.length === 0) {
       throw egoError("The page returned an empty accessibility tree", "EGO_SNAPSHOT_FAILED");
     }
-    lines.push(
-      ...(await renderChildren(mainContext.entry.rootNode, 1, undefined, mainContext)),
+    body.push(
+      ...(await renderChildren(mainContext.entry.rootNode, 1, undefined, mainContext, "")).lines,
     );
   }
 
@@ -133,12 +165,54 @@ export async function captureSnapshot({ connection, targetId, attach, options = 
     );
   }
 
-  let content = lines.join("\n");
+  let content = [snapshotHeader({
+    scope,
+    lines: body.length + 1,
+    refs: state.refs.length,
+    clipped: state.clipped,
+    truncated: false,
+  }), ...body].join("\n");
   const maxResultLength = options.maxResultLength;
-  if (Number.isFinite(maxResultLength) && maxResultLength > 0) {
-    content = content.slice(0, maxResultLength);
+  if (Number.isFinite(maxResultLength) && maxResultLength > 0 && content.length > maxResultLength) {
+    // Say it in the first line, then cut: a truncated snapshot that looks whole
+    // is the failure this header exists to prevent.
+    content = [snapshotHeader({
+      scope,
+      lines: body.length + 1,
+      refs: state.refs.length,
+      clipped: state.clipped,
+      truncated: true,
+      maxResultLength,
+    }), ...body].join("\n").slice(0, maxResultLength);
   }
   return { content, refs: state.refs };
+}
+
+/**
+ * The first line of every snapshot: what slice of the page this is, and whether
+ * anything was left out.
+ *
+ * It sits *before* `root` on purpose. The harness finds the tree by its `root`
+ * line and keeps every line above it verbatim
+ * (`vendor/ego-browser/src/snapshot-result.ts:51-76`), and a line it does not
+ * recognise is ignored by every other reader (`iframeDescendantRefIds` only
+ * tracks `iframe` / `root` lines), so no parser is given anything new to choke
+ * on - unlike a `root` line carrying metadata, which would make
+ * `compactSnapshotContent` bail out of compaction entirely.
+ */
+function snapshotHeader({ scope, lines, refs, clipped, truncated, maxResultLength }) {
+  const label =
+    scope === "subtree" ? "subtree" : scope === "only_within_viewport" ? "viewport only" : "full page";
+  const parts = [`snapshot scope=${label}`, `${lines} lines`, `${refs} refs`];
+  if (scope === "only_within_viewport") {
+    parts.push(
+      clipped > 0
+        ? `${clipped} nodes outside the viewport not shown - pass {scope:"full_page"} for the whole page`
+        : "nothing outside the viewport (the whole page fits)",
+    );
+  }
+  if (truncated) parts.push(`truncated at ${maxResultLength} characters`);
+  return parts.join(", ");
 }
 
 // --- frame graph ---------------------------------------------------------
@@ -431,14 +505,24 @@ async function findSubtreeRoot(backendNodeId, state) {
   return null;
 }
 
-async function renderChildren(node, depth, inheritedBounds, context) {
+async function renderChildren(node, depth, inheritedBounds, context, parentLabel = "") {
   const childIds = Array.isArray(node?.childIds) ? node.childIds : [];
-  const output = [];
+  const rendered = { lines: [], named: false };
   for (const childId of childIds) {
     const child = context.entry?.byNodeId.get(childId);
-    if (child) output.push(...(await renderNode(child, depth, inheritedBounds, context)));
+    if (!child) continue;
+    const childRender = await renderNode(
+      child,
+      depth,
+      inheritedBounds,
+      context,
+      false,
+      parentLabel,
+    );
+    if (childRender.named) rendered.named = true;
+    if (childRender.lines.length > 0) rendered.lines.push(...childRender.lines);
   }
-  return output;
+  return rendered;
 }
 
 /**
@@ -448,20 +532,25 @@ async function renderChildren(node, depth, inheritedBounds, context) {
  */
 async function renderFrameBody(frame, depth, parentContext) {
   const context = await frameContext(frame, parentContext.state);
-  if (!context.entry?.rootNode) return [];
-  return [
-    `${indent(depth)}root`,
-    ...(await renderChildren(context.entry.rootNode, depth + 1, undefined, context)),
-  ];
+  if (!context.entry?.rootNode) return EMPTY_RENDER;
+  const body = await renderChildren(context.entry.rootNode, depth + 1, undefined, context, "");
+  return { lines: [`${indent(depth)}root`, ...body.lines], named: body.named };
 }
 
-async function renderNode(node, depth, inheritedBounds, context, forceRoot = false) {
+async function renderNode(node, depth, inheritedBounds, context, forceRoot = false, parentLabel = "") {
   if (node.ignored === true) {
-    return renderChildren(node, depth, inheritedBounds, context);
+    return renderChildren(node, depth, inheritedBounds, context, parentLabel);
   }
   const role = roleOf(node);
   if (SKIPPED_ROLES.has(role)) {
-    return renderChildren(node, depth, inheritedBounds, context);
+    return renderChildren(node, depth, inheritedBounds, context, parentLabel);
+  }
+
+  const name = nameOf(node);
+  // A link (or any other labelled node) whose only child is its own text says
+  // the same words twice; the parent line already carries the label.
+  if (role === "statictext" && name !== "" && name.trim() === parentLabel.trim()) {
+    return EMPTY_RENDER;
   }
 
   const ownBounds = boundsOf(node, context);
@@ -473,44 +562,95 @@ async function renderNode(node, depth, inheritedBounds, context, forceRoot = fal
     bounds === undefined ||
     intersects(bounds, context.viewport);
 
-  const line = lineFor(node, role, context);
+  const line = lineFor(node, role, name, context);
   // A frame owner is normally an `iframe` node, but `<object>`/`<embed>` hosts
   // can carry another role; the owner lookup is what actually finds the frame.
   const childFrame = context.entry?.ownerByBackend.get(node.backendDOMNodeId);
   const isFrameOwner = Boolean(childFrame) || role === "iframe";
+  // A wrapper with no name, no ref and nothing named underneath is pure
+  // indentation: it is not printed and its children take its place in the tree,
+  // which is why the decision has to be made before rendering them.
+  const wrapper =
+    line !== null && !isFrameOwner && !line.includes("[ref=") && isWrapperRole(role);
+  const dropWrapper = wrapper && name === "" && !subtreeIsNamed(node, context);
+  const childDepth = dropWrapper ? depth : depth + 1;
 
   let children;
   if (!inside) {
+    if (line !== null) context.state.clipped += 1;
     // A frame owner outside the viewport hides its whole frame: the contents
     // live in the frame's own coordinate space and cannot be judged from the
     // parent document.
-    if (isFrameOwner) return [];
-    children = await renderChildren(node, depth + 1, bounds, context);
+    if (isFrameOwner) return EMPTY_RENDER;
+    children = await renderChildren(node, childDepth, bounds, context, name);
   } else if (childFrame) {
     children = await renderFrameBody(childFrame, depth + 1, context);
   } else {
-    children = await renderChildren(node, depth + 1, bounds, context);
+    children = await renderChildren(node, childDepth, bounds, context, name);
   }
 
   if (line === null) return children;
-  if (isFrameOwner) return [`${indent(depth)}${line}`, ...children];
-  if (!inside && children.length === 0) return [];
-  return [`${indent(depth)}${line}`, ...children];
+  if (dropWrapper) return children;
+  if (isFrameOwner) {
+    return { lines: [`${indent(depth)}${line}`, ...children.lines], named: true };
+  }
+  if (!inside && children.lines.length === 0) return EMPTY_RENDER;
+  return {
+    lines: [`${indent(depth)}${line}`, ...children.lines],
+    named: name !== "" || line.includes("[ref=") || children.named,
+  };
+}
+
+/**
+ * Whether an accessibility subtree holds anything worth printing (a name, or an
+ * interactive node that will get a ref).
+ */
+function subtreeIsNamed(node, context) {
+  const stack = Array.isArray(node?.childIds) ? [...node.childIds] : [];
+  const seen = new Set();
+  while (stack.length > 0) {
+    const nodeId = stack.pop();
+    if (seen.has(nodeId)) continue;
+    seen.add(nodeId);
+    const child = context.entry?.byNodeId.get(nodeId);
+    if (!child || child.ignored === true) continue;
+    const role = roleOf(child);
+    if (SKIPPED_ROLES.has(role)) {
+      if (Array.isArray(child.childIds)) stack.push(...child.childIds);
+      continue;
+    }
+    if (nameOf(child).trim() !== "") return true;
+    if (INTERACTIVE_ROLES.has(role) && Number.isInteger(child.backendDOMNodeId)) return true;
+    if (Array.isArray(child.childIds)) stack.push(...child.childIds);
+  }
+  return false;
 }
 
 function indent(depth) {
-  return "  ".repeat(depth);
+  return "  ".repeat(Math.min(depth, MAX_INDENT_DEPTH));
 }
 
-function lineFor(node, role, context) {
+function lineFor(node, role, name, context) {
   if (role === "rootwebarea" || role === "webarea") return "root";
-  const name = nameOf(node);
   if (role === "statictext") {
-    return name ? `text ${JSON.stringify(name)}` : null;
+    return name ? `text ${JSON.stringify(clipText(name))}` : null;
   }
   const head = name ? `${role} ${JSON.stringify(name)}` : role;
   const metadata = refMetadata(node, role, name, context);
   return metadata ? `${head} ${metadata}` : head;
+}
+
+/**
+ * Cut a very long text node, and say so where the cut happens. A silent cut is
+ * worse than a long line: an agent that greps the snapshot would conclude the
+ * sentence ended there.
+ */
+function clipText(text) {
+  if (text.length <= MAX_TEXT_LENGTH) return text;
+  const kept = text.slice(0, MAX_TEXT_LENGTH).replace(/\s+$/, "");
+  const marker = ` ... [truncated, ${text.length - kept.length} more characters; read the full text with page.evaluate]`;
+  // A marker that costs as much as the text it replaces is not worth printing.
+  return kept.length + marker.length < text.length ? `${kept}${marker}` : text;
 }
 
 function refMetadata(node, role, name, context) {
@@ -545,9 +685,15 @@ function refMetadata(node, role, name, context) {
   if (loc) ref.loc = loc;
   if (entry?.url) ref.url = entry.url;
 
+  // One target, one identifier. `loc=href:/wiki/Linux` and
+  // `url=https://en.wikipedia.org/wiki/Linux` are the same link; printing both
+  // was 18% of a big-page snapshot, and the absolute URL is still carried on the
+  // ref in `refs[]` for the SDK. So the printed line keeps the locator (shorter,
+  // and what an action resolves with) and only falls back to `url=` when the
+  // node has no locator at all.
   const parts = [`ref=${refId}`];
   if (ref.loc) parts.push(`loc=${ref.loc}`);
-  if (ref.url) parts.push(`url=${ref.url}`);
+  else if (ref.url) parts.push(`url=${ref.url}`);
 
   context.state.refs.push(ref);
   context.state.refsByNode.set(key, refId);

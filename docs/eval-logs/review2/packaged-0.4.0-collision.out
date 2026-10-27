@@ -1,0 +1,29 @@
+package   packaging/out/rook_0.4.0_amd64.deb
+sha256    8af96375291c46220e00635908aaab5028b01a1ccf5d42111315cc29bcc85f8d
+version   0.4.0
+unpacked  /tmp/opencode/rook-packaged/root
+display   :150
+
+== app run 1: alpha ==
+  banner: [rook] rook 0.4.0-M4 (CEF 156.0.14+g4fa4ab5+chromium-156.0.8078.48), profiles in /tmp/opencode/rook-packaged/home/.local/share/rook/profiles
+  phase1 1 ALPHA
+  ok   run 1 alpha title = ALPHA
+  host ids after phase1 [[1, 'alpha', 'sp2']]
+  app1_alive_after_stop=no
+
+== app run 2: beta takes sp2 too ==
+  phase2 2 BETA
+  ok   run 2 beta title = BETA
+  host ids after phase2 [[1, 'alpha', 'sp2'], [2, 'beta', 'sp2']]
+
+== resume alpha while the collided id is live ==
+  tabs [{"title":"ALPHA"}]
+  title ALPHA
+  ok   alpha actually sees = ALPHA
+
+== beta still sees its own tab ==
+  tabs [{"title":"BETA"}]
+  BETA
+  ok   beta sees = BETA
+
+PASS: packaged app kept alpha and beta apart across the restart

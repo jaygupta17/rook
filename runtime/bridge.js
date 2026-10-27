@@ -7,15 +7,11 @@ import {
 } from "./errors.js";
 import { captureSnapshot } from "./snapshot.js";
 import {
-  listProfiles,
   loadSpaces,
   loadSpacesSync,
   resolveProfile,
   updateSpaces,
 } from "./store.js";
-
-/** The app has one profile; host mode reports exactly this. */
-const APP_PROFILE = { id: "Default", name: "Default", isDefault: true };
 
 /**
  * The object Rook injects as `globalThis.ego`, served over CDP.
@@ -56,6 +52,8 @@ class EgoRuntime {
    * lock is too slow to win that race, so the file is only a restart fallback.
    */
   #activeTargets = new Map();
+  /** spaceId -> Promise while a record is being re-bound to a restarted app */
+  #binding = new Map();
 
   constructor({ WebSocketImpl, backend } = {}) {
     this.#WebSocketImpl = WebSocketImpl;
@@ -71,10 +69,20 @@ class EgoRuntime {
   async listTaskSpaces() {
     assertNoExtraArgs("listTaskSpaces", arguments.length, 0);
     const state = await loadSpaces();
-    const live = await this.#liveSpaceIds(state.spaces);
-    const spaces = state.spaces.filter(
-      (space) => live === null || (space.hostSpaceId && live.has(space.hostSpaceId)),
-    );
+    const live = await this.#liveSpaces(state.spaces);
+    const spaces = state.spaces.filter((space) => {
+      if (live === null) return true;
+      // A record from an earlier app run is resumable: `taskSpace(name)` finds
+      // it here, and its first operation recreates it under the same name. Its
+      // stale `hostSpaceId` is never matched against this run's ids, though -
+      // the number may now name a different agent's space.
+      const boundToThisRun =
+        typeof live.instanceKey === "string" &&
+        live.instanceKey !== "" &&
+        space.hostInstance === live.instanceKey;
+      if (!boundToThisRun) return true;
+      return Boolean(space.hostSpaceId && live.ids.has(space.hostSpaceId));
+    });
     return { taskSpaces: spaces.map(describeSpace) };
   }
 
@@ -88,7 +96,17 @@ class EgoRuntime {
         `createTaskSpace profileId must be a string, got ${typeof profileId}`,
       );
     }
-    const profile = await this.#resolveProfile(profileId);
+    let profile;
+    try {
+      profile = await this.#resolveProfile(profileId);
+    } catch (error) {
+      // The profile list is the app's, so this is where "the app is not
+      // running" surfaces first in host mode.
+      return errorResult(
+        `No active browser: ${error?.message || error}`,
+        error?.error_code ?? "EGO_BROWSER_UNAVAILABLE",
+      );
+    }
     if (!profile) {
       return errorResult("Profile not found", "EGO_PROFILE_NOT_FOUND");
     }
@@ -105,8 +123,11 @@ class EgoRuntime {
       profileName: profile.name,
       contextId: null,
       hostSpaceId: null,
+      /** The app run `hostSpaceId` belongs to; a new run means a new id. */
+      hostInstance: null,
       activeTargetId: null,
       recentTabTitles: [],
+      recentTabUrls: [],
       createdAt: Date.now(),
     };
 
@@ -116,10 +137,11 @@ class EgoRuntime {
       const created = await backend.createSpace(name, record);
       record.contextId = created.contextId ?? null;
       record.hostSpaceId = created.spaceId ?? null;
+      record.hostInstance = created.hostInstance ?? record.hostInstance ?? null;
     } catch (error) {
       return errorResult(
         `No active browser: ${error?.message || error}`,
-        "EGO_BROWSER_UNAVAILABLE",
+        error?.error_code ?? "EGO_BROWSER_UNAVAILABLE",
       );
     }
 
@@ -190,8 +212,13 @@ class EgoRuntime {
     const control = this.#controlError(space.space);
     if (control) return control;
 
-    const backend = await this.#ensureBackend(space.space);
-    await backend.closeSpace(space.space).catch(() => {});
+    // A record from an earlier app run names an id that now belongs to some
+    // other space, so nothing is sent to the app: the row is simply dropped.
+    const backend = await this.#ensureBackend(space.space, { bind: false });
+    const instanceKey = await backend.instanceKey().catch(() => null);
+    if (!instanceKey || space.space.hostInstance === instanceKey) {
+      await backend.closeSpace(space.space).catch(() => {});
+    }
     await updateSpaces((state) => {
       state.spaces = state.spaces.filter((item) => item.id !== space.space.id);
     });
@@ -295,8 +322,33 @@ class EgoRuntime {
 
   async listProfiles() {
     assertNoExtraArgs("listProfiles", arguments.length, 0);
-    if (await this.#isHostMode()) return { profiles: [APP_PROFILE] };
-    return { profiles: await listProfiles() };
+    // Both backends answer this, so the shape and the names come from one place.
+    // Neither opens a browser: the app is already running, and a standalone
+    // profile is a directory.
+    const backend = await this.#profilesBackend();
+    try {
+      return { profiles: await backend.listProfiles() };
+    } catch (error) {
+      throw egoError(
+        `No active browser: ${error?.message || error}`,
+        error?.error_code ?? "EGO_BROWSER_UNAVAILABLE",
+      );
+    }
+  }
+
+  /**
+   * Add a profile. Not part of the SDK's surface (`profiles()` only lists), but
+   * the app has the op and a stale profile list cannot be fixed from a script
+   * otherwise. A space then names it in `createTaskSpace(name, profileId)`.
+   */
+  async createProfile(name) {
+    assertNoExtraArgs("createProfile", arguments.length, 1);
+    if (typeof name !== "string" || name.trim() === "") {
+      throw invalidArgument("createProfile requires a non-empty profile name");
+    }
+    const backend = await this.#profilesBackend();
+    const created = await backend.createProfile(name.trim());
+    return { profileId: created.id, name: created.name, isDefault: created.isDefault === true };
   }
 
   // --- tabs --------------------------------------------------------------
@@ -324,8 +376,10 @@ class EgoRuntime {
     assertNoExtraArgs("listTabs", arguments.length, 0);
     const space = this.#requireSpace();
     if (space.error) return space;
-    const control = this.#controlError(space.space);
-    if (control) return control;
+    // A read, deliberately not gated by `#controlError`: a handed-off space is
+    // still readable (host/README.md: "Reads keep working"), and the SDK needs
+    // its tabs to hand the space back. Mutations are refused below and by the
+    // app's own gate.
 
     const backend = await this.#ensureBackend(space.space);
     const listed = await backend.listTabs(space.space);
@@ -356,7 +410,7 @@ class EgoRuntime {
       // discoverable without a replay of the event that announced it.
       ...(tab.openerId ? { openerId: tab.openerId } : {}),
     }));
-    await this.#rememberTabTitles(space.space.id, result);
+    await this.#rememberTabs(space.space.id, result);
     return { tabs: result };
   }
 
@@ -420,7 +474,18 @@ class EgoRuntime {
     const backend = this.#backendForSpace(space.space);
     if (backend) {
       void backend.sendRaw(space.space, message).catch((error) => {
-        this.#reportSendError(message, "EGO_CDP_CHANNEL_UNAVAILABLE", error);
+        // The app refuses a command it will not take *by model*, with an ego
+        // code: control is with the user, the space is closing. That code is
+        // what the SDK branches on, so it is passed through rather than being
+        // flattened into a channel failure.
+        if (error?.error_code === "EGO_TASK_SPACE_USER_IN_CONTROL") {
+          void this.#noteUserControl(space.space);
+        }
+        this.#reportSendError(
+          message,
+          error?.error_code ?? "EGO_CDP_CHANNEL_UNAVAILABLE",
+          error,
+        );
       });
       return undefined;
     }
@@ -476,6 +541,23 @@ class EgoRuntime {
       return errorResult("The task is under user control", "EGO_TASK_SPACE_USER_IN_CONTROL");
     }
     return errorResult("Task space unavailable", "EGO_TASK_SPACE_UNAVAILABLE");
+  }
+
+  /**
+   * The app refused an agent command because the user has control (a takeover
+   * in the window, or a handoff this process did not make). The bridge's own
+   * record follows the app: reads keep working, further mutations are refused
+   * here without a round trip, and `takeOverTaskSpace()` is what lifts it — the
+   * same call the app itself needs.
+   */
+  async #noteUserControl(space) {
+    if (!space || typeof space.id !== "number") return;
+    if (space.ownership === "agentDelegatedToUser" || space.ownership === "user") return;
+    space.ownership = "agentDelegatedToUser";
+    await updateSpaces((state) => {
+      const target = state.spaces.find((item) => item.id === space.id);
+      if (target) target.ownership = "agentDelegatedToUser";
+    }).catch(() => {});
   }
 
   #reportSendError(message, code, cause) {
@@ -545,14 +627,82 @@ class EgoRuntime {
     return backend;
   }
 
-  async #ensureBackend(space) {
+  async #ensureBackend(space, { bind = true } = {}) {
     const backend = await this.#ensureBackendForProfile(space.profileId);
+    if (bind) await this.#bindSpace(space, backend);
     if (this.#activeBackendSpaceId !== space.id) {
       this.#activeBackend = backend;
       this.#activeBackendSpaceId = space.id;
       await this.#flushSendQueue(space, backend);
     }
     return backend;
+  }
+
+  /**
+   * Point a space record at a live host space in *this* app run.
+   *
+   * A persisted `hostSpaceId` is only meaningful for the app instance that
+   * issued it: the app numbers spaces from `sp1` on every launch, so after a
+   * restart the same id names whatever space this run created at that number -
+   * usually another agent's. The stale id is never reused. The space is created
+   * again under its own name, in the profile it was created in (the profile owns
+   * the storage, so its logins come back with it), and the tabs the record
+   * remembers are reopened by URL.
+   */
+  async #bindSpace(space, backend) {
+    if (backend.kind !== "host") return space;
+    const instanceKey = await backend.instanceKey();
+    if (!instanceKey) return space;
+    const bound =
+      space.hostInstance === instanceKey &&
+      typeof space.hostSpaceId === "string" &&
+      space.hostSpaceId !== "";
+    if (bound) return space;
+    const pending = this.#binding.get(space.id);
+    if (pending) return pending;
+    const binding = this.#rebindSpace(space, backend, instanceKey).finally(() => {
+      this.#binding.delete(space.id);
+    });
+    this.#binding.set(space.id, binding);
+    return binding;
+  }
+
+  async #rebindSpace(space, backend, instanceKey) {
+    const urls = (Array.isArray(space.recentTabUrls) ? space.recentTabUrls : []).filter(
+      (url) => typeof url === "string" && url !== "" && url !== "about:blank",
+    );
+    // Anything cached for this record names the old run's targets and sessions.
+    this.#forgetSpace(space.id);
+    const created = await backend.createSpace(space.name, space);
+    let activeTargetId = null;
+    const reopened = [];
+    for (const url of urls) {
+      const tab = await backend.createTab(space, url).catch(() => null);
+      if (tab?.targetId) reopened.push(tab);
+    }
+    if (reopened.length > 0) {
+      // Every new space gets one canonical blank tab; this record is about the
+      // pages that were open before, so the blank one is not kept.
+      const tabs = await backend.listTabs(space).catch(() => []);
+      const blank = tabs.find((tab) => !tab.url || tab.url === "about:blank");
+      if (blank) await backend.closeTab(space, blank.targetId).catch(() => {});
+      activeTargetId = reopened[0].targetId;
+      await backend.activateTab(space, activeTargetId).catch(() => {});
+    }
+    space.hostSpaceId = created.spaceId;
+    space.hostInstance = instanceKey;
+    space.contextId = created.contextId ?? null;
+    space.activeTargetId = activeTargetId;
+    this.#activeTargets.delete(space.id);
+    await updateSpaces((state) => {
+      const target = state.spaces.find((item) => item.id === space.id);
+      if (!target) return;
+      target.hostSpaceId = space.hostSpaceId;
+      target.hostInstance = space.hostInstance;
+      target.contextId = space.contextId;
+      target.activeTargetId = activeTargetId;
+    }).catch(() => {});
+    return space;
   }
 
   /** Space selected in-process: open the route and replay what was queued. */
@@ -583,22 +733,44 @@ class EgoRuntime {
     }
   }
 
-  async #resolveProfile(profileId) {
-    if (await this.#isHostMode()) {
-      const wanted = profileId === undefined || profileId === null ? null : String(profileId).trim();
-      if (!wanted || wanted === "default" || wanted === APP_PROFILE.id) return APP_PROFILE;
-      return null;
-    }
-    return resolveProfile(profileId);
+  /**
+   * The backend that owns profiles. Host mode: the app, which is the only thing
+   * that can list or create a profile. Standalone: the backend for the default
+   * profile, *not opened* — a profile is a directory, so listing or creating one
+   * must never launch Chrome.
+   */
+  async #profilesBackend() {
+    const chosen = await this.#mode();
+    if (chosen.mode === "host") return this.#ensureBackendForProfile(null);
+    return getBackend({
+      requested: this.#requestedMode,
+      WebSocketImpl: this.#WebSocketImpl,
+    });
   }
 
-  async #liveSpaceIds(spaces) {
+  async #resolveProfile(profileId) {
+    const chosen = await this.#mode();
+    if (chosen.mode !== "host") return resolveProfile(profileId);
+    // The app is the authority: its profile ids are the ones `createSpace`
+    // accepts, and its default profile is the one a space belongs to unless it
+    // names another.
+    const backend = await this.#profilesBackend();
+    const profiles = await backend.listProfiles();
+    const wanted =
+      typeof profileId === "string" && profileId.trim() !== "" ? profileId.trim() : null;
+    if (!wanted) return profiles.find((profile) => profile.isDefault) ?? profiles[0] ?? null;
+    return profiles.find((profile) => profile.id === wanted) ?? null;
+  }
+
+  async #liveSpaces(spaces) {
     if (spaces.length === 0) return null;
     if (!(await this.#isHostMode())) return null;
     try {
       const backend = await this.#ensureBackendForProfile(spaces[0].profileId);
+      const instanceKey = await backend.instanceKey();
       const ids = await backend.listSpaceIds();
-      return Array.isArray(ids) ? new Set(ids) : null;
+      if (!Array.isArray(ids)) return null;
+      return { instanceKey: instanceKey ?? null, ids: new Set(ids) };
     } catch {
       // The app is gone: report what we have rather than hiding every space.
       return null;
@@ -659,16 +831,21 @@ class EgoRuntime {
     }).catch(() => {});
   }
 
-  async #rememberTabTitles(spaceId, tabs) {
+  async #rememberTabs(spaceId, tabs) {
     const titles = tabs.map((tab) => tab.title).filter(Boolean);
+    const urls = tabs
+      .map((tab) => tab.url)
+      .filter((url) => typeof url === "string" && url !== "" && url !== "about:blank");
     await updateSpaces((state) => {
       const space = state.spaces.find((item) => item.id === spaceId);
       if (!space) return;
-      const previous = space.recentTabTitles ?? [];
-      if (previous.length === titles.length && previous.every((value, i) => value === titles[i])) {
-        return;
-      }
+      const sameTitles = sameList(space.recentTabTitles, titles);
+      const sameUrls = sameList(space.recentTabUrls, urls);
+      if (sameTitles && sameUrls) return;
+      // The URLs are what a restarted app can reopen; the titles are only there
+      // for `listTaskSpaces`. Both are kept up to date by every `listTabs`.
       space.recentTabTitles = titles;
+      space.recentTabUrls = urls;
     }).catch(() => {});
   }
 
@@ -793,6 +970,27 @@ function parseFrame(text) {
   } catch {
     return null;
   }
+}
+
+/**
+ * Whether a persisted space is worth listing.
+ *
+ * `live` is null when there is nothing to check against (standalone mode, or
+ * the app is not running): every record is listed, as before. In host mode a
+ * record bound to *this* app run is listed only while its space still exists; a
+ * record from an earlier run stays listed, because resuming it is what
+ * recreates it under the same name.
+ */
+function isListed(space, live) {
+  if (!live || !live.instanceKey) return true;
+  if (space.hostInstance !== live.instanceKey) return true;
+  return Boolean(space.hostSpaceId && live.ids.has(space.hostSpaceId));
+}
+
+function sameList(previous, next) {
+  if (!Array.isArray(previous)) return previous === next;
+  if (previous.length !== next.length) return false;
+  return previous.every((value, index) => value === next[index]);
 }
 
 function describeSpace(space) {

@@ -1,0 +1,8 @@
+popup_url http://127.0.0.1:8781/popup-child.html
+popup_opener object
+opener_status window.open returned: object
+popup_child_result CHILD-CLICKED
+iframe_has_child true button_ref 3
+iframe_clicked true
+upload UPLOAD-OK upload.txt
+download rook-eval.txt "rook-download-payload-42\n"

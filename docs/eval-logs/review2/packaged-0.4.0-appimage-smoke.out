@@ -1,0 +1,13 @@
+cold start — 0.4.0 AppImage (APPIMAGE_EXTRACT_AND_RUN=1)
+payload   /home/user/projects/ego-lite-linux/packaging/out/rook-0.4.0-x86_64.AppImage
+sha256    ceb0b626ae0e9d3644bcfef96812c49e5300172faf47096461736cbf136de389
+fixture   http://127.0.0.1:42909/notes.html + http://127.0.0.1:42909/isolation.html?label=cold
+rule      every run: fresh Xvfb display, fresh profile dir; expect < 5s, > 500 colours, >= 1 page
+
+run   display    exit   wall     colours   pages   frame
+1     :200       0      2.36s    6673      2       ok
+  run 1: storage lines 1, log /tmp/opencode/cold-start.NI8esQ/run1/app.log
+2     :200       0      1.52s    6673      2       ok
+  run 2: storage lines 1, log /tmp/opencode/cold-start.NI8esQ/run2/app.log
+
+PASS: 2 of 2 cold starts were fast (< 5s), painted, and loaded a page

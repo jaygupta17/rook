@@ -1,0 +1,137 @@
+[rook] sandbox: enabled (user namespaces)
+[rook] extra switch: --password-store=basic
+
+(rook:2109937): Gtk-WARNING **: 15:37:53.376: gtk_disable_setlocale() must be called before gtk_init()
+[rook] rook 0.3.0-M3 (CEF 156.0.14+g4fa4ab5+chromium-156.0.8078.48), profile /tmp/opencode/rook-eval/home/.local/share/rook/profiles/default
+[rook] window xid 0x200003
+[rook] active tab tb1 (New tab)
+[rook] active tab tb1 (New tab)
+[rook] tab tb1 -> file:///tmp/opencode/rook-eval/home/.local/share/rook/shell/new-tab.html
+[rook] active tab tb1 (New tab)
+[rook] active tab tb1 (New tab)
+[rook] shell up: 1 space(s), profile /tmp/opencode/rook-eval/home/.local/share/rook/profiles/default, data /tmp/opencode/rook-eval/home/.local/share
+[control] listening on /tmp/opencode/rook-eval/run/rook-1000.sock (mode 0600, JSON-RPC 2.0)
+[rook] tab tb1 browser ready (xid 0xc00003)
+[rook] tab tb1 loaded (http 200) file:///tmp/opencode/rook-eval/home/.local/share/rook/shell/new-tab.html
+[event] space.created {"spaceId":"sp2","name":"cold-docs"}
+[event] tab.created {"spaceId":"sp2","tabId":"tb2","url":"about:blank"}
+[rook] active tab tb2 (about:blank)
+[event] tab.activated {"spaceId":"sp2","tabId":"tb2"}
+[rook] tab tb1 parked
+[rook] active tab tb2 (about:blank)
+[rook] tab tb2 -> about:blank
+[rook] active tab tb1 (New tab)
+[rook] tab tb2 browser ready (xid 0xc0000d)
+[rook] tab tb1 awake
+[rook] tab tb2 parked
+[rook] active tab tb1 (New tab)
+[rook] tab tb2 awake
+[rook] tab tb2 loaded (http 0) about:blank
+[rook] active tab tb2 (about:blank) [background]
+[event] tab.updated {"spaceId":"sp2","tabId":"tb2","url":"https://docs.python.org/3/library/json.html"}
+[event] tab.updated {"spaceId":"sp2","tabId":"tb2","title":"json — JSON encoder and decoder — Python 3.15.2 documentation"}
+[rook] tab tb2 loaded (http 200) https://docs.python.org/3/library/json.html
+[rook] tab tb2 parked
+[rook] tab tb2 awake
+[rook] space sp2 handed off to the user
+[event] control.changed {"spaceId":"sp2","state":"user"}
+[event] space.created {"spaceId":"sp3","name":"form"}
+[event] tab.created {"spaceId":"sp3","tabId":"tb3","url":"about:blank"}
+[rook] active tab tb3 (about:blank)
+[event] tab.activated {"spaceId":"sp3","tabId":"tb3"}
+[rook] tab tb1 parked
+[rook] active tab tb3 (about:blank)
+[rook] tab tb3 -> about:blank
+[rook] active tab tb1 (New tab)
+[rook] tab tb3 browser ready (xid 0xc0001b)
+[rook] tab tb1 awake
+[rook] tab tb3 parked
+[rook] active tab tb1 (New tab)
+[rook] tab tb3 awake
+[rook] tab tb3 loaded (http 0) about:blank
+[rook] active tab tb3 (about:blank) [background]
+[event] tab.updated {"spaceId":"sp3","tabId":"tb3","url":"http://127.0.0.1:8781/form.html"}
+[event] tab.updated {"spaceId":"sp3","tabId":"tb3","title":"Profile form"}
+[rook] tab tb3 loaded (http 200) http://127.0.0.1:8781/form.html
+[rook] active tab tb3 (Profile form) [background]
+[rook] tab tb2 parked
+[rook] tab tb3 parked
+[event] space.created {"spaceId":"sp4","name":"form2"}
+[event] tab.created {"spaceId":"sp4","tabId":"tb4","url":"about:blank"}
+[rook] active tab tb4 (about:blank)
+[event] tab.activated {"spaceId":"sp4","tabId":"tb4"}
+[rook] tab tb1 parked
+[rook] active tab tb4 (about:blank)
+[rook] tab tb4 -> about:blank
+[rook] active tab tb1 (New tab)
+[rook] tab tb4 browser ready (xid 0xc0001f)
+[rook] tab tb1 awake
+[rook] tab tb4 parked
+[rook] active tab tb1 (New tab)
+[rook] tab tb4 loaded (http 0) about:blank
+[rook] tab tb4 awake
+[rook] active tab tb4 (about:blank) [background]
+[event] tab.updated {"spaceId":"sp4","tabId":"tb4","url":"http://127.0.0.1:8781/form.html"}
+[event] tab.updated {"spaceId":"sp4","tabId":"tb4","title":"Profile form"}
+[rook] tab tb4 loaded (http 200) http://127.0.0.1:8781/form.html
+[rook] active tab tb4 (Profile form) [background]
+[rook] active tab tb4 (Profile form) [background]
+[rook] active tab tb4 (Profile form) [background]
+[rook] active tab tb4 (Profile form) [background]
+[rook] active tab tb4 (Profile form) [background]
+[rook] active tab tb4 (Profile form) [background]
+[rook] space sp4 state "Clicking element"
+[rook] active tab tb4 (Profile form) [background]
+[rook] space sp4 state "Clicking element"
+[event] tab.updated {"spaceId":"sp4","tabId":"tb4","url":"http://127.0.0.1:8781/form-result"}
+[event] tab.updated {"spaceId":"sp4","tabId":"tb4","title":"Form result"}
+[rook] tab tb4 loaded (http 200) http://127.0.0.1:8781/form-result
+[rook] active tab tb4 (Form result) [background]
+[rook] active tab tb4 (Form result) [background]
+[event] space.created {"spaceId":"sp5","name":"login-space"}
+[event] tab.created {"spaceId":"sp5","tabId":"tb5","url":"about:blank"}
+[rook] active tab tb5 (about:blank)
+[event] tab.activated {"spaceId":"sp5","tabId":"tb5"}
+[rook] tab tb4 parked
+[rook] tab tb1 parked
+[rook] active tab tb5 (about:blank)
+[rook] tab tb5 -> about:blank
+[rook] active tab tb1 (New tab)
+[rook] tab tb5 browser ready (xid 0xc00023)
+[rook] tab tb1 awake
+[rook] tab tb5 parked
+[rook] active tab tb1 (New tab)
+[rook] tab tb5 awake
+[rook] tab tb5 loaded (http 0) about:blank
+[rook] active tab tb5 (about:blank) [background]
+[event] tab.updated {"spaceId":"sp5","tabId":"tb5","url":"http://127.0.0.1:8781/login.html"}
+[event] tab.updated {"spaceId":"sp5","tabId":"tb5","title":"Sign in"}
+[rook] tab tb5 loaded (http 200) http://127.0.0.1:8781/login.html
+[rook] active tab tb5 (Sign in) [background]
+[rook] active tab tb5 (Sign in) [background]
+[rook] active tab tb5 (Sign in) [background]
+[rook] active tab tb5 (Sign in) [background]
+[rook] space sp5 state "Clicking element"
+[event] tab.updated {"spaceId":"sp5","tabId":"tb5","url":"http://127.0.0.1:8781/private.html"}
+[event] tab.updated {"spaceId":"sp5","tabId":"tb5","title":"Private area"}
+[rook] tab tb5 loaded (http 200) http://127.0.0.1:8781/private.html
+[rook] active tab tb5 (Private area) [background]
+[rook] active tab tb5 (Private area) [background]
+[rook] tab tb5 parked
+[rook] tab tb5 awake
+
+(rook:2109937): Gdk-WARNING **: 15:39:33.463: GdkWindow 0x200029 unexpectedly destroyed
+
+(rook:2109937): Gdk-WARNING **: 15:39:33.463: GdkWindow 0x200229 unexpectedly destroyed
+
+(rook:2109937): Gdk-WARNING **: 15:39:33.463: GdkWindow 0x20017b unexpectedly destroyed
+
+(rook:2109937): Gdk-WARNING **: 15:39:33.463: GdkWindow 0x200114 unexpectedly destroyed
+
+(rook:2109937): Gdk-WARNING **: 15:39:33.464: GdkWindow 0x200093 unexpectedly destroyed
+
+(rook:2109937): Gdk-WARNING **: 15:39:33.464: GdkWindow 0x200003 unexpectedly destroyed
+[2109937:2109937:1027/153933.464464:ERROR:content/browser/browser_main_loop.cc:287] GLib-GObject: invalid (NULL) pointer instance
+[2109937:2109937:1027/153933.464601:ERROR:content/browser/browser_main_loop.cc:287] GLib-GObject: g_signal_handler_disconnect: assertion 'G_TYPE_CHECK_INSTANCE (instance)' failed
+[2109937:2109937:1027/153933.464625:ERROR:content/browser/browser_main_loop.cc:287] Gdk: gdk_frame_clock_end_updating: assertion 'GDK_IS_FRAME_CLOCK (frame_clock)' failed
+[rook] shutdown watchdog: the message loop did not return within 5 s (open browsers: 5); exiting anyway. A browser created with Target.createTarget through the CDP broker is not owned by a tab and is the usual cause.

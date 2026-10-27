@@ -1,0 +1,34 @@
+Error: JavaScript evaluation failed at line 0, column 0: SecurityError: Failed to set the 'cookie' property on 'Document': Cookies are disabled inside 'data:' URLs.
+    at __egoPageEvaluate (<anonymous>:2:86)
+    at <anonymous>:3:9; expression: () => { document.cookie = "who=alpha; Path=/; Max-Age=86400" }
+    at runtimeValue (file:///tmp/opencode/rook-eval/root/usr/lib/rook/sdk/index.js:9189:15)
+    at evaluateInSession (file:///tmp/opencode/rook-eval/root/usr/lib/rook/sdk/index.js:19792:12)
+    at process.processTicksAndRejections (node:internal/process/task_queues:103:5)
+    at async file:///tmp/opencode/rook-eval/root/usr/lib/rook/sdk/index.js:19415:24
+    at async file:///tmp/opencode/rook-eval/root/usr/lib/rook/sdk/index.js:17272:28
+phase1_exit=1
+after phase1:
+[(1, 'alpha', 'sp2')]
+Error: JavaScript evaluation failed at line 0, column 0: SecurityError: Failed to set the 'cookie' property on 'Document': Cookies are disabled inside 'data:' URLs.
+    at __egoPageEvaluate (<anonymous>:2:85)
+    at <anonymous>:3:9; expression: () => { document.cookie = "who=beta; Path=/; Max-Age=86400" }
+    at runtimeValue (file:///tmp/opencode/rook-eval/root/usr/lib/rook/sdk/index.js:9189:15)
+    at evaluateInSession (file:///tmp/opencode/rook-eval/root/usr/lib/rook/sdk/index.js:19792:12)
+    at process.processTicksAndRejections (node:internal/process/task_queues:103:5)
+    at async file:///tmp/opencode/rook-eval/root/usr/lib/rook/sdk/index.js:19415:24
+    at async file:///tmp/opencode/rook-eval/root/usr/lib/rook/sdk/index.js:17272:28
+phase2_exit=1
+now resume alpha:
+Error: JavaScript evaluation failed at line 0, column 0: SecurityError: Failed to read the 'cookie' property from 'Document': Cookies are disabled inside 'data:' URLs.
+    at <anonymous>:2:38
+    at __egoPageEvaluate (<anonymous>:2:45)
+    at <anonymous>:3:9; expression: () => document.cookie
+    at runtimeValue (file:///tmp/opencode/rook-eval/root/usr/lib/rook/sdk/index.js:9189:15)
+    at evaluateInSession (file:///tmp/opencode/rook-eval/root/usr/lib/rook/sdk/index.js:19792:12)
+    at process.processTicksAndRejections (node:internal/process/task_queues:103:5)
+    at async file:///tmp/opencode/rook-eval/root/usr/lib/rook/sdk/index.js:19415:24
+    at async file:///tmp/opencode/rook-eval/root/usr/lib/rook/sdk/index.js:17272:28
+resumed alpha 1 [{"label":"p2","title":"BETA","url":"data:text/html,<title>BETA</title><h1>BETA</h1>"}]
+alpha_resume_exit=1
+after phase2:
+[(1, 'alpha', 'sp2'), (2, 'beta', 'sp2')]

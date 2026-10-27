@@ -1,0 +1,16 @@
+upload_snapshot
+[p1 "Upload result" | space "files"(13): 1 managed, 0 untracked — p1* "Upload result"]
+root
+  heading "Upload result"
+    text "Upload result"
+  paragraph
+    text "UPLOAD-OK"
+  paragraph
+    text "upload.txt"
+  paragraph
+    text "75"
+upload_result { result: 'UPLOAD-OK', file: 'upload.txt', bytes: '75' }
+download_meta {"url":"http://127.0.0.1:8781/download","name":"rook-eval.txt"}
+download_text "rook-download-payload-42\n"
+exit=0
+-rw-r--r-- 1 user user 25 Oct 27 15:47 /tmp/opencode/rook-eval/downloads/rook-eval.txt

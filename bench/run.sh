@@ -37,7 +37,9 @@ die() { printf '\n\033[1m[bench] FAIL\033[0m %s\n' "$*" >&2; exit 1; }
 # --- interpreter ------------------------------------------------------------
 node_bin="${ROOK_NODE:-}"
 if [ -z "$node_bin" ]; then
-  for candidate in "$(command -v node 2>/dev/null)" /usr/local/bin/node22 /opt/node22/bin/node; do
+  # /tmp/opencode/node22 is the Node 22 this box keeps for the bridge; a distro
+  # node is usually 18, which cannot run it at all.
+  for candidate in "$(command -v node 2>/dev/null)" /tmp/opencode/node22/bin/node /usr/local/bin/node22 /opt/node22/bin/node; do
     [ -n "$candidate" ] && [ -x "$candidate" ] || continue
     major=$("$candidate" -v 2>/dev/null | sed 's/^v//' | cut -d. -f1)
     if [ "${major:-0}" -ge 22 ] 2>/dev/null; then node_bin="$candidate"; break; fi
@@ -81,7 +83,12 @@ printf '  %-14s %s\n' "load" "$(cut -d' ' -f1-3 /proc/loadavg)"
 if [ -n "${ROOK_BENCH_XVFB:-}" ] && [ ! -x "$ROOK_BENCH_XVFB" ]; then
   die "ROOK_BENCH_XVFB=$ROOK_BENCH_XVFB is not executable"
 fi
-command -v "${ROOK_BENCH_XVFB:-Xvfb}" >/dev/null 2>&1 ||
+xvfb="${ROOK_BENCH_XVFB:-}"
+if [ -z "$xvfb" ]; then
+  if [ -x /tmp/opencode/xvfb-root/usr/bin/Xvfb ]; then xvfb=/tmp/opencode/xvfb-root/usr/bin/Xvfb
+  else xvfb="$(command -v Xvfb || true)"; fi
+fi
+[ -n "$xvfb" ] && { [ -x "$xvfb" ] || command -v "$xvfb" >/dev/null 2>&1; } ||
   die "no Xvfb: install xvfb, or set ROOK_BENCH_XVFB=/path/to/Xvfb"
 
 # --- measure ----------------------------------------------------------------

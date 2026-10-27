@@ -32,6 +32,16 @@ bool BrowserClient::OnDevToolsMessage(CefRefPtr<CefBrowser> browser,
   return true;  // handled: do not also fire OnDevToolsMethodResult/Event
 }
 
+bool BrowserClient::OnSetFocus(CefRefPtr<CefBrowser> browser, FocusSource source) {
+  CEF_REQUIRE_UI_THREAD();
+  (void)browser;
+  (void)source;
+  if (shell_ != nullptr) {
+    shell_->OnBrowserFocus(tab_id_);
+  }
+  return false;  // not handled here: Chromium keeps its own focus state
+}
+
 bool BrowserClient::DoClose(CefRefPtr<CefBrowser> browser) {
   CEF_REQUIRE_UI_THREAD();
   // Let the close proceed; OnBeforeClose tears the tab down.
@@ -149,3 +159,4 @@ void BrowserClient::OnAddressChange(CefRefPtr<CefBrowser> browser,
 }
 
 }  // namespace rook
+

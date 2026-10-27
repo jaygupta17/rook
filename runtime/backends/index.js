@@ -19,14 +19,20 @@ import { StandaloneBackend } from "./standalone.js";
  *
  *   kind                                "standalone" | "host"
  *   describe()                          one line for error messages
+ *   async instanceKey()                 identity of the browser process spaces
+ *                                       belong to (null: not applicable)
  *   async open()                        connect or launch; idempotent
  *   close()                             drop this process's resources
  *   openFrameListener(fn)               fn({space, tabId, data, text}) for every
  *                                       CDP frame, correlated replies included
  *   async createSpace(name, space)      -> { spaceId, contextId }; leaves exactly
- *                                       one blank tab in the new space
+ *                                       one blank tab in the new space. The
+ *                                       space record carries `profileId`, which
+ *                                       is the storage boundary in host mode.
  *   async closeSpace(space)
  *   async listSpaceIds()                -> string[] | null (null: nothing to check)
+ *   async listProfiles()                -> [{ id, name, isDefault }] (SDK shape)
+ *   async createProfile(name)           -> { id, name, isDefault:false }
  *   async handOff(space) / takeOver(space)
  *   async setAgentTaskState(space, text)
  *   async highlightMouseTo(space, x, y)
@@ -47,9 +53,12 @@ export const BACKEND_METHODS = [
   "close",
   "openFrameListener",
   "describe",
+  "instanceKey",
   "createSpace",
   "closeSpace",
   "listSpaceIds",
+  "listProfiles",
+  "createProfile",
   "handOff",
   "takeOver",
   "setAgentTaskState",
@@ -170,8 +179,9 @@ export async function resolveSelection({ requested, env = process.env } = {}) {
 }
 
 /**
- * The backend for one profile. In host mode `profileId` is ignored: the app has
- * a single profile, so there is a single backend.
+ * The backend for one profile. In host mode `profileId` is not a backend key:
+ * the app is one process, so every profile's spaces are driven through one
+ * backend; the profile itself travels on the space record (`createSpace`).
  */
 export async function getBackend({ requested, profileId, WebSocketImpl, env } = {}) {
   const chosen = await resolveSelection({ requested, env });

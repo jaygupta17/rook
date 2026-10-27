@@ -1,6 +1,7 @@
 #include "shell.h"
 
 #include <gdk/gdkx.h>
+#include <X11/extensions/XInput2.h>
 #include <unistd.h>
 
 #include <algorithm>
@@ -15,6 +16,8 @@
 #include "control.h"
 #include "include/cef_app.h"
 #include "include/cef_frame.h"
+#include "include/cef_parser.h"
+#include "include/cef_values.h"
 #include "include/wrapper/cef_helpers.h"
 #include "json.h"
 #include "paths.h"
@@ -138,8 +141,9 @@ const char kWelcomeHtml[] = R"HTML(<!doctype html>
   <div class="k">Rook &middot; linux</div>
   <h1>New tab</h1>
   <p>Chromium 156 inside a native GTK3 shell. Type an address above.</p>
-  <p>Every space in the sidebar is a separate browser profile &mdash; its own
-     cookies, storage and cache under <code>~/.local/share/rook</code>.</p>
+  <p>Spaces are tabs sets inside a profile. Every space of the same profile
+     shares its cookies and logins, in its own directory under
+     <code>~/.local/share/rook/profiles</code>.</p>
 </div></body></html>
 )HTML";
 
@@ -216,6 +220,119 @@ void PumpGtkEvents() {
   if (display != nullptr) {
     gdk_display_sync(display);
   }
+}
+
+// --- X keyboard focus -------------------------------------------------------
+//
+// GTK and the page are two X clients sharing one window: GTK draws the chrome
+// in the toplevel, CEF draws the page in a child window of the tab's drawing
+// area. X delivers a keystroke to exactly one window, so "which side gets the
+// keyboard" is decided by XSetInputFocus and by nothing else. CEF's
+// CefBrowserHost::SetFocus only tells Chromium's internal widget; on its own it
+// does not survive GTK claiming the toplevel on the next click.
+
+Display* XDisplayOf() {
+  GdkDisplay* display = gdk_display_get_default();
+  return display != nullptr ? GDK_DISPLAY_XDISPLAY(display) : nullptr;
+}
+
+// Ends a GDK error trap. A non-zero result means an X error was caught and
+// deliberately ignored (the caller's X call raced with a window going away).
+int EndXErrorTrap() {
+  GdkDisplay* display = gdk_display_get_default();
+  return display != nullptr ? gdk_x11_display_error_trap_pop(display) : 0;
+}
+
+bool FocusXWindow(unsigned long xid) {
+  Display* display = XDisplayOf();
+  GdkDisplay* gdk_display = gdk_display_get_default();
+  if (display == nullptr || gdk_display == nullptr || xid == 0) {
+    return false;
+  }
+  // XSetInputFocus on a window that stopped being viewable is a BadMatch, and
+  // X errors reach GDK's handler *later*, where the default one is fatal. Trap
+  // them: a focus hand-off that loses a race is a no-op, not a crash.
+  gdk_x11_display_error_trap_push(gdk_display);
+  XWindowAttributes attributes{};
+  bool viewable = XGetWindowAttributes(display, static_cast<Window>(xid), &attributes) != 0 &&
+                  attributes.map_state == IsViewable;
+  if (viewable) {
+    XSetInputFocus(display, static_cast<Window>(xid), RevertToParent, CurrentTime);
+    XFlush(display);
+  }
+  const int error = EndXErrorTrap();
+  return viewable && error == 0;
+}
+
+// Is X's input focus still inside `toplevel` (the window itself or a CEF child
+// of one of its drawing areas)? Used to avoid pulling the keyboard off whatever
+// other application the user is working in when an agent drives a tab.
+bool XFocusBelongsTo(Display* display, unsigned long toplevel) {
+  if (display == nullptr || toplevel == 0) {
+    return false;
+  }
+  GdkDisplay* gdk_display = gdk_display_get_default();
+  if (gdk_display == nullptr) {
+    return false;
+  }
+  gdk_x11_display_error_trap_push(gdk_display);
+  Window focus = 0;
+  int revert = 0;
+  XGetInputFocus(display, &focus, &revert);
+  if (focus == None || focus == PointerRoot) {
+    (void)EndXErrorTrap();
+    return false;
+  }
+  for (int depth = 0; depth < 16 && focus != 0; ++depth) {
+    if (focus == static_cast<Window>(toplevel)) {
+      (void)EndXErrorTrap();
+      return true;
+    }
+    Window root = 0;
+    Window parent = 0;
+    Window* children = nullptr;
+    unsigned int child_count = 0;
+    if (XQueryTree(display, focus, &root, &parent, &children, &child_count) == 0) {
+      (void)EndXErrorTrap();
+      return false;
+    }
+    if (children != nullptr) {
+      XFree(children);
+    }
+    if (parent == 0 || parent == focus) {
+      (void)EndXErrorTrap();
+      return false;
+    }
+    focus = parent;
+  }
+  (void)EndXErrorTrap();
+  return false;
+}
+
+// Two X-level signals survive a click on the page, which itself never reaches
+// GDK: a pointer entering CEF's window (EnterNotify; the click is delivered to
+// Chromium, but crossings go to every interested client) and the X focus GTK or
+// the window manager takes back afterwards (FocusIn). Both mean the same thing:
+// the user is working with the page, so the page should own the keyboard.
+GdkFilterReturn FilterXEvent(GdkXEvent* xevent, GdkEvent* event, gpointer data) {
+  auto* shell = static_cast<Shell*>(data);
+  auto* x = static_cast<XEvent*>(xevent);
+  if (shell == nullptr || x == nullptr) {
+    return GDK_FILTER_CONTINUE;
+  }
+  if (x->type == KeyPress && (x->xkey.state & ControlMask) != 0) {
+    // Only the combinations taken by GrabChromeShortcuts get here. When one of
+    // them is handled the event is consumed, otherwise GTK would act on the same
+    // key press a second time through its own accelerator handler.
+    if (shell->HandleChromeShortcut(static_cast<int>(XLookupKeysym(&x->xkey, 0)))) {
+      return GDK_FILTER_REMOVE;
+    }
+  } else if (x->type == EnterNotify) {
+    shell->OnPointerEnter(static_cast<unsigned long>(x->xcrossing.window));
+  } else if (x->type == FocusIn) {
+    shell->OnXFocusIn(static_cast<unsigned long>(x->xfocus.window));
+  }
+  return GDK_FILTER_CONTINUE;
 }
 
 std::string UrlForDisplay(const std::string& url) {
@@ -479,19 +596,32 @@ void OnReloadClicked(GtkButton* button, gpointer data) {
 
 void OnUrlActivate(GtkEntry* entry, gpointer data) {
   if (g_shell != nullptr) {
+    // The address is committed: the keyboard belongs to the page that is about
+    // to load, not to the entry (which otherwise keeps it and appends whatever
+    // is typed next to the URL).
     g_shell->UiNavigateFromEntry(gtk_entry_get_text(entry));
+    g_shell->UiFocusActivePage();
   }
+}
+
+gboolean OnUrlKeyPress(GtkWidget* widget, GdkEventKey* event, gpointer data) {
+  if (g_shell == nullptr || event == nullptr) {
+    return FALSE;
+  }
+  if (event->keyval == GDK_KEY_Escape) {
+    g_shell->UiCancelAddressBar();
+    return TRUE;  // consumed: Escape does not also reach the page
+  }
+  return FALSE;
 }
 
 gboolean OnUrlFocusIn(GtkWidget* widget, GdkEventFocus* event, gpointer data) {
   // Hand keyboard focus to the entry while it is being edited, and select the
-  // whole address so typing replaces it (omnibox behaviour).
+  // whole address so typing replaces it (omnibox behaviour). This also moves
+  // the X focus off the page: a page that keeps it would keep receiving the
+  // keystrokes meant for the address.
   if (g_shell != nullptr) {
-    if (Tab* tab = g_shell->active_tab()) {
-      if (tab->browser) {
-        tab->browser->GetHost()->SetFocus(false);
-      }
-    }
+    g_shell->FocusChrome();
   }
   // Selecting here would be undone by the click that follows focus-in, so the
   // selection runs from the idle loop, once the click has been handled.
@@ -502,6 +632,67 @@ gboolean OnUrlFocusIn(GtkWidget* widget, GdkEventFocus* event, gpointer data) {
         return G_SOURCE_REMOVE;
       },
       g_object_ref(widget), g_object_unref);
+  return FALSE;
+}
+
+// The window itself came back (WM activation, alt-tab): the page should get the
+// keyboard again unless the user was in the middle of editing the address.
+gboolean OnWindowFocusInEvent(GtkWidget* widget, GdkEventFocus* event, gpointer data) {
+  if (g_shell != nullptr) {
+    g_shell->OnWindowFocusIn();
+  }
+  return FALSE;
+}
+
+// The tab's drawing area is the GTK widget that stands for "the keyboard is in
+// the page". GTK focus reaching it (Tab key, window manager focus, a click we
+// forwarded) means the browser should own the keyboard; GTK focus leaving it
+// means the browser should stop claiming it.
+gboolean OnTabHostFocusInEvent(GtkWidget* widget, GdkEventFocus* event, gpointer data) {
+  if (g_shell == nullptr) {
+    return FALSE;
+  }
+  const std::string* id = IdOf(widget);
+  if (id == nullptr) {
+    return FALSE;
+  }
+  if (Tab* tab = g_shell->FindTab(*id)) {
+    g_shell->FocusPage(tab);
+  }
+  return FALSE;
+}
+
+gboolean OnTabHostFocusOutEvent(GtkWidget* widget, GdkEventFocus* event, gpointer data) {
+  if (g_shell == nullptr) {
+    return FALSE;
+  }
+  const std::string* id = IdOf(widget);
+  if (id == nullptr) {
+    return FALSE;
+  }
+  if (Tab* tab = g_shell->FindTab(*id)) {
+    if (tab->browser) {
+      tab->browser->GetHost()->SetFocus(false);
+    }
+  }
+  return FALSE;
+}
+
+// Fallback for the case where the drawing area itself gets the button press
+// (before CEF's window exists, or if a page ever leaves part of the area
+// uncovered): give the page the keyboard the same way a click into it does.
+gboolean OnTabHostButtonPressEvent(GtkWidget* widget, GdkEventButton* event, gpointer data) {
+  if (g_shell == nullptr || event == nullptr) {
+    return FALSE;
+  }
+  const std::string* id = IdOf(widget);
+  if (id == nullptr) {
+    return FALSE;
+  }
+  if (Tab* tab = g_shell->FindTab(*id)) {
+    g_shell->FocusPage(tab);
+    return TRUE;
+  }
   return FALSE;
 }
 
@@ -561,21 +752,60 @@ class Shell::ControlAdapter : public ControlDelegate {
   // handler calls: OnTabClicked -> ActivateTab, OnAddTabClicked -> OpenTab,
   // OnSpaceRowClicked -> CloseSpace/ActivateSpace, and so on. Adding behaviour
   // to one path therefore lands in both.
-  std::string CreateSpace(const std::string& name) override {
-    Space* space = shell_->CreateSpace(name, false);
-    return space != nullptr ? space->id : std::string();
+  ControlStatus CreateSpace(const std::string& name,
+                            const std::string& profile_id,
+                            std::string* space_id,
+                            std::string* resolved_profile_id) override {
+    Profile* profile = nullptr;
+    if (profile_id.empty()) {
+      profile = shell_->DefaultProfile();
+    } else {
+      profile = shell_->FindProfile(profile_id);
+      if (profile == nullptr) {
+        return ControlStatus::Fail("no profile " + profile_id, kEgoSpaceNotFound);
+      }
+    }
+    if (profile == nullptr) {
+      return ControlStatus::Fail("the host has no default profile");
+    }
+    Space* space = shell_->CreateSpace(name, false, profile);
+    if (space == nullptr) {
+      return ControlStatus::Fail("the host could not create a space named \"" + name + "\"");
+    }
+    if (space_id != nullptr) {
+      *space_id = space->id;
+    }
+    if (resolved_profile_id != nullptr) {
+      *resolved_profile_id = profile->id;
+    }
+    return ControlStatus::Ok();
+  }
+
+  std::string ListProfiles() const override { return shell_->ProfilesJson(); }
+
+  ControlStatus CreateProfile(const std::string& name, std::string* profile_id) override {
+    Profile* profile = nullptr;
+    std::string why;
+    if (!shell_->CreateProfile(name, &profile, &why)) {
+      return ControlStatus::Fail(why, kEgoInvalidArgument);
+    }
+    if (profile_id != nullptr) {
+      *profile_id = profile->id;
+    }
+    return ControlStatus::Ok();
   }
 
   ControlStatus CloseSpace(const std::string& space_id) override {
     Space* space = shell_->FindSpace(space_id);
     if (space == nullptr) {
-      return ControlStatus::Fail("no space " + space_id);
+      return ControlStatus::Fail("no space " + space_id, kEgoSpaceNotFound);
     }
     if (space->is_user) {
-      return ControlStatus::Fail("the \"You\" space belongs to the user and cannot be closed");
+      return ControlStatus::Fail("the \"You\" space belongs to the user and cannot be closed",
+                                 kEgoSpaceUserInControl);
     }
-    if (const std::string why = Guard(space); !why.empty()) {
-      return ControlStatus::Fail(why);
+    if (const ControlStatus status = Guard(space); !status.ok) {
+      return status;
     }
     shell_->CloseSpace(space);
     return ControlStatus::Ok();
@@ -586,28 +816,35 @@ class Shell::ControlAdapter : public ControlDelegate {
     return shell_->TabsJson(space_id);
   }
 
-  std::string CreateTab(const std::string& space_id,
-                        const std::string& url) override {
+  ControlStatus CreateTab(const std::string& space_id,
+                          const std::string& url,
+                          std::string* tab_id) override {
     Space* space = shell_->FindSpace(space_id);
     if (space == nullptr) {
-      return std::string();
+      return ControlStatus::Fail("no space " + space_id, kEgoSpaceNotFound);
     }
-    if (const std::string why = Guard(space); !why.empty()) {
-      return std::string();
+    if (const ControlStatus status = Guard(space); !status.ok) {
+      return status;
     }
     // reveal_space = false: a tab in a space the user is not looking at is
     // created and loaded, but the window stays where the user left it.
     Tab* tab = shell_->OpenTab(space, url.empty() ? "about:blank" : url, true, false);
-    return tab != nullptr ? tab->id : std::string();
+    if (tab == nullptr) {
+      return ControlStatus::Fail("the host could not open a tab in " + space_id);
+    }
+    if (tab_id != nullptr) {
+      *tab_id = tab->id;
+    }
+    return ControlStatus::Ok();
   }
 
   ControlStatus ActivateSpace(const std::string& space_id) override {
     Space* space = shell_->FindSpace(space_id);
     if (space == nullptr) {
-      return ControlStatus::Fail("no space " + space_id);
+      return ControlStatus::Fail("no space " + space_id, kEgoSpaceNotFound);
     }
     if (space->closing) {
-      return ControlStatus::Fail("space " + space_id + " is closing");
+      return ControlStatus::Fail("space " + space_id + " is closing", kEgoSpaceInactive);
     }
     // A view operation, not a mutation: no Guard(). The window may be moved to
     // the user's space or to a handed-off space without driving anything.
@@ -619,13 +856,14 @@ class Shell::ControlAdapter : public ControlDelegate {
                             const std::string& tab_id) override {
     Tab* tab = shell_->FindTab(tab_id);
     if (tab == nullptr) {
-      return ControlStatus::Fail("no tab " + tab_id);
+      return ControlStatus::Fail("no tab " + tab_id, kEgoSpaceNotFound);
     }
     if (tab->space == nullptr || tab->space->id != space_id) {
-      return ControlStatus::Fail("tab " + tab_id + " is not in space " + space_id);
+      return ControlStatus::Fail("tab " + tab_id + " is not in space " + space_id,
+                                 kEgoInvalidArgument);
     }
-    if (const std::string why = Guard(tab->space); !why.empty()) {
-      return ControlStatus::Fail(why);
+    if (const ControlStatus status = Guard(tab->space); !status.ok) {
+      return status;
     }
     shell_->ActivateTab(tab, tab->space == shell_->active_space());
     return ControlStatus::Ok();
@@ -635,13 +873,14 @@ class Shell::ControlAdapter : public ControlDelegate {
                          const std::string& tab_id) override {
     Tab* tab = shell_->FindTab(tab_id);
     if (tab == nullptr) {
-      return ControlStatus::Fail("no tab " + tab_id);
+      return ControlStatus::Fail("no tab " + tab_id, kEgoSpaceNotFound);
     }
     if (tab->space == nullptr || tab->space->id != space_id) {
-      return ControlStatus::Fail("tab " + tab_id + " is not in space " + space_id);
+      return ControlStatus::Fail("tab " + tab_id + " is not in space " + space_id,
+                                 kEgoInvalidArgument);
     }
-    if (const std::string why = Guard(tab->space); !why.empty()) {
-      return ControlStatus::Fail(why);
+    if (const ControlStatus status = Guard(tab->space); !status.ok) {
+      return status;
     }
     shell_->CloseTab(tab);
     return ControlStatus::Ok();
@@ -650,10 +889,10 @@ class Shell::ControlAdapter : public ControlDelegate {
   ControlStatus Navigate(const std::string& tab_id, const std::string& url) override {
     Tab* tab = shell_->FindTab(tab_id);
     if (tab == nullptr) {
-      return ControlStatus::Fail("no tab " + tab_id);
+      return ControlStatus::Fail("no tab " + tab_id, kEgoSpaceNotFound);
     }
-    if (const std::string why = Guard(tab->space); !why.empty()) {
-      return ControlStatus::Fail(why);
+    if (const ControlStatus status = Guard(tab->space); !status.ok) {
+      return status;
     }
     shell_->Navigate(tab, url);
     return ControlStatus::Ok();
@@ -662,10 +901,13 @@ class Shell::ControlAdapter : public ControlDelegate {
   ControlStatus HandOff(const std::string& space_id) override {
     Space* space = shell_->FindSpace(space_id);
     if (space == nullptr) {
-      return ControlStatus::Fail("no space " + space_id);
+      return ControlStatus::Fail("no space " + space_id, kEgoSpaceNotFound);
     }
     if (space->is_user) {
       return ControlStatus::Fail("the \"You\" space is always the user's");
+    }
+    if (space->closing) {
+      return ControlStatus::Fail("space " + space_id + " is closing", kEgoSpaceInactive);
     }
     shell_->HandOffSpace(space);
     return ControlStatus::Ok();
@@ -674,10 +916,13 @@ class Shell::ControlAdapter : public ControlDelegate {
   ControlStatus TakeOver(const std::string& space_id) override {
     Space* space = shell_->FindSpace(space_id);
     if (space == nullptr) {
-      return ControlStatus::Fail("no space " + space_id);
+      return ControlStatus::Fail("no space " + space_id, kEgoSpaceNotFound);
     }
     if (space->is_user) {
       return ControlStatus::Fail("the \"You\" space is always the user's");
+    }
+    if (space->closing) {
+      return ControlStatus::Fail("space " + space_id + " is closing", kEgoSpaceInactive);
     }
     shell_->TakeOverSpace(space);
     return ControlStatus::Ok();
@@ -687,7 +932,7 @@ class Shell::ControlAdapter : public ControlDelegate {
                                   const std::string& state) override {
     Space* space = shell_->FindSpace(space_id);
     if (space == nullptr) {
-      return ControlStatus::Fail("no space " + space_id);
+      return ControlStatus::Fail("no space " + space_id, kEgoSpaceNotFound);
     }
     shell_->SetAgentState(space, state);
     return ControlStatus::Ok();
@@ -696,7 +941,13 @@ class Shell::ControlAdapter : public ControlDelegate {
   ControlStatus HighlightMouseTo(const std::string& space_id, int x, int y) override {
     Space* space = shell_->FindSpace(space_id);
     if (space == nullptr) {
-      return ControlStatus::Fail("no space " + space_id);
+      return ControlStatus::Fail("no space " + space_id, kEgoSpaceNotFound);
+    }
+    // The ring is an agent gesture, so a space the user has taken over must not
+    // show one. The "You" space is not gated: pointing at something for the
+    // user is the one agent action that belongs in it.
+    if (const ControlStatus status = GuardUserControl(space); !status.ok) {
+      return status;
     }
     if (!shell_->HighlightMouse(space, x, y)) {
       return ControlStatus::Fail("space " + space_id + " has no rendered tab to point at");
@@ -708,10 +959,10 @@ class Shell::ControlAdapter : public ControlDelegate {
                         const std::string& message) override {
     Tab* tab = shell_->FindTab(browser_id);
     if (tab == nullptr) {
-      return ControlStatus::Fail("no browser " + browser_id);
+      return ControlStatus::Fail("no browser " + browser_id, kEgoSpaceNotFound);
     }
-    if (const std::string why = Guard(tab->space); !why.empty()) {
-      return ControlStatus::Fail(why);
+    if (const ControlStatus status = Guard(tab->space); !status.ok) {
+      return status;
     }
     if (!shell_->SendCdpMessage(tab, message)) {
       return ControlStatus::Fail("browser " + browser_id +
@@ -727,20 +978,42 @@ class Shell::ControlAdapter : public ControlDelegate {
  private:
   // The one place the agent-mutation gate lives. The user's own clicks do not
   // come through here, so handing a space off never freezes the window.
-  static std::string Guard(const Space* space) {
+  //
+  // Reads (listTabs, getInfo, listSpaces) never pass through it; every op that
+  // would change a page or a tab does, and so does cdp.send.
+  static ControlStatus Guard(const Space* space) {
     if (space == nullptr) {
-      return "no space";
-    }
-    if (space->is_user) {
-      return "the \"You\" space belongs to the user; the agent cannot drive it";
+      return ControlStatus::Fail("no space", kEgoSpaceNotFound);
     }
     if (space->closing) {
-      return "space " + space->id + " is closing";
+      return ControlStatus::Fail("space " + space->id + " is closing", kEgoSpaceInactive);
+    }
+    if (space->is_user) {
+      return ControlStatus::Fail(
+          "the \"You\" space belongs to the user; the agent cannot drive it",
+          kEgoSpaceUserInControl);
     }
     if (space->ownership != "agent") {
-      return "space " + space->id + " is handed off to the user; the agent cannot drive it";
+      return ControlStatus::Fail(
+          "space " + space->id +
+              " is handed off to the user; the agent cannot drive it until takeOver",
+          kEgoSpaceUserInControl);
     }
-    return std::string();
+    return ControlStatus::Ok();
+  }
+
+  // The weaker gate for gestures that are not page mutations (the pointer ring).
+  static ControlStatus GuardUserControl(const Space* space) {
+    if (space == nullptr) {
+      return ControlStatus::Fail("no space", kEgoSpaceNotFound);
+    }
+    if (space->ownership != "agent") {
+      return ControlStatus::Fail(
+          "space " + space->id +
+              " is handed off to the user; the agent cannot drive it until takeOver",
+          kEgoSpaceUserInControl);
+    }
+    return ControlStatus::Ok();
   }
 
   Shell* shell_;
@@ -755,12 +1028,7 @@ bool Shell::Start(std::string* error) {
   data_home_ = DataRoot(options_.data_root);
   app_dir_ = JoinPath(data_home_, "rook");
 
-  if (!MakeDirs(options_.profile_dir)) {
-    *error = "cannot create profile directory " + options_.profile_dir;
-    return false;
-  }
-  if (!MakeDirs(JoinPath(app_dir_, "profiles"))) {
-    *error = "cannot create " + JoinPath(app_dir_, "profiles");
+  if (!LoadProfiles(error)) {
     return false;
   }
 
@@ -781,6 +1049,13 @@ bool Shell::Start(std::string* error) {
   gtk_widget_realize(window_);
   gtk_widget_show_all(window_);
   PumpGtkEvents();
+
+  // X focus changes inside our own windows are the one X-level signal that
+  // survives a click on the page: the click itself goes to CEF's window and is
+  // never reported to GDK at all (see OnXFocusIn).
+  gdk_window_add_filter(nullptr, FilterXEvent, this);
+  GrabChromeShortcuts();
+
 
   // Useful for scripts/manual QA: the toplevel XID is what `import -window`
   // wants, and Xvfb has no window manager to look it up any other way.
@@ -837,8 +1112,9 @@ bool Shell::Start(std::string* error) {
   }
 
   std::fprintf(stderr,
-               "[rook] shell up: %zu space(s), profile %s, data %s\n", spaces_.size(),
-               options_.profile_dir.c_str(), data_home_.c_str());
+               "[rook] shell up: %zu space(s), %zu profile(s), default profile %s, data %s\n",
+               spaces_.size(), profiles_.size(), default_profile_id_.c_str(),
+               data_home_.c_str());
 
   if (!options_.screenshot.empty()) {
     StartScreenshotFlow();
@@ -872,6 +1148,15 @@ void Shell::TearDown() {
     g_source_remove(shutdown_watchdog_);
     shutdown_watchdog_ = 0;
   }
+  if (page_focus_source_ != 0) {
+    g_source_remove(page_focus_source_);
+    page_focus_source_ = 0;
+  }
+  if (focus_guard_source_ != 0) {
+    g_source_remove(focus_guard_source_);
+    focus_guard_source_ = 0;
+  }
+  gdk_window_remove_filter(nullptr, FilterXEvent, this);
   if (control_) {
     // Last chance: events queued by the browsers closing above (tab.closed per
     // tab) go out before the socket disappears.
@@ -951,6 +1236,10 @@ void Shell::BuildWindow() {
   g_signal_connect(window_, "delete-event", G_CALLBACK(OnDeleteEvent), nullptr);
   g_signal_connect(window_, "destroy", G_CALLBACK(OnDeleteEvent), nullptr);
   g_signal_connect(window_, "key-press-event", G_CALLBACK(OnWindowKeyPress), nullptr);
+  // Coming back from another application: whatever had the keyboard inside the
+  // window keeps it, everything else hands it to the page (see OnWindowFocusIn).
+  g_signal_connect(window_, "focus-in-event", G_CALLBACK(OnWindowFocusInEvent),
+                   nullptr);
 
   GtkWidget* root = gtk_box_new(GTK_ORIENTATION_HORIZONTAL, 0);
   GtkWidget* main = gtk_box_new(GTK_ORIENTATION_VERTICAL, 0);
@@ -1083,6 +1372,7 @@ GtkWidget* Shell::BuildToolbar() {
   gtk_widget_set_margin_end(url_entry_, 14);
   g_signal_connect(url_entry_, "activate", G_CALLBACK(OnUrlActivate), nullptr);
   g_signal_connect(url_entry_, "focus-in-event", G_CALLBACK(OnUrlFocusIn), nullptr);
+  g_signal_connect(url_entry_, "key-press-event", G_CALLBACK(OnUrlKeyPress), nullptr);
   gtk_box_pack_start(GTK_BOX(bar), url_entry_, TRUE, TRUE, 0);
 
   return bar;
@@ -1100,19 +1390,373 @@ GtkWidget* Shell::BuildContent() {
 }
 
 // ---------------------------------------------------------------------------
+// Profiles on disk
+//
+// A profile is the isolation boundary: one directory, one CefRequestContext,
+// any number of spaces sharing its cookies, localStorage and cache. Spaces are
+// tab sets inside a profile (see "Profiles, spaces and storage" in README.md).
+//
+// <data>/rook/profiles is CEF's root_cache_path, so every profile can be one of
+// its direct children — CEF refuses anything else (it falls back to in-memory
+// storage when a context points outside the root, measured). CEF also keeps its
+// own global context and its component data in that directory; the host never
+// creates a tab in them, and LoadProfiles tells them apart from real profiles.
+// ---------------------------------------------------------------------------
+
+namespace {
+
+// profiles.json is the only thing the host keeps beside the storage dirs: the
+// display name of each profile. Losing it costs names, not data (ids are the
+// directory names).
+std::vector<std::pair<std::string, std::string>> ReadProfileRegistry(const std::string& path) {
+  std::vector<std::pair<std::string, std::string>> out;
+  FILE* file = std::fopen(path.c_str(), "rb");
+  if (file == nullptr) {
+    return out;
+  }
+  std::string text;
+  char buffer[4096];
+  size_t read_bytes = 0;
+  while ((read_bytes = std::fread(buffer, 1, sizeof(buffer), file)) > 0) {
+    text.append(buffer, read_bytes);
+  }
+  std::fclose(file);
+  CefRefPtr<CefValue> parsed =
+      CefParseJSON(text.data(), text.size(), JSON_PARSER_RFC);
+  if (!parsed || parsed->GetType() != VTYPE_DICTIONARY) {
+    std::fprintf(stderr, "[rook] ignoring unreadable %s\n", path.c_str());
+    return out;
+  }
+  CefRefPtr<CefListValue> list = parsed->GetDictionary()->GetList("profiles");
+  if (!list) {
+    return out;
+  }
+  for (size_t i = 0; i < list->GetSize(); ++i) {
+    CefRefPtr<CefDictionaryValue> entry = list->GetDictionary(i);
+    if (!entry) {
+      continue;
+    }
+    const std::string id = entry->GetString("id").ToString();
+    const std::string name = entry->GetString("name").ToString();
+    if (!id.empty() && !name.empty()) {
+      out.emplace_back(id, name);
+    }
+  }
+  return out;
+}
+
+// "work-laptop" -> "Work laptop": a name for a profile directory that exists
+// on disk but has no registry entry (an old --profile run, or a lost registry).
+std::string HumanizeProfileId(const std::string& id) {
+  std::string out;
+  out.reserve(id.size());
+  bool capital = true;
+  for (const char c : id) {
+    if (c == '-') {
+      out.push_back(' ');
+      capital = true;
+      continue;
+    }
+    out.push_back(capital ? static_cast<char>(g_ascii_toupper(c)) : c);
+    capital = false;
+  }
+  return out.empty() ? id : out;
+}
+
+// Pre-M4 every space got its own CEF profile directory inside the profile dir
+// (profiles/<profile>/<space>). None of it is read any more, and mixing the two
+// layouts is worse than dropping the old data: a pre-release app, no users.
+//
+// A CEF profile directory has a Preferences file at its root; the component
+// directories CEF keeps in its cache root do not, so they are left alone.
+int RemoveLegacySpaceDirs(const std::string& profile_dir) {
+  int removed = 0;
+  for (const std::string& child : ChildDirs(profile_dir)) {
+    if (child == "Default") {
+      continue;  // the profile's own storage from the pre-M4 user-data layout
+    }
+    const std::string dir = JoinPath(profile_dir, child);
+    if (!FileExists(JoinPath(dir, "Preferences"))) {
+      continue;  // not a CEF profile dir; leave it alone
+    }
+    if (RemoveTree(dir)) {
+      std::fprintf(stderr,
+                   "[rook] removed legacy per-space storage %s (pre-M4 layout)\n",
+                   dir.c_str());
+      ++removed;
+    } else {
+      std::fprintf(stderr, "[rook] could not remove legacy storage %s\n", dir.c_str());
+    }
+  }
+  return removed;
+}
+
+// Until M4 the default profile was CEF's *global* context, which keeps its real
+// profile one level down (<user data>/Default). M4 reads the profile directory
+// directly, so the files move up once — cookies, localStorage and preferences
+// included, which is what keeps the user's existing logins. Nothing is
+// overwritten: a name that already exists in the target is left in place.
+int MigratePreM4Profile(const std::string& profile_dir) {
+  const std::string inner = JoinPath(profile_dir, "Default");
+  if (!FileExists(JoinPath(inner, "Preferences"))) {
+    return 0;  // no pre-M4 profile here
+  }
+  int moved = 0;
+  for (const std::string& name : ChildNames(inner)) {
+    const std::string from = JoinPath(inner, name);
+    const std::string to = JoinPath(profile_dir, name);
+    if (FileExists(to)) {
+      continue;
+    }
+    if (std::rename(from.c_str(), to.c_str()) != 0) {
+      std::fprintf(stderr, "[rook] could not move %s out of the pre-M4 layout\n",
+                   from.c_str());
+      continue;
+    }
+    ++moved;
+  }
+  const std::vector<std::string> left = ChildNames(inner);
+  if (left.empty()) {
+    ::rmdir(inner.c_str());
+  }
+  if (moved > 0) {
+    std::fprintf(stderr,
+                 "[rook] profile migrated from the pre-M4 layout: %d entries moved "
+                 "out of %s\n",
+                 moved, inner.c_str());
+  }
+  return moved;
+}
+
+// A directory under profiles/ is a profile when it is the default id, a name in
+// profiles.json, or a directory a request context has written to (a CEF profile
+// always has a Preferences file). CEF's component data is none of those.
+bool HasProfileData(const std::string& dir) {
+  return FileExists(JoinPath(dir, "Preferences"));
+}
+
+}  // namespace
+
+Profile* Shell::AddProfile(const std::string& id,
+                           const std::string& name,
+                           bool is_default) {
+  auto profile = std::make_unique<Profile>();
+  profile->id = id;
+  profile->name = name;
+  profile->is_default = is_default;
+  profile->root_path = JoinPath(profiles_root_, id);
+  profile->context_path = profile->root_path;
+  Profile* raw = profile.get();
+  profiles_.push_back(std::move(profile));
+  return raw;
+}
+
+Profile* Shell::FindProfile(const std::string& profile_id) const {
+  for (const auto& profile : profiles_) {
+    if (profile->id == profile_id) {
+      return profile.get();
+    }
+  }
+  return nullptr;
+}
+
+Profile* Shell::DefaultProfile() const {
+  Profile* profile = FindProfile(default_profile_id_);
+  if (profile != nullptr) {
+    return profile;
+  }
+  return profiles_.empty() ? nullptr : profiles_.front().get();
+}
+
+bool Shell::LoadProfiles(std::string* error) {
+  profiles_root_ = options_.profiles_root.empty()
+                       ? JoinPath(app_dir_, "profiles")
+                       : options_.profiles_root;
+  profiles_registry_ = JoinPath(app_dir_, "profiles.json");
+  default_profile_id_ =
+      options_.profile_id.empty() ? std::string("default") : options_.profile_id;
+
+  if (!MakeDirs(profiles_root_)) {
+    *error = "cannot create " + profiles_root_;
+    return false;
+  }
+  profile_names_ = ReadProfileRegistry(profiles_registry_);
+
+  // The default profile always exists: it is where "You" and every space
+  // created without an explicit profile live.
+  std::vector<std::string> ids;
+  for (const std::string& id : ChildDirs(profiles_root_)) {
+    if (id == "Default") {
+      continue;  // CEF's own global context, never a Rook profile
+    }
+    bool registered = false;
+    for (const auto& entry : profile_names_) {
+      if (entry.first == id) {
+        registered = true;
+        break;
+      }
+    }
+    if (!registered && id != default_profile_id_ &&
+        !HasProfileData(JoinPath(profiles_root_, id))) {
+      continue;  // CEF's component data, not a profile
+    }
+    ids.push_back(id);
+  }
+  if (std::find(ids.begin(), ids.end(), default_profile_id_) == ids.end()) {
+    ids.push_back(default_profile_id_);
+  }
+  std::sort(ids.begin(), ids.end());
+  for (const std::string& id : ids) {
+    const std::string dir = JoinPath(profiles_root_, id);
+    if (!MakeDirs(dir)) {
+      std::fprintf(stderr, "[rook] cannot create profile directory %s\n", dir.c_str());
+      continue;
+    }
+    const bool is_default = (id == default_profile_id_);
+    if (is_default) {
+      // The default profile is the one that carries the user's own logins, so
+      // it gets the one-time move out of CEF's pre-M4 user-data layout.
+      MigratePreM4Profile(dir);
+    }
+    RemoveLegacySpaceDirs(dir);
+    std::string name = is_default ? "You" : HumanizeProfileId(id);
+    for (const auto& entry : profile_names_) {
+      if (entry.first == id) {
+        name = entry.second;
+        break;
+      }
+    }
+    // "You" names the run's default profile; a profile created by a --profile
+    // run of its own must not inherit that label when it shows up as a second
+    // profile later.
+    if (!is_default && name == "You") {
+      name = HumanizeProfileId(id);
+    }
+    AddProfile(id, name, is_default);
+  }
+  if (profiles_.empty()) {
+    *error = "no profile could be created under " + profiles_root_;
+    return false;
+  }
+  // The default profile first, so the sidebar and listProfiles start with it.
+  std::stable_sort(profiles_.begin(), profiles_.end(),
+                   [](const std::unique_ptr<Profile>& a,
+                      const std::unique_ptr<Profile>& b) {
+                     return a->is_default && !b->is_default;
+                   });
+  SaveProfiles();
+  std::fprintf(stderr, "[rook] profiles: %zu (default %s, %zu registered name(s))\n",
+               profiles_.size(), default_profile_id_.c_str(), profile_names_.size());
+  return true;
+}
+
+void Shell::SaveProfiles() const {
+  std::string json = "{\"profiles\":[";
+  bool first = true;
+  for (const auto& profile : profiles_) {
+    if (!first) {
+      json += ",";
+    }
+    first = false;
+    json += "{\"id\":\"" + JsonEscape(profile->id) + "\",\"name\":\"" +
+            JsonEscape(profile->name) + "\"}";
+  }
+  json += "]}\n";
+  const std::string tmp = profiles_registry_ + ".tmp";
+  FILE* file = std::fopen(tmp.c_str(), "wb");
+  if (file == nullptr) {
+    std::fprintf(stderr, "[rook] cannot write %s\n", tmp.c_str());
+    return;
+  }
+  const bool wrote = std::fwrite(json.data(), 1, json.size(), file) == json.size();
+  std::fclose(file);
+  if (!wrote || std::rename(tmp.c_str(), profiles_registry_.c_str()) != 0) {
+    std::fprintf(stderr, "[rook] cannot update %s\n", profiles_registry_.c_str());
+    std::remove(tmp.c_str());
+  }
+}
+
+bool Shell::CreateProfile(const std::string& name, Profile** profile, std::string* error) {
+  const std::string trimmed = Trim(name);
+  if (trimmed.empty()) {
+    *error = "createProfile needs a non-empty string 'name'";
+    return false;
+  }
+  const std::string id = Slugify(trimmed);
+  if (FindProfile(id) != nullptr) {
+    *error = "a profile with id \"" + id + "\" already exists";
+    return false;
+  }
+  const std::string dir = JoinPath(profiles_root_, id);
+  if (!MakeDirs(dir)) {
+    *error = "cannot create " + dir;
+    return false;
+  }
+  Profile* created = AddProfile(id, trimmed, false);
+  SaveProfiles();
+  std::fprintf(stderr, "[rook] profile %s \"%s\" created at %s\n", id.c_str(),
+               trimmed.c_str(), dir.c_str());
+  PushEvent("profile.created", "{\"profileId\":\"" + JsonEscape(id) +
+                                   "\",\"name\":\"" + JsonEscape(trimmed) + "\"}");
+  if (profile != nullptr) {
+    *profile = created;
+  }
+  return true;
+}
+
+CefRefPtr<CefRequestContext> Shell::ContextFor(Profile* profile) {
+  if (profile == nullptr) {
+    return nullptr;
+  }
+  if (profile->context) {
+    return profile->context;
+  }
+  // One context per profile, straight on the profile directory. The default
+  // profile's directory holds the data every pre-M4 build wrote (LoadProfiles
+  // moves it up out of CEF's old "Default" level once), so the user's logins
+  // are simply there for this context to read.
+  const std::string cache_path = profile->root_path;
+  CefRequestContextSettings settings;
+  CefString(&settings.cache_path) = cache_path;
+  CefString(&settings.accept_language_list) = "en-US,en";
+  profile->context = CefRequestContext::CreateContext(settings, nullptr);
+  if (!profile->context) {
+    std::fprintf(stderr, "[rook] request context failed for profile %s\n",
+                 profile->id.c_str());
+    return nullptr;
+  }
+  profile->context_path = cache_path;
+  std::fprintf(stderr, "[rook] profile %s context created (%s)\n",
+               profile->id.c_str(), cache_path.c_str());
+  return profile->context;
+}
+
+// ---------------------------------------------------------------------------
 // Space lifecycle
 // ---------------------------------------------------------------------------
 
-Space* Shell::CreateSpace(const std::string& name, bool is_user) {
+Space* Shell::CreateSpace(const std::string& name, bool is_user, Profile* profile) {
   OpScope op_scope(this);
+  if (profile == nullptr) {
+    profile = DefaultProfile();
+  }
+  if (profile == nullptr) {
+    std::fprintf(stderr, "[rook] CreateSpace(%s): no default profile\n", name.c_str());
+    return nullptr;
+  }
   auto space = std::make_unique<Space>();
   space->name = Trim(name).empty() ? "Space" : Trim(name);
   space->is_user = is_user;
   space->id = "sp" + std::to_string(next_space_++);
   space->color = space_rows_++;
+  space->profile = profile;
+  // Every space of a profile reads and writes the one profile storage tree. A
+  // space is a tab set plus ownership, not a storage boundary.
+  space->cache_path = profile->context_path.empty() ? profile->root_path
+                                                    : profile->context_path;
 
-  // Directory: the user space *is* the profile dir (the global context), agent
-  // spaces are direct children of it, as CEF requires for root_cache_path.
+  // Slugs only matter for the sidebar identity from here on; no directory is
+  // named after a space any more. Kept unique so logs stay readable.
   std::string dir_name = Slugify(space->name);
   auto taken = [this](const std::string& candidate) {
     for (const auto& other : spaces_) {
@@ -1128,21 +1772,12 @@ Space* Shell::CreateSpace(const std::string& name, bool is_user) {
     dir_name = base + "-" + std::to_string(suffix++);
   }
   space->slug = dir_name;
-  space->cache_path = is_user ? options_.profile_dir
-                              : JoinPath(options_.profile_dir, dir_name);
-  if (!MakeDirs(space->cache_path)) {
-    std::fprintf(stderr, "[rook] cannot create %s\n", space->cache_path.c_str());
-  }
 
-  if (!is_user) {
-    CefRequestContextSettings settings;
-    CefString(&settings.cache_path) = space->cache_path;
-    CefString(&settings.accept_language_list) = "en-US,en";
-    space->context = CefRequestContext::CreateContext(settings, nullptr);
-    if (!space->context) {
-      std::fprintf(stderr, "[rook] request context failed for space %s\n",
-                   space->name.c_str());
-    }
+  // The profile's context is created here, once: the first space in a profile
+  // brings the storage up, every later space shares it.
+  if (!ContextFor(profile)) {
+    std::fprintf(stderr, "[rook] request context failed for profile %s\n",
+                 profile->id.c_str());
   }
 
   Space* raw = space.get();
@@ -1151,7 +1786,8 @@ Space* Shell::CreateSpace(const std::string& name, bool is_user) {
   UpdateSpaceRow(raw);
   // UI "new space" and createSpace both land here.
   PushEvent("space.created", "{\"spaceId\":\"" + JsonEscape(raw->id) +
-                                 "\",\"name\":\"" + JsonEscape(raw->name) + "\"}");
+                                 "\",\"name\":\"" + JsonEscape(raw->name) +
+                                 "\",\"profileId\":\"" + JsonEscape(profile->id) + "\"}");
   return raw;
 }
 
@@ -1228,17 +1864,23 @@ void Shell::UpdateSpaceRow(Space* space) {
     gtk_label_set_text(GTK_LABEL(space->name_label), space->name.c_str());
   }
   if (space->meta_label != nullptr) {
+    // A space in a second profile says which one: the sidebar is the only place
+    // the profile is visible, and "why am I logged out here" should be obvious.
+    std::string prefix;
+    if (space->profile != nullptr && !space->profile->is_default) {
+      prefix = space->profile->name + " - ";
+    }
     std::string meta;
     if (space->is_user) {
-      meta = "Your profile";
+      meta = prefix + "Your profile";
     } else if (space->ownership != "agent") {
-      meta = "You have control";
+      meta = prefix + "You have control";
     } else if (!space->agent_state.empty()) {
-      meta = space->agent_state;
+      meta = prefix + space->agent_state;
     } else if (space->tabs.size() == 1) {
-      meta = "Agent space - 1 tab";
+      meta = prefix + "Agent space - 1 tab";
     } else {
-      meta = "Agent space - " + std::to_string(space->tabs.size()) + " tabs";
+      meta = prefix + "Agent space - " + std::to_string(space->tabs.size()) + " tabs";
     }
     gtk_label_set_text(GTK_LABEL(space->meta_label), meta.c_str());
   }
@@ -1252,13 +1894,16 @@ void Shell::DestroySpace(Space* space) {
   }
   const bool was_active = (active_space_ == space);
   const std::string space_id = space->id;
+  const std::string profile_id = space->profile != nullptr ? space->profile->id : "";
   if (space->row != nullptr) {
     gtk_widget_destroy(space->row);
     space->row = nullptr;
   }
-  space->context = nullptr;  // release the request context
-  std::fprintf(stderr, "[rook] space %s destroyed (request context released)\n",
-               space_id.c_str());
+  // The request context belongs to the profile, not the space: other spaces of
+  // the same profile are still using it, so nothing is released here.
+  std::fprintf(stderr,
+               "[rook] space %s destroyed (profile %s storage kept)\n",
+               space_id.c_str(), profile_id.c_str());
   for (auto it = spaces_.begin(); it != spaces_.end(); ++it) {
     if (it->get() == space) {
       spaces_.erase(it);
@@ -1422,12 +2067,23 @@ Tab* Shell::OpenTab(Space* space,
   gtk_widget_set_hexpand(tab->host, TRUE);
   gtk_widget_set_vexpand(tab->host, TRUE);
   gtk_widget_set_size_request(tab->host, 120, 120);
+  // Focusable, so GTK has somewhere to put "the keyboard is in this tab" and
+  // the focus handlers below can turn that into browser focus. Without it a
+  // click on the page left GTK's focus widget on a toolbar button and the
+  // keystrokes went there.
+  gtk_widget_set_can_focus(tab->host, TRUE);
   if (root_visual_ != nullptr) {
     gtk_widget_set_visual(tab->host, root_visual_);
   }
   AttachId(tab->host, tab->id);
   g_signal_connect(tab->host, "configure-event", G_CALLBACK(OnTabHostConfigure),
                    nullptr);
+  g_signal_connect(tab->host, "focus-in-event", G_CALLBACK(OnTabHostFocusInEvent),
+                   nullptr);
+  g_signal_connect(tab->host, "focus-out-event", G_CALLBACK(OnTabHostFocusOutEvent),
+                   nullptr);
+  g_signal_connect(tab->host, "button-press-event",
+                   G_CALLBACK(OnTabHostButtonPressEvent), nullptr);
   gtk_container_add(GTK_CONTAINER(content_), tab->host);
 
   tab->item = CreateTabItem(tab.get());
@@ -1495,7 +2151,8 @@ void Shell::CreateBrowserForTab(Tab* tab) {
 
   CefRefPtr<CefClient> client(new BrowserClient(this, tab->id));
   const bool ok = CefBrowserHost::CreateBrowser(
-      window_info, client, tab->url, browser_settings, nullptr, tab->space->context);
+      window_info, client, tab->url, browser_settings, nullptr,
+      ContextFor(tab->space != nullptr ? tab->space->profile : nullptr));
   if (!ok) {
     std::fprintf(stderr, "[rook] CreateBrowser failed for tab %s\n", tab->id.c_str());
     tab->loaded = true;
@@ -1557,7 +2214,9 @@ void Shell::ActivateTab(Tab* tab, bool reveal_space) {
     CefRefPtr<CefBrowserHost> host = tab->browser->GetHost();
     host->WasResized();
     host->Invalidate(PET_VIEW);
-    host->SetFocus(true);
+    // Switching tabs (or spaces) is also a keyboard hand-off: the tab now on
+    // screen takes the keyboard, the one that was on screen gives it up.
+    FocusPage(tab);
   }
   if (url_entry_ != nullptr) {
     gtk_entry_set_text(GTK_ENTRY(url_entry_), tab->url.c_str());
@@ -1725,6 +2384,13 @@ void Shell::OnBrowserCreated(const std::string& tab_id, CefRefPtr<CefBrowser> br
   std::fprintf(stderr, "[rook] tab %s browser ready (xid 0x%lx)\n", tab_id.c_str(),
                static_cast<unsigned long>(browser->GetHost()->GetWindowHandle()));
   ApplyVisibility(tab);  // a tab created in a hidden space starts parked
+  WatchBrowserInput(tab);
+  // A page created for the tab that is already on screen can take the keyboard
+  // right away: that is what makes typing work immediately after a launch or a
+  // new tab, without a click first.
+  if (tab->space == active_space_ && tab->space->active == tab) {
+    FocusPage(tab);
+  }
 
   // A bridge sends Page.enable the instant createTab returns, which is before
   // CEF gets here. Those messages waited in the tab; hand them over in order.
@@ -1736,7 +2402,8 @@ void Shell::OnBrowserCreated(const std::string& tab_id, CefRefPtr<CefBrowser> br
     for (const std::string& message : tab->pending_cdp) {
       if (!host->SendDevToolsMessage(message.data(), message.size()) && control_) {
         control_->PushCdpError(tab_id, -32002,
-                               "CEF rejected a queued DevTools message (malformed JSON?)");
+                               "CEF rejected a queued DevTools message (malformed JSON?)",
+                               std::string());
       }
     }
     tab->pending_cdp.clear();
@@ -2043,8 +2710,10 @@ void Shell::Navigate(Tab* tab, const std::string& input) {
   }
   if (tab == active_tab() && url_entry_ != nullptr) {
     gtk_entry_set_text(GTK_ENTRY(url_entry_), url.c_str());
-    if (tab->browser) {
-      tab->browser->GetHost()->SetFocus(true);
+    if (tab->browser && !gtk_widget_has_focus(url_entry_)) {
+      // Keep the page's keyboard claim across a navigation, unless the user is
+      // typing in the address bar right now (Enter/Escape handle that case).
+      FocusPage(tab);
     }
   }
   UpdateTabItem(tab);
@@ -2088,12 +2757,18 @@ std::string TabJson(const Tab* tab, const Tab* active) {
 }
 
 std::string SpaceJson(const Space* space, const Space* active_space, bool with_tabs) {
+  const Profile* profile = space->profile;
+  const std::string profile_id = profile != nullptr ? profile->id : "";
   std::string json = "{\"spaceId\":\"" + JsonEscape(space->id) + "\"";
   json += ",\"name\":\"" + JsonEscape(space->name) + "\"";
   json += ",\"user\":" + std::string(space->is_user ? "true" : "false");
   json += ",\"active\":" + std::string(space == active_space ? "true" : "false");
   json += ",\"ownership\":\"" + JsonEscape(space->ownership) + "\"";
   json += ",\"agentState\":\"" + JsonEscape(space->agent_state) + "\"";
+  json += ",\"profileId\":\"" + JsonEscape(profile_id) + "\"";
+  json += ",\"profileName\":\"" +
+          JsonEscape(profile != nullptr ? profile->name : "") + "\"";
+  // The profile's storage dir: every space of the profile reads this one tree.
   json += ",\"cache\":\"" + JsonEscape(space->cache_path) + "\"";
   json += ",\"tabCount\":" + std::to_string(space->tabs.size());
   json += ",\"activeTabId\":\"" + JsonEscape(space->active != nullptr ? space->active->id
@@ -2154,9 +2829,30 @@ std::string Shell::TabsJson(const std::string& space_id) const {
   std::string json = "{\"spaceId\":\"" + JsonEscape(space->id) + "\"";
   json += ",\"name\":\"" + JsonEscape(space->name) + "\"";
   json += ",\"ownership\":\"" + JsonEscape(space->ownership) + "\"";
+  json += ",\"profileId\":\"" +
+          JsonEscape(space->profile != nullptr ? space->profile->id : "") + "\"";
   json += ",\"activeTabId\":\"" +
           JsonEscape(space->active != nullptr ? space->active->id : "") + "\"";
   json += ",\"tabs\":" + TabsArray(space) + "}";
+  return json;
+}
+
+std::string Shell::ProfilesJson() const {
+  std::string json = "{\"defaultProfileId\":\"" + JsonEscape(default_profile_id_) +
+                     "\",\"profiles\":[";
+  bool first = true;
+  for (const auto& profile : profiles_) {
+    if (!first) {
+      json += ",";
+    }
+    first = false;
+    json += "{\"id\":\"" + JsonEscape(profile->id) + "\"";
+    json += ",\"name\":\"" + JsonEscape(profile->name) + "\"";
+    json += ",\"isDefault\":" + std::string(profile->is_default ? "true" : "false");
+    json += ",\"path\":\"" + JsonEscape(profile->root_path) + "\"";
+    json += "}";
+  }
+  json += "]}";
   return json;
 }
 
@@ -2249,6 +2945,475 @@ void Shell::UiFocusAddressBar() {
   gtk_editable_select_region(GTK_EDITABLE(url_entry_), 0, -1);
 }
 
+void Shell::UiCancelAddressBar() {
+  // Escape abandons the edit: put the tab's own URL back and hand the keyboard
+  // back to the page. Without the second half the entry kept the keystrokes and
+  // whatever came next was appended to the address.
+  Tab* tab = active_tab();
+  if (url_entry_ != nullptr) {
+    if (tab != nullptr) {
+      gtk_entry_set_text(GTK_ENTRY(url_entry_), tab->url.c_str());
+    }
+    gtk_editable_select_region(GTK_EDITABLE(url_entry_), 0, 0);
+  }
+  if (tab != nullptr) {
+    FocusPage(tab);
+  }
+}
+
+void Shell::UiFocusActivePage() {
+  if (Tab* tab = active_tab()) {
+    FocusPage(tab);
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Keyboard focus
+// ---------------------------------------------------------------------------
+
+void Shell::QueuePageFocus(const std::string& tab_id) {
+  if (!tab_id.empty()) {
+    queued_focus_tab_ = tab_id;
+  }
+  if (page_focus_source_ != 0 || shutting_down_) {
+    return;
+  }
+  // Deferred on purpose: both callers run in the middle of someone else's event
+  // handling (Chromium's focus notification, or GTK's own focus move on a
+  // click), and the hand-off has to happen after that has finished.
+  page_focus_source_ = g_idle_add(&Shell::OnPageFocusIdle, this);
+}
+
+gboolean Shell::OnPageFocusIdle(gpointer data) {
+  auto* shell = static_cast<Shell*>(data);
+  if (shell != nullptr) {
+    shell->page_focus_source_ = 0;
+    shell->ApplyQueuedPageFocus();
+  }
+  return G_SOURCE_REMOVE;
+}
+
+bool Shell::PageHasXFocus(Tab* tab) const {
+  Display* display = XDisplayOf();
+  if (display == nullptr || tab == nullptr || !tab->browser) {
+    return false;
+  }
+  const CefWindowHandle handle = tab->browser->GetHost()->GetWindowHandle();
+  if (handle == 0) {
+    return false;
+  }
+  Window focus = 0;
+  int revert = 0;
+  XGetInputFocus(display, &focus, &revert);
+  // CEF puts its input window one level below the window GetWindowHandle
+  // reports, so any descendant counts.
+  for (int depth = 0; depth < 4 && focus != 0; ++depth) {
+    if (focus == static_cast<Window>(handle)) {
+      return true;
+    }
+    Window root = 0;
+    Window parent = 0;
+    Window* children = nullptr;
+    unsigned int child_count = 0;
+    if (XQueryTree(display, focus, &root, &parent, &children, &child_count) == 0) {
+      return false;
+    }
+    if (children != nullptr) {
+      XFree(children);
+    }
+    if (parent == 0 || parent == focus) {
+      return false;
+    }
+    focus = parent;
+  }
+  return false;
+}
+
+void Shell::ApplyQueuedPageFocus() {
+  const std::string tab_id = queued_focus_tab_;
+  queued_focus_tab_.clear();
+  if (shutting_down_ || in_focus_page_) {
+    return;
+  }
+  // The address bar is being edited: it keeps the keyboard, and the focus move
+  // that got us here was the user clicking into it.
+  if (url_entry_ != nullptr && gtk_widget_has_focus(url_entry_)) {
+    FocusChrome();
+    return;
+  }
+  Tab* tab = tab_id.empty() ? active_tab() : FindTab(tab_id);
+  if (tab == nullptr || !tab->browser) {
+    return;
+  }
+  if (keyboard_tab_id_ == tab->id && PageHasXFocus(tab)) {
+    return;  // already where it belongs
+  }
+  // A click into the page also abandons a half-typed address.
+  FocusPage(tab, true);
+}
+
+void Shell::OnBrowserFocus(const std::string& tab_id) {
+  if (in_set_focus_call_) {
+    return;  // our own SetFocus(true) being reported straight back
+  }
+  // This lands while the click is being processed: take the X focus back now, so
+  // the keystrokes that follow the click are not lost to a deferred hand-off.
+  //
+  // Unless the chrome is being typed into. Chromium reports its widget taking
+  // focus again when the X focus moves to our toplevel (Ctrl+L, a click into the
+  // address bar), and grabbing it back for the page there would send the
+  // keystrokes meant for the address bar to the page instead.
+  const bool chrome_owns_keyboard =
+      url_entry_ != nullptr && gtk_widget_has_focus(url_entry_);
+  if (Tab* tab = FindTab(tab_id)) {
+    if (!chrome_owns_keyboard && tab->browser != nullptr && tab->space == active_space_ &&
+        tab->space->active == tab && !PageHasXFocus(tab)) {
+      FocusXWindow(static_cast<unsigned long>(tab->browser->GetHost()->GetWindowHandle()));
+    }
+  }
+  // Chromium says the page took focus, which is what happens when the user
+  // clicks into it - on top of navigation and programmatic focus. GTK never sees
+  // that click (it goes straight to CEF's window), so this is the shell's only
+  // notice that the keyboard should move to the page.
+  QueuePageFocus(tab_id);
+}
+
+void Shell::GrabChromeShortcuts() {
+  Display* display = XDisplayOf();
+  GdkWindow* gdk_window = window_ != nullptr ? gtk_widget_get_window(window_) : nullptr;
+  if (display == nullptr || gdk_window == nullptr) {
+    return;
+  }
+  const Window window = GDK_WINDOW_XID(gdk_window);
+  GdkDisplay* gdk_display = gdk_display_get_default();
+  if (gdk_display == nullptr) {
+    return;
+  }
+  gdk_x11_display_error_trap_push(gdk_display);
+  // Ctrl+L/W/T/R are the shell's shortcuts, and once the page owns the keyboard
+  // CEF receives those keys instead of GTK. A keyboard grab on the toplevel takes
+  // just these four combinations back, before CEF's window sees them; every
+  // other key is untouched. Each combination has to be grabbed once per lock
+  // modifier the user may have on (Num Lock, Caps Lock, both) or it would only
+  // work with the locks off.
+  const unsigned int locks[] = {0, LockMask, Mod2Mask, LockMask | Mod2Mask};
+  for (const char* name : {"l", "w", "t", "r"}) {
+    const KeyCode code = XKeysymToKeycode(display, XStringToKeysym(name));
+    if (code == 0) {
+      continue;
+    }
+    for (unsigned int lock : locks) {
+      XGrabKey(display, code, ControlMask | lock, window, False, GrabModeAsync,
+               GrabModeAsync);
+    }
+  }
+  XFlush(display);
+  const int grab_error = EndXErrorTrap();
+  std::fprintf(stderr, "[rook] chrome shortcut grabs on 0x%lx: %s\n", window,
+               grab_error != 0 ? "X error" : "installed");
+}
+
+Tab* Shell::TabForXid(unsigned long xid) const {
+  Display* display = XDisplayOf();
+  if (display == nullptr || xid == 0) {
+    return nullptr;
+  }
+  // Chromium keeps its input window one level below the window GetWindowHandle
+  // reports, so any descendant of a tab's browser window belongs to that tab.
+  Window current = static_cast<Window>(xid);
+  for (int depth = 0; depth < 12 && current != 0; ++depth) {
+    for (auto& space : spaces_) {
+      for (auto& tab : space->tabs) {
+        if (!tab->browser) {
+          continue;
+        }
+        const CefWindowHandle handle = tab->browser->GetHost()->GetWindowHandle();
+        if (handle != 0 && static_cast<Window>(handle) == current) {
+          return tab.get();
+        }
+      }
+    }
+    Window root = 0;
+    Window parent = 0;
+    Window* children = nullptr;
+    unsigned int child_count = 0;
+    if (XQueryTree(display, current, &root, &parent, &children, &child_count) == 0) {
+      return nullptr;
+    }
+    if (children != nullptr) {
+      XFree(children);
+    }
+    if (parent == 0 || parent == current || parent == root) {
+      return nullptr;
+    }
+    current = parent;
+  }
+  return nullptr;
+}
+
+void Shell::WatchBrowserInput(Tab* tab) {
+  if (tab == nullptr || tab->browser == nullptr) {
+    return;
+  }
+  Display* display = XDisplayOf();
+  if (display == nullptr) {
+    return;
+  }
+  const CefWindowHandle handle = tab->browser->GetHost()->GetWindowHandle();
+  if (handle == 0) {
+    return;
+  }
+  // Ask GDK's connection for the pointer crossings of CEF's window as well as
+  // Chromium's own: X event masks are per client, so this takes nothing away
+  // from CEF but makes "the pointer just entered the page" visible to the shell.
+  std::vector<Window> pending{static_cast<Window>(handle)};
+  for (size_t i = 0; i < pending.size() && i < 16; ++i) {
+    XSelectInput(display, pending[i], EnterWindowMask);
+    Window root = 0;
+    Window parent = 0;
+    Window* children = nullptr;
+    unsigned int child_count = 0;
+    if (XQueryTree(display, pending[i], &root, &parent, &children, &child_count) == 0) {
+      continue;
+    }
+    for (unsigned int child = 0; child < child_count; ++child) {
+      pending.push_back(children[child]);
+    }
+    if (children != nullptr) {
+      XFree(children);
+    }
+  }
+  XFlush(display);
+}
+
+void Shell::StartFocusGuard() {
+  if (focus_guard_source_ != 0) {
+    return;
+  }
+  focus_guard_ticks_ = 0;
+  // 10 ms: the keystrokes that follow a click can start within a few
+  // milliseconds, so this has to outrun them.
+  focus_guard_source_ = g_timeout_add(10, &Shell::OnFocusGuardTick, this);
+}
+
+gboolean Shell::OnFocusGuardTick(gpointer data) {
+  auto* shell = static_cast<Shell*>(data);
+  if (shell == nullptr) {
+    return G_SOURCE_REMOVE;
+  }
+  Tab* tab = shell->active_tab();
+  if (shell->shutting_down_ || tab == nullptr || tab->browser == nullptr) {
+    shell->focus_guard_source_ = 0;
+    return G_SOURCE_REMOVE;
+  }
+  // The address bar being edited outranks the page, and a page that already has
+  // the focus needs no help: stop the guard.
+  if (shell->url_entry_ != nullptr && gtk_widget_has_focus(shell->url_entry_)) {
+    shell->focus_guard_source_ = 0;
+    return G_SOURCE_REMOVE;
+  }
+  if (shell->PageHasXFocus(tab)) {
+    shell->focus_guard_source_ = 0;
+    return G_SOURCE_REMOVE;
+  }
+  // Only if the keyboard is somewhere in this window already: never pull it off
+  // another application.
+  Display* display = XDisplayOf();
+  const unsigned long toplevel =
+      shell->window_ != nullptr && gtk_widget_get_window(shell->window_) != nullptr
+          ? GDK_WINDOW_XID(gtk_widget_get_window(shell->window_))
+          : 0;
+  if (display != nullptr && toplevel != 0 && XFocusBelongsTo(display, toplevel)) {
+    FocusXWindow(
+        static_cast<unsigned long>(tab->browser->GetHost()->GetWindowHandle()));
+  }
+  shell->focus_guard_ticks_ += 1;
+  if (shell->focus_guard_ticks_ > 40) {  // ~400 ms, then give up
+    shell->focus_guard_source_ = 0;
+    return G_SOURCE_REMOVE;
+  }
+  return G_SOURCE_CONTINUE;
+}
+
+void Shell::OnPointerEnter(unsigned long xid) {
+  Tab* tab = TabForXid(xid);
+  if (tab == nullptr || tab->space != active_space_ || tab->space->active != tab) {
+    return;
+  }
+  // The pointer entered the page: this is the shell's only notice that the user
+  // is about to work in it (the click itself goes straight to Chromium, which
+  // never reports it to GTK). The X focus moves right here, before the click and
+  // the keystrokes that follow it, so no character can be typed into the chrome
+  // in between; the rest of the hand-off (GTK focus, CEF focus flag) is queued
+  // because GTK widget calls do not belong inside an event filter.
+  if (keyboard_tab_id_ == tab->id && PageHasXFocus(tab)) {
+    return;  // the page still owns the keyboard: nothing to hand over
+  }
+  if (tab->browser) {
+    FocusXWindow(static_cast<unsigned long>(tab->browser->GetHost()->GetWindowHandle()));
+  }
+  QueuePageFocus(tab->id);
+  StartFocusGuard();
+}
+
+void Shell::OnXFocusIn(unsigned long xid) {
+  // GTK or the window manager put the X keyboard focus back on one of our own
+  // windows. When that follows a click on the page, the page must take it back;
+  // when the user clicked the address bar, ApplyQueuedPageFocus sees the entry's
+  // focus and leaves it alone.
+  Display* display = XDisplayOf();
+  const unsigned long toplevel =
+      window_ != nullptr && gtk_widget_get_window(window_) != nullptr
+          ? GDK_WINDOW_XID(gtk_widget_get_window(window_))
+          : 0;
+  if (display == nullptr || toplevel == 0 || xid == 0) {
+    return;
+  }
+  Window current = static_cast<Window>(xid);
+  for (int depth = 0; depth < 12 && current != 0; ++depth) {
+    if (current == static_cast<Window>(toplevel)) {
+      QueuePageFocus(std::string());
+      return;
+    }
+    Window root = 0;
+    Window parent = 0;
+    Window* children = nullptr;
+    unsigned int child_count = 0;
+    if (XQueryTree(display, current, &root, &parent, &children, &child_count) == 0) {
+      return;
+    }
+    if (children != nullptr) {
+      XFree(children);
+    }
+    if (parent == 0 || parent == current) {
+      return;
+    }
+    current = parent;
+  }
+}
+
+void Shell::FocusPage(Tab* tab, bool reset_address) {
+  if (tab == nullptr || tab->space == nullptr || tab->browser == nullptr) {
+    return;
+  }
+  // Only the page on screen may own the keyboard: a parked tab has no viewable
+  // X window (XSetInputFocus would be a BadMatch) and must not keep a focus
+  // claim that competes with the visible one.
+  if (tab->space != active_space_ || tab->space->active != tab) {
+    return;
+  }
+  if (in_focus_page_) {
+    return;
+  }
+  in_focus_page_ = true;
+
+  for (auto& space : spaces_) {
+    for (auto& other : space->tabs) {
+      if (other.get() == tab || !other->browser) {
+        continue;
+      }
+      other->browser->GetHost()->SetFocus(false);
+    }
+  }
+
+  if (reset_address && url_entry_ != nullptr && !gtk_widget_has_focus(url_entry_)) {
+    gtk_entry_set_text(GTK_ENTRY(url_entry_), tab->url.c_str());
+    gtk_editable_select_region(GTK_EDITABLE(url_entry_), 0, 0);
+  }
+
+  if (tab->host != nullptr) {
+    // GTK-side focus. Also what makes the entry drop its cursor: a page with
+    // the keyboard must not look like it is still waiting for a URL.
+    gtk_widget_grab_focus(tab->host);
+  }
+
+  CefRefPtr<CefBrowserHost> host = tab->browser->GetHost();
+  keyboard_tab_id_ = tab->id;
+  in_set_focus_call_ = true;
+  host->SetFocus(true);
+  in_set_focus_call_ = false;
+
+  // The piece GTK and CEF do not do for us. Without this the keystrokes stayed
+  // with the toplevel (GTK focused one of its own widgets on every click) and
+  // the page never saw a key, even though it had DOM focus.
+  Display* display = XDisplayOf();
+  const unsigned long toplevel =
+      window_ != nullptr && gtk_widget_get_window(window_) != nullptr
+          ? GDK_WINDOW_XID(gtk_widget_get_window(window_))
+          : 0;
+  if (toplevel == 0 || XFocusBelongsTo(display, toplevel)) {
+    // Only take the X focus when this application already has it: an agent
+    // opening a tab in the background must not pull the keyboard off whatever
+    // the user is typing into.
+    FocusXWindow(static_cast<unsigned long>(host->GetWindowHandle()));
+  }
+
+  in_focus_page_ = false;
+}
+
+void Shell::FocusChrome() {
+  if (in_focus_page_) {
+    return;
+  }
+  keyboard_tab_id_.clear();
+  in_focus_page_ = true;  // the focus change below must not bounce back
+  if (Tab* tab = active_tab()) {
+    if (tab->browser) {
+      tab->browser->GetHost()->SetFocus(false);
+    }
+  }
+  if (window_ != nullptr) {
+    if (GdkWindow* gdk_window = gtk_widget_get_window(window_)) {
+      // The GDK call asks the window manager (when there is one) and is enough
+      // on a desktop; with no window manager at all — Xvfb, a bare X session —
+      // it is a no-op, and the keystrokes meant for the address bar would keep
+      // going to the page. Set the X focus on our own toplevel as well; that is
+      // the same call FocusPage uses in the other direction.
+      gdk_window_focus(gdk_window, GDK_CURRENT_TIME);
+      FocusXWindow(GDK_WINDOW_XID(gdk_window));
+    }
+  }
+  in_focus_page_ = false;
+}
+
+void Shell::OnWindowFocusIn() {
+  if (in_focus_page_) {
+    return;
+  }
+  // Coming back from another application: a widget the user was editing keeps
+  // the keyboard, everything else hands it back to the page.
+  if (url_entry_ != nullptr && gtk_widget_has_focus(url_entry_)) {
+    FocusChrome();
+    return;
+  }
+  if (Tab* tab = active_tab()) {
+    FocusPage(tab);
+  }
+}
+
+bool Shell::HandleChromeShortcut(int keyval) {
+  // Ctrl+<key> arriving while the page has the keyboard. The keys are grabbed on
+  // the toplevel (GrabChromeShortcuts), so they reach the shell even though X
+  // delivers everything else to Chromium's window; without the grab the window
+  // shortcuts would only work while the address bar had the keyboard.
+  switch (gdk_keyval_to_lower(static_cast<guint>(keyval))) {
+    case GDK_KEY_t:
+      UiNewTab();
+      return true;
+    case GDK_KEY_w:
+      UiCloseActiveTab();
+      return true;
+    case GDK_KEY_l:
+      UiFocusAddressBar();
+      return true;
+    case GDK_KEY_r:
+      UiReload();
+      return true;
+    default:
+      return false;
+  }
+}
+
 // ---------------------------------------------------------------------------
 // Control channel: CDP broker and agent state
 // ---------------------------------------------------------------------------
@@ -2337,27 +3502,49 @@ bool Shell::CdpSweepTick() {
 }
 
 void Shell::HandOffSpace(Space* space) {
-  if (space == nullptr) {
+  if (space == nullptr || space->closing) {
     return;
   }
+  OpScope op_scope(this);
+  const bool changed = space->ownership != "user";
   space->ownership = "user";
   std::fprintf(stderr, "[rook] space %s handed off to the user\n", space->id.c_str());
   UpdateSpaceRow(space);
+  // A handoff is more than a flag: the window goes to the space, the page takes
+  // the keyboard, and the banner says who is driving. Without the first two the
+  // user has to find the space and click into it before the first keystroke
+  // counts, which is exactly what "the agent paused" is supposed to save them.
+  ActivateSpace(space);
+  if (space->active != nullptr) {
+    if (window_ != nullptr) {
+      gtk_window_present(GTK_WINDOW(window_));
+    }
+    FocusPage(space->active, true);
+  }
   UpdateBanner();
-  PushEvent("control.changed", "{\"spaceId\":\"" + JsonEscape(space->id) +
-                                   "\",\"state\":\"user\"}");
+  std::fprintf(stderr,
+               "[rook] handoff banner: You have control — Rook is paused (%s)\n",
+               space->name.c_str());
+  if (changed) {
+    PushEvent("control.changed", "{\"spaceId\":\"" + JsonEscape(space->id) +
+                                     "\",\"state\":\"user\"}");
+  }
 }
 
 void Shell::TakeOverSpace(Space* space) {
-  if (space == nullptr) {
+  if (space == nullptr || space->closing) {
     return;
   }
+  OpScope op_scope(this);
+  const bool changed = space->ownership != "agent";
   space->ownership = "agent";
   std::fprintf(stderr, "[rook] space %s taken over by the agent\n", space->id.c_str());
   UpdateSpaceRow(space);
   UpdateBanner();
-  PushEvent("control.changed", "{\"spaceId\":\"" + JsonEscape(space->id) +
-                                   "\",\"state\":\"agent\"}");
+  if (changed) {
+    PushEvent("control.changed", "{\"spaceId\":\"" + JsonEscape(space->id) +
+                                     "\",\"state\":\"agent\"}");
+  }
 }
 
 void Shell::SetAgentState(Space* space, const std::string& state) {
@@ -2390,9 +3577,10 @@ void Shell::UpdateBanner() {
   const Space* space = active_space_;
   std::string text;
   if (space != nullptr && !space->is_user && space->ownership != "agent") {
-    text = "Agent paused - you have control of \"" + space->name + "\"";
+    text = "You have control — Rook is paused";
+    text += "   |   " + space->name;
     if (!space->agent_state.empty()) {
-      text += "  |  " + space->agent_state;
+      text += "   |   " + space->agent_state;
     }
   }
   gtk_label_set_text(GTK_LABEL(banner_label_), text.c_str());
@@ -2480,21 +3668,25 @@ void Shell::OnConsoleMessage(const std::string& tab_id,
 
 void Shell::PrintIsolationReport() {
   for (const auto& space : spaces_) {
+    const std::string profile_id =
+        space->profile != nullptr ? space->profile->id : "";
     const auto found = storage_reports_.find(space->id);
     if (found == storage_reports_.end()) {
-      std::fprintf(stderr, "[isolation] space=\"%s\" error=\"no storage report\"\n",
-                   space->name.c_str());
+      std::fprintf(stderr,
+                   "[isolation] space=\"%s\" profile=\"%s\" error=\"no storage report\"\n",
+                   space->name.c_str(), profile_id.c_str());
       continue;
     }
     const std::string error = JsonField(found->second, "error");
     if (!error.empty()) {
-      std::fprintf(stderr, "[isolation] space=\"%s\" error=\"%s\"\n",
-                   space->name.c_str(), error.c_str());
+      std::fprintf(stderr, "[isolation] space=\"%s\" profile=\"%s\" error=\"%s\"\n",
+                   space->name.c_str(), profile_id.c_str(), error.c_str());
       continue;
     }
     std::fprintf(stderr,
-                 "[isolation] space=\"%s\" localStorage=\"%s\" cookie=\"%s\"\n",
-                 space->name.c_str(), JsonField(found->second, "ls").c_str(),
+                 "[isolation] space=\"%s\" profile=\"%s\" localStorage=\"%s\" cookie=\"%s\"\n",
+                 space->name.c_str(), profile_id.c_str(),
+                 JsonField(found->second, "ls").c_str(),
                  JsonField(found->second, "ck").c_str());
   }
 }

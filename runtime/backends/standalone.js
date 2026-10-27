@@ -1,4 +1,20 @@
+import { mkdir } from "node:fs/promises";
+import { dirname, join } from "node:path";
+
 import { ensureBrowser, releaseBrowserHandles } from "../browser.js";
+import { profileDataDir, runtimeHome } from "../paths.js";
+import {
+  listProfiles as listChromeProfiles,
+  readJsonFile,
+  writeJsonFile,
+} from "../store.js";
+
+/** Display names for standalone profiles live beside the profile directories. */
+const PROFILE_NAMES_FILE = "profiles.json";
+
+function profileNamesFile() {
+  return join(runtimeHome(), PROFILE_NAMES_FILE);
+}
 
 /**
  * The stock-Chrome backend: one headless Chromium per profile, one browser
@@ -35,6 +51,14 @@ export class StandaloneBackend {
   describe() {
     const port = this.#handle?.port;
     return port ? `chrome profile ${this.#profileId} (port ${port})` : `chrome profile ${this.#profileId}`;
+  }
+
+  /**
+   * A browser context id is the space identity here, and Chrome owns the
+   * numbering, so there is no app instance to bind a persisted space record to.
+   */
+  async instanceKey() {
+    return null;
   }
 
   openFrameListener(listener) {
@@ -78,6 +102,8 @@ export class StandaloneBackend {
 
   async createSpace(name, space) {
     await this.open();
+    // `space.profileId` is not used here: this backend *is* one Chrome for one
+    // profile (`ensureBrowser(this.#profileId)`), so every context belongs to it.
     const connection = this.connection;
     const created = await connection.request("Target.createBrowserContext", {
       disposeOnDetach: false,
@@ -113,6 +139,55 @@ export class StandaloneBackend {
   /** Chrome spaces live in browser contexts, so there is nothing to verify. */
   async listSpaceIds() {
     return null;
+  }
+
+  // --- profiles ----------------------------------------------------------
+
+  /**
+   * A standalone profile is a Chrome `--user-data-dir` plus, for this process,
+   * one Chrome. A task space is a browser *context* inside that Chrome, so
+   * spaces are isolated from each other here — the opposite of the app, where a
+   * profile is the boundary and its spaces share storage. No browser has to be
+   * running to list or create a profile directory.
+   */
+  async listProfiles() {
+    const [profiles, names] = await Promise.all([listChromeProfiles(), this.#profileNames()]);
+    return profiles.map((profile) => ({
+      id: profile.id,
+      // A directory the bridge did not name keeps its id as the name.
+      name: typeof names[profile.id] === "string" ? names[profile.id] : profile.name,
+      isDefault: profile.isDefault === true,
+    }));
+  }
+
+  /**
+   * Profiles become visible once they hold a Chromium profile directory, which
+   * is what `listProfiles()` looks for. Chrome fills that directory on first
+   * launch, so creating the profile is just creating the directory.
+   */
+  async createProfile(name) {
+    const trimmed = typeof name === "string" ? name.trim() : "";
+    if (trimmed === "") throw invalidProfileName("createProfile requires a non-empty name");
+    const [existing, names] = await Promise.all([listChromeProfiles(), this.#profileNames()]);
+    const sameName = existing.some(
+      (profile) => (names[profile.id] ?? profile.name).toLowerCase() === trimmed.toLowerCase(),
+    );
+    if (sameName) {
+      throw invalidProfileName(`a profile named ${JSON.stringify(trimmed)} already exists`);
+    }
+    const taken = new Set(existing.map((profile) => profile.id));
+    const base = slugifyProfile(trimmed);
+    let id = base;
+    for (let suffix = 2; taken.has(id); suffix += 1) id = `${base}-${suffix}`;
+    await mkdir(profileDataDir(id), { recursive: true });
+    await mkdir(dirname(profileNamesFile()), { recursive: true });
+    await writeJsonFile(profileNamesFile(), { ...names, [id]: trimmed });
+    return { id, name: trimmed, isDefault: false };
+  }
+
+  async #profileNames() {
+    const names = await readJsonFile(profileNamesFile(), {});
+    return names && typeof names === "object" && !Array.isArray(names) ? names : {};
   }
 
   async handOff() {}
@@ -219,4 +294,19 @@ export class StandaloneBackend {
       }
     };
   }
+}
+
+function invalidProfileName(message) {
+  const error = new TypeError(message);
+  error.error_code = "EGO_INVALID_ARGUMENT";
+  return error;
+}
+
+/** "Work laptop" -> "work-laptop", the id the profile directory is named after. */
+function slugifyProfile(name) {
+  const slug = name
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-+|-+$/g, "");
+  return slug === "" ? "profile" : slug;
 }

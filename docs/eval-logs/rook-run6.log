@@ -1,0 +1,461 @@
+[rook] sandbox: enabled (user namespaces)
+[rook] extra switch: --password-store=basic
+
+(rook:2141938): Gtk-WARNING **: 15:46:55.014: gtk_disable_setlocale() must be called before gtk_init()
+[2141938:2141976:1027/154655.034561:ERROR:dbus/bus.cc:405] Failed to connect to the bus: Could not parse server address: Unknown address type (examples of valid types are "tcp" and on UNIX "unix")
+[2141938:2141976:1027/154655.035064:ERROR:dbus/bus.cc:405] Failed to connect to the bus: Could not parse server address: Unknown address type (examples of valid types are "tcp" and on UNIX "unix")
+[2141938:2141976:1027/154655.035106:ERROR:dbus/bus.cc:405] Failed to connect to the bus: Could not parse server address: Unknown address type (examples of valid types are "tcp" and on UNIX "unix")
+[2141938:2141976:1027/154655.057151:ERROR:dbus/bus.cc:405] Failed to connect to the bus: Could not parse server address: Unknown address type (examples of valid types are "tcp" and on UNIX "unix")
+[rook] rook 0.3.0-M3 (CEF 156.0.14+g4fa4ab5+chromium-156.0.8078.48), profile /tmp/opencode/rook-eval/home/.local/share/rook/profiles/default
+[rook] window xid 0x200003
+[rook] active tab tb1 (New tab)
+[rook] active tab tb1 (New tab)
+[rook] tab tb1 -> file:///tmp/opencode/rook-eval/home/.local/share/rook/shell/new-tab.html
+[rook] active tab tb1 (New tab)
+[rook] active tab tb1 (New tab)
+[rook] shell up: 1 space(s), profile /tmp/opencode/rook-eval/home/.local/share/rook/profiles/default, data /tmp/opencode/rook-eval/home/.local/share
+[control] listening on /tmp/opencode/rook-eval/run/rook-1000.sock (mode 0600, JSON-RPC 2.0)
+[2141938:2141938:1027/154655.102256:ERROR:dbus/object_proxy.cc:572] Failed to call method: org.freedesktop.DBus.NameHasOwner: object_path= /org/freedesktop/DBus: unknown error type: 
+[2141938:2141938:1027/154655.102355:ERROR:dbus/object_proxy.cc:572] Failed to call method: org.freedesktop.DBus.NameHasOwner: object_path= /org/freedesktop/DBus: unknown error type: 
+[2141938:2141976:1027/154655.102355:ERROR:dbus/bus.cc:405] Failed to connect to the bus: Could not parse server address: Unknown address type (examples of valid types are "tcp" and on UNIX "unix")
+[2141938:2141976:1027/154655.102430:ERROR:dbus/bus.cc:405] Failed to connect to the bus: Could not parse server address: Unknown address type (examples of valid types are "tcp" and on UNIX "unix")
+[2141938:2141938:1027/154655.104779:ERROR:dbus/object_proxy.cc:572] Failed to call method: org.freedesktop.DBus.NameHasOwner: object_path= /org/freedesktop/DBus: unknown error type: 
+[2141938:2141976:1027/154655.104886:ERROR:dbus/bus.cc:405] Failed to connect to the bus: Could not parse server address: Unknown address type (examples of valid types are "tcp" and on UNIX "unix")
+[rook] tab tb1 browser ready (xid 0xc00003)
+[2141938:2141938:1027/154655.118081:ERROR:dbus/object_proxy.cc:572] Failed to call method: org.freedesktop.DBus.NameHasOwner: object_path= /org/freedesktop/DBus: unknown error type: 
+[2141938:2141938:1027/154655.118495:ERROR:dbus/object_proxy.cc:572] Failed to call method: org.freedesktop.DBus.NameHasOwner: object_path= /org/freedesktop/DBus: unknown error type: 
+[2141938:2141938:1027/154655.119023:ERROR:dbus/object_proxy.cc:572] Failed to call method: org.freedesktop.DBus.NameHasOwner: object_path= /org/freedesktop/DBus: unknown error type: 
+[2141938:2141976:1027/154655.119506:ERROR:dbus/bus.cc:405] Failed to connect to the bus: Could not parse server address: Unknown address type (examples of valid types are "tcp" and on UNIX "unix")
+[2141938:2141938:1027/154655.132777:ERROR:dbus/object_proxy.cc:572] Failed to call method: org.freedesktop.DBus.NameHasOwner: object_path= /org/freedesktop/DBus: unknown error type: 
+[2141938:2141976:1027/154655.132921:ERROR:dbus/bus.cc:405] Failed to connect to the bus: Could not parse server address: Unknown address type (examples of valid types are "tcp" and on UNIX "unix")
+[2141938:2141938:1027/154655.138928:ERROR:dbus/object_proxy.cc:572] Failed to call method: org.freedesktop.DBus.NameHasOwner: object_path= /org/freedesktop/DBus: unknown error type: 
+[2141938:2141976:1027/154655.139070:ERROR:dbus/bus.cc:405] Failed to connect to the bus: Could not parse server address: Unknown address type (examples of valid types are "tcp" and on UNIX "unix")
+[2141938:2141938:1027/154655.140223:ERROR:dbus/object_proxy.cc:572] Failed to call method: org.freedesktop.DBus.NameHasOwner: object_path= /org/freedesktop/DBus: unknown error type: 
+[rook] tab tb1 loaded (http 200) file:///tmp/opencode/rook-eval/home/.local/share/rook/shell/new-tab.html
+[event] space.created {"spaceId":"sp2","name":"persist-space"}
+[event] tab.created {"spaceId":"sp2","tabId":"tb2","url":"about:blank"}
+[rook] active tab tb2 (about:blank)
+[event] tab.activated {"spaceId":"sp2","tabId":"tb2"}
+[rook] tab tb1 parked
+[rook] active tab tb2 (about:blank)
+[rook] tab tb2 -> about:blank
+[rook] active tab tb1 (New tab)
+[rook] tab tb2 browser ready (xid 0xc0000d)
+[rook] tab tb1 awake
+[rook] tab tb2 parked
+[rook] active tab tb1 (New tab)
+[rook] tab tb2 awake
+[rook] tab tb2 loaded (http 0) about:blank
+[rook] active tab tb2 (about:blank) [background]
+[event] tab.updated {"spaceId":"sp2","tabId":"tb2","url":"http://127.0.0.1:8781/private.html"}
+[event] tab.updated {"spaceId":"sp2","tabId":"tb2","title":"Private area"}
+[rook] tab tb2 loaded (http 200) http://127.0.0.1:8781/private.html
+[rook] active tab tb2 (Private area) [background]
+[rook] active tab tb2 (Private area) [background]
+[event] space.created {"spaceId":"sp3","name":"other-space"}
+[event] tab.created {"spaceId":"sp3","tabId":"tb3","url":"about:blank"}
+[rook] active tab tb3 (about:blank)
+[event] tab.activated {"spaceId":"sp3","tabId":"tb3"}
+[rook] tab tb1 parked
+[rook] active tab tb3 (about:blank)
+[rook] tab tb3 -> about:blank
+[rook] active tab tb1 (New tab)
+[rook] tab tb3 browser ready (xid 0xc00016)
+[rook] tab tb1 awake
+[rook] tab tb3 parked
+[rook] active tab tb1 (New tab)
+[rook] tab tb3 awake
+[rook] tab tb3 loaded (http 0) about:blank
+[rook] active tab tb3 (about:blank) [background]
+[event] tab.updated {"spaceId":"sp3","tabId":"tb3","url":"http://127.0.0.1:8781/private.html"}
+[event] tab.updated {"spaceId":"sp3","tabId":"tb3","title":"Denied"}
+[rook] tab tb3 loaded (http 401) http://127.0.0.1:8781/private.html
+[rook] active tab tb3 (Denied) [background]
+[rook] active tab tb3 (Denied) [background]
+[rook] tab tb2 parked
+[rook] tab tb3 parked
+[event] space.created {"spaceId":"sp4","name":"popup"}
+[event] tab.created {"spaceId":"sp4","tabId":"tb4","url":"about:blank"}
+[rook] active tab tb4 (about:blank)
+[event] tab.activated {"spaceId":"sp4","tabId":"tb4"}
+[rook] tab tb1 parked
+[rook] active tab tb4 (about:blank)
+[rook] tab tb4 -> about:blank
+[rook] active tab tb1 (New tab)
+[rook] tab tb4 browser ready (xid 0xc0001a)
+[rook] tab tb1 awake
+[rook] tab tb4 parked
+[rook] active tab tb1 (New tab)
+[rook] tab tb4 loaded (http 0) about:blank
+[rook] tab tb4 awake
+[rook] active tab tb4 (about:blank) [background]
+[event] tab.updated {"spaceId":"sp4","tabId":"tb4","url":"http://127.0.0.1:8781/popup.html"}
+[event] tab.updated {"spaceId":"sp4","tabId":"tb4","title":"Popup opener"}
+[rook] tab tb4 loaded (http 200) http://127.0.0.1:8781/popup.html
+[rook] active tab tb4 (Popup opener) [background]
+[rook] active tab tb4 (Popup opener) [background]
+[rook] space sp4 state "Clicking element"
+[rook] popup request from tb4: space sp4, window on sp1 (background)
+[event] tab.created {"spaceId":"sp4","tabId":"tb5","url":"http://127.0.0.1:8781/popup-child.html","openerTabId":"tb4","windowName":"kid"}
+[rook] active tab tb4 (Popup opener)
+[rook] tab tb1 parked
+[rook] active tab tb5 (127.0.0.1:8781)
+[event] tab.activated {"spaceId":"sp4","tabId":"tb5"}
+[rook] tab tb5 -> http://127.0.0.1:8781/popup-child.html
+[rook] active tab tb1 (New tab)
+[rook] tab tb5 browser ready (xid 0xc0001e)
+[event] tab.updated {"spaceId":"sp4","tabId":"tb5","title":"Popup child"}
+[rook] tab tb5 loaded (http 200) http://127.0.0.1:8781/popup-child.html
+[rook] tab tb1 awake
+[rook] tab tb5 parked
+[rook] active tab tb1 (New tab)
+[rook] popup tb5 from tb4 (name "kid")
+[rook] tab tb5 awake
+[rook] active tab tb5 (Popup child) [background]
+[rook] active tab tb5 (Popup child) [background]
+[rook] active tab tb4 (Popup opener) [background]
+[event] tab.activated {"spaceId":"sp4","tabId":"tb4"}
+[rook] active tab tb5 (Popup child) [background]
+[event] tab.activated {"spaceId":"sp4","tabId":"tb5"}
+[rook] active tab tb5 (Popup child) [background]
+[rook] active tab tb5 (Popup child) [background]
+[rook] space sp4 state "Clicking element"
+[rook] active tab tb5 (Popup child) [background]
+[rook] active tab tb5 (Popup child) [background]
+[rook] tab tb4 parked
+[rook] tab tb5 parked
+[event] space.created {"spaceId":"sp5","name":"iframe"}
+[event] tab.created {"spaceId":"sp5","tabId":"tb6","url":"about:blank"}
+[rook] active tab tb6 (about:blank)
+[event] tab.activated {"spaceId":"sp5","tabId":"tb6"}
+[rook] tab tb1 parked
+[rook] active tab tb6 (about:blank)
+[rook] tab tb6 -> about:blank
+[rook] active tab tb1 (New tab)
+[rook] tab tb6 browser ready (xid 0xc00022)
+[rook] tab tb1 awake
+[rook] tab tb6 parked
+[rook] active tab tb1 (New tab)
+[rook] tab tb6 awake
+[rook] tab tb6 loaded (http 0) about:blank
+[rook] active tab tb6 (about:blank) [background]
+[event] tab.updated {"spaceId":"sp5","tabId":"tb6","url":"http://127.0.0.1:8781/iframe.html"}
+[event] tab.updated {"spaceId":"sp5","tabId":"tb6","title":"Outer iframe page"}
+[rook] tab tb6 loaded (http 200) http://127.0.0.1:8781/iframe.html
+[rook] active tab tb6 (Outer iframe page) [background]
+[rook] active tab tb6 (Outer iframe page) [background]
+[rook] active tab tb6 (Outer iframe page) [background]
+[rook] space sp5 state "Clicking element"
+[rook] active tab tb6 (Outer iframe page) [background]
+[rook] active tab tb6 (Outer iframe page) [background]
+[rook] tab tb6 parked
+[event] space.created {"spaceId":"sp6","name":"files"}
+[event] tab.created {"spaceId":"sp6","tabId":"tb7","url":"about:blank"}
+[rook] active tab tb7 (about:blank)
+[event] tab.activated {"spaceId":"sp6","tabId":"tb7"}
+[rook] tab tb1 parked
+[rook] active tab tb7 (about:blank)
+[rook] tab tb7 -> about:blank
+[rook] active tab tb1 (New tab)
+[rook] tab tb7 browser ready (xid 0xc00028)
+[rook] tab tb1 awake
+[rook] tab tb7 parked
+[rook] active tab tb1 (New tab)
+[rook] tab tb7 loaded (http 0) about:blank
+[rook] tab tb7 awake
+[rook] active tab tb7 (about:blank) [background]
+[event] tab.updated {"spaceId":"sp6","tabId":"tb7","url":"http://127.0.0.1:8781/upload.html"}
+[event] tab.updated {"spaceId":"sp6","tabId":"tb7","title":"Upload"}
+[rook] tab tb7 loaded (http 200) http://127.0.0.1:8781/upload.html
+[rook] active tab tb7 (Upload) [background]
+[rook] active tab tb7 (Upload) [background]
+[rook] space sp6 state "Clicking element"
+[event] tab.updated {"spaceId":"sp6","tabId":"tb7","url":"http://127.0.0.1:8781/upload-result"}
+[event] tab.updated {"spaceId":"sp6","tabId":"tb7","title":"Upload result"}
+[rook] tab tb7 loaded (http 200) http://127.0.0.1:8781/upload-result
+[rook] active tab tb7 (Upload result) [background]
+[rook] active tab tb7 (Upload result) [background]
+[rook] active tab tb7 (Upload result) [background]
+[rook] active tab tb7 (Upload result) [background]
+[event] tab.updated {"spaceId":"sp6","tabId":"tb7","url":"http://127.0.0.1:8781/"}
+[event] tab.updated {"spaceId":"sp6","tabId":"tb7","title":"Fixture home"}
+[rook] tab tb7 loaded (http 200) http://127.0.0.1:8781/
+[rook] active tab tb7 (Fixture home) [background]
+[rook] space sp6 state "Clicking element"
+[2141938:2141976:1027/154749.350675:ERROR:dbus/bus.cc:405] Failed to connect to the bus: Could not parse server address: Unknown address type (examples of valid types are "tcp" and on UNIX "unix")
+[2141938:2141938:1027/154749.350766:ERROR:dbus/object_proxy.cc:572] Failed to call method: org.freedesktop.DBus.NameHasOwner: object_path= /org/freedesktop/DBus: unknown error type: 
+[rook] tab tb7 parked
+[event] space.created {"spaceId":"sp7","name":"clip"}
+[event] tab.created {"spaceId":"sp7","tabId":"tb8","url":"about:blank"}
+[rook] active tab tb8 (about:blank)
+[event] tab.activated {"spaceId":"sp7","tabId":"tb8"}
+[rook] tab tb1 parked
+[rook] active tab tb8 (about:blank)
+[rook] tab tb8 -> about:blank
+[rook] active tab tb1 (New tab)
+[rook] tab tb8 browser ready (xid 0xc00031)
+[rook] tab tb1 awake
+[rook] tab tb8 parked
+[rook] active tab tb1 (New tab)
+[rook] tab tb8 awake
+[rook] tab tb8 loaded (http 0) about:blank
+[rook] active tab tb8 (about:blank) [background]
+[event] tab.updated {"spaceId":"sp7","tabId":"tb8","url":"http://127.0.0.1:8781/clip.html"}
+[event] tab.updated {"spaceId":"sp7","tabId":"tb8","title":"Clipboard"}
+[rook] tab tb8 loaded (http 200) http://127.0.0.1:8781/clip.html
+[rook] active tab tb8 (Clipboard) [background]
+[rook] space sp7 state "Clicking element"
+[rook] active tab tb8 (Clipboard) [background]
+[rook] active tab tb8 (Clipboard) [background]
+[rook] active tab tb8 (Clipboard) [background]
+[rook] space sp7 state "Clicking element"
+[rook] active tab tb8 (Clipboard) [background]
+[rook] active tab tb8 (Clipboard) [background]
+[rook] active tab tb8 (Clipboard) [background]
+[rook] active tab tb8 (Clipboard) [background]
+[rook] space sp7 state "Clicking element"
+[rook] active tab tb8 (Clipboard) [background]
+[rook] active tab tb8 (Clipboard) [background]
+[rook] active tab tb8 (Clipboard) [background]
+[rook] active tab tb8 (Clipboard) [background]
+[rook] tab tb8 parked
+[event] space.created {"spaceId":"sp8","name":"shot"}
+[event] tab.created {"spaceId":"sp8","tabId":"tb9","url":"about:blank"}
+[rook] active tab tb9 (about:blank)
+[event] tab.activated {"spaceId":"sp8","tabId":"tb9"}
+[rook] tab tb1 parked
+[rook] active tab tb9 (about:blank)
+[rook] tab tb9 -> about:blank
+[rook] active tab tb1 (New tab)
+[rook] tab tb9 browser ready (xid 0xc0003a)
+[rook] tab tb1 awake
+[rook] tab tb9 parked
+[rook] active tab tb1 (New tab)
+[rook] tab tb9 awake
+[rook] tab tb9 loaded (http 0) about:blank
+[rook] active tab tb9 (about:blank) [background]
+[event] tab.updated {"spaceId":"sp8","tabId":"tb9","url":"http://127.0.0.1:8781/form.html"}
+[event] tab.updated {"spaceId":"sp8","tabId":"tb9","title":"Profile form"}
+[rook] tab tb9 loaded (http 200) http://127.0.0.1:8781/form.html
+[rook] active tab tb9 (Profile form) [background]
+[2141938:2141976:1027/154818.983462:ERROR:dbus/bus.cc:405] Failed to connect to the bus: Could not parse server address: Unknown address type (examples of valid types are "tcp" and on UNIX "unix")
+[2141938:2141938:1027/154818.983588:ERROR:dbus/object_proxy.cc:572] Failed to call method: org.freedesktop.DBus.NameHasOwner: object_path= /org/freedesktop/DBus: unknown error type: 
+[2141938:2141976:1027/154818.983663:ERROR:dbus/bus.cc:405] Failed to connect to the bus: Could not parse server address: Unknown address type (examples of valid types are "tcp" and on UNIX "unix")
+[2141938:2141938:1027/154818.983700:ERROR:dbus/object_proxy.cc:572] Failed to call method: org.freedesktop.DBus.NameHasOwner: object_path= /org/freedesktop/DBus: unknown error type: 
+[rook] tab tb9 parked
+[event] space.created {"spaceId":"sp9","name":"recover"}
+[event] tab.created {"spaceId":"sp9","tabId":"tb10","url":"about:blank"}
+[rook] active tab tb10 (about:blank)
+[event] tab.activated {"spaceId":"sp9","tabId":"tb10"}
+[rook] tab tb1 parked
+[rook] active tab tb10 (about:blank)
+[rook] tab tb10 -> about:blank
+[rook] active tab tb1 (New tab)
+[rook] tab tb10 browser ready (xid 0xc0003e)
+[rook] tab tb1 awake
+[rook] tab tb10 parked
+[rook] active tab tb1 (New tab)
+[rook] tab tb10 loaded (http 0) about:blank
+[rook] tab tb10 awake
+[rook] active tab tb10 (about:blank) [background]
+[event] tab.updated {"spaceId":"sp9","tabId":"tb10","url":"http://127.0.0.1:8781/dialogs.html"}
+[event] tab.updated {"spaceId":"sp9","tabId":"tb10","title":"Dialogs"}
+[rook] tab tb10 loaded (http 200) http://127.0.0.1:8781/dialogs.html
+[rook] active tab tb10 (Dialogs) [background]
+[rook] space sp9 state "Clicking element"
+[rook] active tab tb10 (Dialogs) [background]
+[rook] active tab tb10 (Dialogs) [background]
+[rook] space sp9 state "Clicking element"
+[rook] active tab tb10 (Dialogs) [background]
+[rook] active tab tb10 (Dialogs) [background]
+[rook] space sp9 state "Clicking element"
+[rook] active tab tb10 (Dialogs) [background]
+[rook] active tab tb10 (Dialogs) [background]
+[event] tab.updated {"spaceId":"sp9","tabId":"tb10","url":"http://127.0.0.1:8781/form.html"}
+[event] tab.updated {"spaceId":"sp9","tabId":"tb10","title":"Profile form"}
+[rook] tab tb10 loaded (http 200) http://127.0.0.1:8781/form.html
+[rook] active tab tb10 (Profile form) [background]
+[rook] active tab tb10 (Profile form) [background]
+[event] tab.updated {"spaceId":"sp9","tabId":"tb10","url":"http://127.0.0.1:8781/nav.html"}
+[event] tab.updated {"spaceId":"sp9","tabId":"tb10","title":"Navigates away"}
+[rook] tab tb10 loaded (http 200) http://127.0.0.1:8781/nav.html
+[event] tab.updated {"spaceId":"sp9","tabId":"tb10","url":"http://127.0.0.1:8781/form.html"}
+[event] tab.updated {"spaceId":"sp9","tabId":"tb10","title":"Profile form"}
+[rook] tab tb10 loaded (http 200) http://127.0.0.1:8781/form.html
+[rook] active tab tb10 (Profile form) [background]
+[rook] active tab tb10 (Profile form) [background]
+[rook] tab tb10 loaded (http 200) http://127.0.0.1:8781/form.html
+[rook] active tab tb10 (Profile form) [background]
+[rook] active tab tb10 (Profile form) [background]
+[event] tab.updated {"spaceId":"sp9","tabId":"tb10","url":"http://127.0.0.1:8781/clip.html"}
+[event] tab.updated {"spaceId":"sp9","tabId":"tb10","title":"Clipboard"}
+[rook] tab tb10 loaded (http 200) http://127.0.0.1:8781/clip.html
+[rook] active tab tb10 (Clipboard) [background]
+[event] space.created {"spaceId":"sp10","name":"fresh-1793116148"}
+[event] tab.created {"spaceId":"sp10","tabId":"tb11","url":"about:blank"}
+[rook] active tab tb11 (about:blank)
+[event] tab.activated {"spaceId":"sp10","tabId":"tb11"}
+[rook] tab tb1 parked
+[rook] active tab tb11 (about:blank)
+[rook] tab tb11 -> about:blank
+[rook] active tab tb1 (New tab)
+[rook] tab tb11 browser ready (xid 0xc00042)
+[rook] tab tb1 awake
+[rook] tab tb11 parked
+[rook] active tab tb1 (New tab)
+[rook] tab tb11 awake
+[rook] tab tb11 loaded (http 0) about:blank
+[rook] tab tb10 parked
+[event] space.created {"spaceId":"sp11","name":"recovery-eval"}
+[event] tab.created {"spaceId":"sp11","tabId":"tb12","url":"about:blank"}
+[rook] active tab tb12 (about:blank)
+[event] tab.activated {"spaceId":"sp11","tabId":"tb12"}
+[rook] tab tb1 parked
+[rook] active tab tb12 (about:blank)
+[rook] tab tb12 -> about:blank
+[rook] active tab tb1 (New tab)
+[rook] tab tb12 browser ready (xid 0xc00046)
+[rook] tab tb1 awake
+[rook] tab tb12 parked
+[rook] active tab tb1 (New tab)
+[rook] tab tb12 awake
+[rook] tab tb12 loaded (http 0) about:blank
+[rook] active tab tb12 (about:blank) [background]
+[event] tab.updated {"spaceId":"sp11","tabId":"tb12","url":"http://127.0.0.1:8781/dialogs.html"}
+[event] tab.updated {"spaceId":"sp11","tabId":"tb12","title":"Dialogs"}
+[rook] tab tb12 loaded (http 200) http://127.0.0.1:8781/dialogs.html
+[rook] active tab tb12 (Dialogs) [background]
+[rook] space sp11 state "Clicking element"
+[rook] active tab tb12 (Dialogs) [background]
+[rook] active tab tb12 (Dialogs) [background]
+[rook] space sp11 state "Clicking element"
+[rook] active tab tb12 (Dialogs) [background]
+[rook] active tab tb12 (Dialogs) [background]
+[rook] space sp11 state "Clicking element"
+[rook] active tab tb12 (Dialogs) [background]
+[rook] active tab tb12 (Dialogs) [background]
+[event] tab.updated {"spaceId":"sp11","tabId":"tb12","url":"http://127.0.0.1:8781/form.html"}
+[event] tab.updated {"spaceId":"sp11","tabId":"tb12","title":"Profile form"}
+[rook] tab tb12 loaded (http 200) http://127.0.0.1:8781/form.html
+[rook] active tab tb12 (Profile form) [background]
+[rook] active tab tb12 (Profile form) [background]
+[event] tab.updated {"spaceId":"sp11","tabId":"tb12","url":"http://127.0.0.1:8781/nav.html"}
+[event] tab.updated {"spaceId":"sp11","tabId":"tb12","title":"Navigates away"}
+[rook] tab tb12 loaded (http 200) http://127.0.0.1:8781/nav.html
+[event] tab.updated {"spaceId":"sp11","tabId":"tb12","url":"http://127.0.0.1:8781/form.html"}
+[event] tab.updated {"spaceId":"sp11","tabId":"tb12","title":"Profile form"}
+[rook] tab tb12 loaded (http 200) http://127.0.0.1:8781/form.html
+[rook] tab tb11 parked
+[rook] active tab tb12 (Profile form) [background]
+[rook] active tab tb12 (Profile form) [background]
+[rook] tab tb12 loaded (http 200) http://127.0.0.1:8781/form.html
+[rook] active tab tb12 (Profile form) [background]
+[rook] active tab tb12 (Profile form) [background]
+[event] tab.updated {"spaceId":"sp11","tabId":"tb12","url":"http://127.0.0.1:8781/clip.html"}
+[event] tab.updated {"spaceId":"sp11","tabId":"tb12","title":"Clipboard"}
+[rook] tab tb12 loaded (http 200) http://127.0.0.1:8781/clip.html
+[rook] active tab tb12 (Clipboard) [background]
+[rook] active tab tb12 (Clipboard) [background]
+[event] tab.updated {"spaceId":"sp11","tabId":"tb12","url":"http://127.0.0.1:8781/form.html"}
+[event] tab.updated {"spaceId":"sp11","tabId":"tb12","title":"Profile form"}
+[rook] tab tb12 loaded (http 200) http://127.0.0.1:8781/form.html
+[rook] active tab tb12 (Profile form) [background]
+[event] tab.created {"spaceId":"sp11","tabId":"tb13","url":"about:blank"}
+[rook] active tab tb12 (Profile form)
+[rook] tab tb1 parked
+[rook] active tab tb13 (about:blank)
+[event] tab.activated {"spaceId":"sp11","tabId":"tb13"}
+[rook] tab tb13 -> about:blank
+[rook] active tab tb1 (New tab)
+[rook] tab tb13 browser ready (xid 0xc0004a)
+[rook] tab tb13 loaded (http 0) about:blank
+[rook] tab tb1 awake
+[rook] tab tb13 parked
+[rook] active tab tb1 (New tab)
+[rook] tab tb13 awake
+[event] tab.closed {"spaceId":"sp11","tabId":"tb12"}
+[rook] tab tb13 parked
+[event] space.created {"spaceId":"sp12","name":"recover3"}
+[event] tab.created {"spaceId":"sp12","tabId":"tb14","url":"about:blank"}
+[rook] active tab tb14 (about:blank)
+[event] tab.activated {"spaceId":"sp12","tabId":"tb14"}
+[rook] tab tb1 parked
+[rook] active tab tb14 (about:blank)
+[rook] tab tb14 -> about:blank
+[rook] active tab tb1 (New tab)
+[rook] tab tb14 browser ready (xid 0xc0004e)
+[rook] tab tb1 awake
+[rook] tab tb14 parked
+[rook] active tab tb1 (New tab)
+[rook] tab tb14 awake
+[rook] tab tb14 loaded (http 0) about:blank
+[event] tab.created {"spaceId":"sp12","tabId":"tb15","url":"about:blank"}
+[rook] active tab tb14 (about:blank)
+[rook] tab tb1 parked
+[rook] active tab tb15 (about:blank)
+[event] tab.activated {"spaceId":"sp12","tabId":"tb15"}
+[rook] tab tb15 -> about:blank
+[rook] active tab tb1 (New tab)
+[rook] tab tb15 browser ready (xid 0xc00052)
+[rook] tab tb1 awake
+[rook] tab tb15 parked
+[rook] active tab tb1 (New tab)
+[rook] tab tb15 loaded (http 0) about:blank
+[rook] tab tb15 awake
+[rook] active tab tb15 (about:blank) [background]
+[event] tab.updated {"spaceId":"sp12","tabId":"tb15","url":"http://127.0.0.1:8781/dialogs.html"}
+[event] tab.updated {"spaceId":"sp12","tabId":"tb15","title":"Dialogs"}
+[rook] tab tb15 loaded (http 200) http://127.0.0.1:8781/dialogs.html
+[rook] active tab tb15 (Dialogs) [background]
+[rook] space sp12 state "Clicking element"
+[event] space.created {"spaceId":"sp13","name":"alert-block"}
+[event] tab.created {"spaceId":"sp13","tabId":"tb16","url":"about:blank"}
+[rook] active tab tb16 (about:blank)
+[event] tab.activated {"spaceId":"sp13","tabId":"tb16"}
+[rook] tab tb1 parked
+[rook] active tab tb16 (about:blank)
+[rook] tab tb16 -> about:blank
+[rook] active tab tb1 (New tab)
+[rook] tab tb16 browser ready (xid 0xc00056)
+[rook] tab tb1 awake
+[rook] tab tb16 parked
+[rook] active tab tb1 (New tab)
+[rook] tab tb16 awake
+[rook] tab tb16 loaded (http 0) about:blank
+[rook] active tab tb16 (about:blank) [background]
+[event] tab.updated {"spaceId":"sp13","tabId":"tb16","url":"http://127.0.0.1:8781/dialogs.html"}
+[event] tab.updated {"spaceId":"sp13","tabId":"tb16","title":"Dialogs"}
+[rook] tab tb16 loaded (http 200) http://127.0.0.1:8781/dialogs.html
+[rook] active tab tb16 (Dialogs) [background]
+[rook] space sp13 state "Clicking element"
+[rook] tab tb14 parked
+[rook] tab tb15 parked
+[rook] tab tb16 parked
+[rook] tab tb16 awake
+[rook] tab tb14 awake
+[rook] tab tb15 awake
+[rook] tab tb16 parked
+[rook] tab tb16 awake
+[rook] tab tb14 parked
+[rook] tab tb15 parked
+[rook] tab tb15 awake
+[rook] tab tb16 parked
+[rook] tab tb15 parked
+[event] tab.closed {"spaceId":"sp1","tabId":"tb1"}
+[event] tab.closed {"spaceId":"sp2","tabId":"tb2"}
+[event] tab.closed {"spaceId":"sp3","tabId":"tb3"}
+[event] tab.closed {"spaceId":"sp4","tabId":"tb4"}
+[event] tab.closed {"spaceId":"sp4","tabId":"tb5"}
+[event] tab.closed {"spaceId":"sp5","tabId":"tb6"}
+[event] tab.closed {"spaceId":"sp6","tabId":"tb7"}
+[event] tab.closed {"spaceId":"sp7","tabId":"tb8"}
+[event] tab.closed {"spaceId":"sp8","tabId":"tb9"}
+[event] tab.closed {"spaceId":"sp9","tabId":"tb10"}
+[event] tab.closed {"spaceId":"sp10","tabId":"tb11"}
+[event] tab.closed {"spaceId":"sp11","tabId":"tb13"}
+[event] tab.closed {"spaceId":"sp12","tabId":"tb14"}
+[event] tab.closed {"spaceId":"sp12","tabId":"tb15"}
+[event] tab.closed {"spaceId":"sp13","tabId":"tb16"}
+[rook] message loop returned (exit 0), tearing down
+[control] socket /tmp/opencode/rook-eval/run/rook-1000.sock removed
+[rook] CefShutdown finished

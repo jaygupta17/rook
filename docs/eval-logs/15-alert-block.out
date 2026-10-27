@@ -1,0 +1,10 @@
+=== unhandled alert: does the next command hang? ===
+PageDialogOpenedError: Runtime.evaluate cannot run while a JavaScript alert dialog ("ALERT-OK") is open; handle it with page.acceptDialog() or page.dismissDialog() before continuing
+    at browserCdp (file:///tmp/opencode/rook-eval/root/usr/lib/rook/sdk/index.js:8238:15)
+    at Object.cdp (file:///tmp/opencode/rook-eval/root/usr/lib/rook/sdk/index.js:18202:32)
+    at evaluateInSession (file:///tmp/opencode/rook-eval/root/usr/lib/rook/sdk/index.js:19761:39)
+    at file:///tmp/opencode/rook-eval/root/usr/lib/rook/sdk/index.js:19415:30
+    at file:///tmp/opencode/rook-eval/root/usr/lib/rook/sdk/index.js:17302:20
+    at async file:///tmp/opencode/rook-eval/root/usr/lib/rook/sdk/index.js:17272:28
+receipt {"dialog":{"url":"http://127.0.0.1:8781/dialogs.html","frameId":"87E93ACB1A13D88C0A7EF4C56BD744B6","message":"ALERT-OK","type":"alert","hasBrowserHandler":true,"defaultPrompt":""}}
+unhandled_alert_exit=1

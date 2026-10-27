@@ -1,0 +1,8 @@
+iframe_child true ref 3
+iframe_click true
+upload UPLOAD-OK
+download "rook-download-payload-42\n"
+clip_textarea "review2 pasted"
+clip_html "<b>review2 bold</b>"
+dialog_type confirm
+confirm CONFIRM-TRUE

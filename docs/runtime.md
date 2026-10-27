@@ -41,8 +41,8 @@ The same surface runs on two browsers, chosen once per process:
 
 | Backend | Browser | A task space is | A tab is |
 | --- | --- | --- | --- |
-| `host` | the native app (`host/`) | a host space id, `sp2` | a `browserId` on its control socket |
-| `standalone` | Chrome, headless unless `ROOK_HEADFUL=1` | a Chromium browser context | a DevTools target |
+| `host` | the native app (`host/`) | a tab set inside a profile (`sp2`), sharing that profile's cookies and storage | a `browserId` on its control socket |
+| `standalone` | Chrome, headless unless `ROOK_HEADFUL=1` | a Chromium browser context of one Chrome profile | a DevTools target |
 
 **Selection.** `standalone` unless the app is *actually running*: the CLI probes
 `$XDG_RUNTIME_DIR/rook-<uid>.sock` (then `/tmp/rook-<uid>.sock`) with a
@@ -82,6 +82,16 @@ the OOPIF cases still expand frames in host mode.
 A tab id from the app is not a DevTools target id: the bridge reads the page
 target with `Target.getTargetInfo` on that tab's browser and hands the SDK the
 target id, so `listTabs`, refs and sessions all keep working unchanged.
+
+**Profiles are a host-mode feature.** In the app, `listProfiles()` is the app's
+list, a space is created *inside* a profile (`createTaskSpace(name, profileId)`)
+and every space of that profile shares its cookies and storage. Standalone Chrome
+has no such thing to report: a profile there is a separate Chrome with its own
+user-data directory, `listProfiles()` lists the directories the bridge knows
+about, and isolation is per task space (a browser context), which is what the
+upstream suite relies on. The interface both backends implement
+(`runtime/backends/index.js`) has `listProfiles`/`createProfile` in both; only
+the app gives them the profile-is-the-boundary meaning.
 
 ## Commands
 
@@ -191,11 +201,23 @@ over the app's unix socket: id map, push dispatch, reconnect-on-EOF) and a
 `HostBackend` that shapes it like the Chrome one. The channel itself is
 documented in `host/README.md`; this section is only the bridge's side.
 
-- **Spaces** — `createTaskSpace` → `createSpace{name}` + one
+- **Spaces** — `createTaskSpace` → `createSpace{name, profileId}` + one
   `createTab{url:"about:blank"}` (a new space must have exactly one tab), and
   `closeTaskSpace` → `closeSpace`. The app's own space id lives in `spaces.json`
-  as `hostSpaceId`; rows whose space the app no longer has are filtered out of
-  `listTaskSpaces` instead of failing later.
+  as `hostSpaceId`, together with the app run that issued it (`hostInstance`,
+  from `getInfo.pid` plus the `/proc` start time). A space from a previous run is
+  never re-bound to its old id — the app numbers spaces from `sp1` on every
+  launch, so that number can name another agent's space. The bridge creates the
+  space again under the same name in the same profile (`recentTabUrls` are
+  reopened; the profile owns the storage, so logins survive) and re-stamps the
+  record. `listTaskSpaces` still lists such a record so it can be resumed by
+  name, and rows whose space is really gone are filtered out.
+- **Profiles** — `listProfiles` is the app's list passed through, exactly the
+  three fields the SDK checks (`id`, `name`, `isDefault`); the app's storage
+  `path` is dropped. In host mode the app is the authority on profiles, so
+  `createTaskSpace(name, profileId)` resolves the id against that list and an
+  unknown one is `EGO_PROFILE_NOT_FOUND` with no space created.
+  `ego.createProfile(name)` adds one (the SDK only lists them).
 - **Tabs** — `createTab`/`closeTab`/`activateTab` are the host ops (navigation
   itself is ordinary CDP, so `Page.navigate` from the SDK needs nothing special).
   A row in `listTabs` is the app's tab id plus the DevTools target id read from
@@ -206,16 +228,66 @@ documented in `host/README.md`; this section is only the bridge's side.
   WebSocket per profile.
 - **`useTaskSpace` does not touch the window.** CDP works on a space the window
   is not showing, and the app wakes a parked tab when a command arrives, so
-  selecting a space is bridge state only. The app does have `activateSpace`
-  (view only: it shows a space and never touches a tab) and the bridge still
-  does not call it, because a round must not move the user's window;
-  `scripts/demo-host.mjs` uses it to put its space on screen for the screenshot.
-- **Ownership** — `handOff`/`takeOver` are the app's, and the bridge keeps its
-  own `ownership` in step, so a handed-off space is refused by both sides. The
-  app also draws the "You have control" banner.
-- **Persistence** — unchanged and per backend: the app keeps each space's
-  cookies/storage in its own request context and its profile, exactly as Chrome
-  keeps a browser context's; nothing about the standalone path changed.
+  selecting a space is bridge state only. Selecting a handed-off space works
+  too: it is a read-side operation, and the first mutation is what fails. The
+  app does have `activateSpace` (view only: it shows a space and never touches a
+  tab) and the bridge still does not call it, because a round must not move the
+  user's window; `scripts/demo-host.mjs` uses it to put its space on screen for
+  the screenshot.
+- **Ownership** — `handOff`/`takeOver` are the app's and the bridge keeps its own
+  `ownership` in step, so a handed-off space is refused by both sides. The app
+  also draws the "You have control" banner and focuses the page.
+- **Persistence** — the profile keeps the storage: every space of a profile
+  shares its `CefRequestContext`, so its cookies, `localStorage` and cache are
+  what a later round sees. A space has no directory of its own any more.
+
+### Profiles, spaces and the handoff gate
+
+The model is ego lite's, and it is the app's, not the bridge's:
+
+- **Profile = the isolation boundary.** One `CefRequestContext`, one storage
+  directory, created once and shared by every space in it.
+- **Space = a tab set plus ownership inside a profile.** Two spaces of one
+  profile share cookies, `localStorage` and the cache; a space in another profile
+  reads another directory. (Standalone is the opposite: a space is a browser
+  context, so spaces are isolated and a profile is a separate Chrome.)
+- **Handoff = exclusive user control.** The app refuses every agent mutation for
+  that space until `takeOver`.
+
+`Target.getTargets` is process-wide and now carries the *profile's* context id,
+so the bridge's context filter separates profiles, not spaces: from one space's
+browser you can see another space's page in the same profile. That is inherent to
+the model (one context, several tab sets), and it does not change routing — a
+frame still goes to the tab it names, and `listTabs{spaceId}` is the per-space
+view the SDK lists from.
+
+The gate reaches the SDK as one error shape, whether the handoff was made by the
+bridge (`handOffTaskSpace`) or by the user in the window:
+
+```
+Error { message, error_code: "EGO_TASK_SPACE_USER_IN_CONTROL" }
+```
+
+How it gets there:
+
+1. the app refuses the op with JSON-RPC error `-32002` (or `-32001`) and
+   `error.data.reason: "EGO_TASK_SPACE_USER_IN_CONTROL"`;
+2. `HostControlClient` puts `reason` on the error and, because the reason is an
+   `EGO_*` code, also sets `error_code` (the property the SDK branches on, see
+   `vendor/ego-browser/src/ego-errors.ts:118-133`);
+3. a refused `cdp.send` is re-thrown out of `HostBackend.sendRaw` instead of
+   being turned into a per-request CDP error, so the bridge reports it through
+   `onSendCDPMessageError(message, "EGO_TASK_SPACE_USER_IN_CONTROL")` — the signal
+   the SDK stops on — and the bridge marks the space
+   `agentDelegatedToUser` so the next attempt fails locally and `snapshot()`
+   (the SDK's own control probe) reports the same code.
+
+Other app refusals (`EGO_TASK_SPACE_INACTIVE`, `EGO_TASK_SPACE_NOT_FOUND`) stay a
+correlated CDP error for the one request: a whole-task stop is the wrong answer to
+a closing tab. Reads are deliberately not gated on the bridge side —
+`listTaskSpaces`/`listTabs` keep working while the user has control, but a
+*page* read through raw CDP does not, because the app refuses every `cdp.send` in
+a handed-off space.
 
 ### Target lifecycle, synthesised from the app's tab pushes
 
@@ -223,7 +295,7 @@ CEF's Target domain is process-wide and knows nothing about the app's tabs, and
 for a popup it says `canAccessOpener:false` with no `openerId` — it cannot say
 otherwise, because the popup browser that would carry the relationship is
 cancelled. The app knows the truth: `tab.created` carries `openerTabId` and
-`windowName`. So the bridge translates the protocol-2 pushes into the target
+`windowName`. So the bridge translates the protocol-3 pushes into the target
 lifecycle the SDK listens for (`runtime/backends/host.js`):
 
 | push | what the SDK sees |
@@ -270,9 +342,12 @@ What only works standalone, or not at all:
   earlier full host run and did not reproduce in the two runs measured here, so
   there is no fix to point at: the snapshot is right, the *page* loaded a frame
   the case expected to stay unrequested. Timeboxed and left alone.
-- **One profile.** The app has a single profile, so `listProfiles()` reports one
-  entry and `createTaskSpace(name, profileId)` refuses any other id with
-  `EGO_PROFILE_NOT_FOUND`.
+- **One profile is the boundary, not one space.** `listProfiles()` reports the
+  app's profiles (`default`/`You` and any created one) and a space can be created
+  in any of them; two spaces of one profile share cookies and storage, and a
+  space in another profile does not. A page in another space of the *same*
+  profile is visible to `Target.getTargets` (CEF has no per-space context); the
+  per-space view is `listTabs`.
 - **`Target.createTarget` is refused**, on purpose. Raw CDP that creates tabs
   that way (instead of `createTab()`) does not work in host mode.
 - **A closing tab silently drops in-flight requests** — the app sends no final
@@ -309,18 +384,51 @@ unadopted popup tabs filled, then `Page delayed popup: resume` behind its
 
 ## Snapshot
 
-`ego.snapshot(options)` returns `{ content, refs }`. `content` is the
-accessibility tree as indented text — `root`, two spaces per level,
+`ego.snapshot(options)` returns `{ content, refs }`. `content` starts with one
+header line — `snapshot scope=full page, 8126 lines, 1696 refs` — followed by the
+accessibility tree as indented text: `root`, two spaces per level,
 `role "name" [ref=N, loc=css:#id]`, and `text "..."` for text nodes. Every ref
 carries the real `backendNodeId`, so `page.click("@12")` and the SDK's element
-resolver work unchanged. `scope` supports `full_page` and
-`only_within_viewport`; `loc=` is emitted only when it is unique (`css:#id`,
-`href:/path?query`).
+resolver work unchanged. `scope` supports `full_page`, `only_within_viewport` and
+`subtree`.
+
+The header exists because the SDK's default is viewport-only: an agent that reads
+a slice as the whole page concludes the page does not mention what it is looking
+for. So the first line always says which slice it is, and when the viewport
+filter left nodes out it says how many and what to call instead
+(`..., 7893 nodes outside the viewport not shown - pass {scope:"full_page"} for
+the whole page`). It sits above `root` on purpose: the harness finds the tree by
+its `root` line and keeps the lines above it verbatim, so the header survives
+compaction — putting the same text on the `root` line would make
+`compactSnapshotContent` skip compaction altogether. The header also says when
+`maxResultLength` cut the snapshot short.
+
+What the serializer leaves out, and why it is safe to:
+
+- **One identifier per line.** `loc=href:/wiki/Linux` and
+  `url=https://en.wikipedia.org/wiki/Linux` are the same link; the line prints
+  the locator (which is what an action resolves with) and only falls back to
+  `url=` when the node has no locator. The absolute URL is still on the ref in
+  `refs[]`, so nothing is lost for the SDK.
+- **A text child identical to its parent's label** is the label twice and is not
+  printed (1,157 such lines on the Wikipedia page the bench used).
+- **A `generic`/`layout*` wrapper with no name, no ref and nothing named
+  underneath** is not printed; its children take its place.
+- **Indentation is clamped** at 8 levels (still 2 spaces per level, which is the
+  grammar the harness parses). Deeper nodes print at the clamp so a deeply nested
+  page does not spend most of its bytes on spaces.
+- **Text over 240 characters** is cut with an explicit
+  `... [truncated, N more characters; read the full text with page.evaluate]`
+  marker, and only when the marker is shorter than the text it replaces.
+
+`loc=` is emitted only when it is unique (`css:#id`, `href:/path?query`).
+
 
 Frames expand in place: an `iframe` prints its own line, then a nested `root`
 and that frame's tree, recursively.
 
 ```
+snapshot scope=full page, 7 lines, 2 refs
 root
   main
     iframe "A frame" [ref=3, loc=css:#frame]
@@ -352,10 +460,12 @@ prints no nested root.
 ## Tests
 
 ```sh
-npm test                   # launcher checks, host-backend checks, real-browser smoke test
+npm test                   # launcher, host-backend, space-resume and a real-browser smoke test
 node test/cli.mjs          # launcher surface only, no browser needed
 node test/host-backend.mjs # host backend against a stub control socket, no browser needed
+node test/space-resume.mjs # two stub app runs: a stale host id must never be reused
 node test/smoke.mjs        # real Chrome: space -> tab -> snapshot -> click, incl. a frame ref
+node test/profile-e2e.mjs  # profiles + handoff through the CLI against the real app
 ```
 
 `test/smoke.mjs` drives a local fixture page through the real SDK, so an SDK
@@ -364,18 +474,38 @@ build has to exist: it looks in `vendor/ego-browser` (what
 another one. It forces `ROOK_BACKEND=standalone` so a running app can never
 become the browser under test.
 
+`test/profile-e2e.mjs` is the product model proved the way an agent would see it:
+it starts its own Xvfb and app, then runs four `ego-browser nodejs` rounds — A
+signs in on a local fixture, B in the same profile is already signed in, C in a
+second profile is not, a handoff makes a click fail with
+`EGO_TASK_SPACE_USER_IN_CONTROL` without counting it, and `takeOverTaskSpace`
+lets the same click through. It needs the app binary, the vendored SDK build and
+an X server, so it is a separate command rather than part of `npm test`.
+
+`test/space-resume.mjs` starts two stub hosts that both number their spaces from
+`sp2` — two app runs, the same id — and asserts that resuming a space from the
+first run reopens its own tab under a new host id instead of landing on the
+second run's space.
+
 `test/host-backend.mjs` starts `test/host-stub.mjs` on a temporary socket and
 drives the bridge through it: space/tab mapping, DevTools id correlation, the
 three re-mapped `Target.*` calls, `Target.getTargets` narrowing, push filtering
-and reconnect after the socket goes away. It also covers the synthesised target
-lifecycle end to end: nothing is emitted before the client subscribes; a
-`tab.created` push with an opener becomes a `Target.targetCreated` whose
-`targetInfo` carries `openerId` (the opener's target id) and
-`canAccessOpener:true`; a CEF `targetCreated` for the same target is dropped;
-`tab.updated` becomes exactly one `targetInfoChanged`; `tab.closed` exactly one
-`targetDestroyed`; `listTabs` reports the opener so a late client adopts the
-popup from its baseline; and the SDK's `Target.attachToTarget` for the popup
-reaches the popup's browser rather than the opener's.
+and reconnect after the socket goes away. It also covers the protocol-3 model end
+to end: `listProfiles` in the SDK's shape, `createProfile`, a space created in a
+named profile, two spaces of one profile reading the same `localStorage` and
+cookies while a space in another profile reads neither, and the handoff gate in
+both directions — the bridge's own `handOffTaskSpace`, and a takeover in the
+window the bridge never saw, which must arrive as a thrown
+`EGO_TASK_SPACE_USER_IN_CONTROL` on the send path, keep `listTabs` working, and
+be lifted by `takeOverTaskSpace`. On top of that, the synthesised target
+lifecycle: nothing is emitted before the client subscribes; a `tab.created` push
+with an opener becomes a `Target.targetCreated` whose `targetInfo` carries
+`openerId` (the opener's target id) and `canAccessOpener:true`; a CEF
+`targetCreated` for the same target is dropped; `tab.updated` becomes exactly one
+`targetInfoChanged`; `tab.closed` exactly one `targetDestroyed`; `listTabs`
+reports the opener so a late client adopts the popup from its baseline; and the
+SDK's `Target.attachToTarget` for the popup reaches the popup's browser rather
+than the opener's.
 
 The upstream end-to-end suite runs against this CLI through its own hook:
 

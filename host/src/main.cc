@@ -14,6 +14,7 @@
 #include "include/cef_app.h"
 #include "include/cef_version.h"
 
+#include "a11y.h"
 #include "app.h"
 #include "options.h"
 #include "paths.h"
@@ -63,10 +64,21 @@ int main(int argc, char* argv[]) {
   gtk_disable_setlocale();
   g_set_prgname("rook");
   g_set_application_name("Rook");
+  // Before gtk_init_check(): GTK loads atk-bridge here, and a session bus with
+  // no accessibility bus behind it does not fail fast -- it blocks the first
+  // navigation (blank window, tens of seconds). Bounded probe, one line of log.
+  // Browser process only: a child must do nothing but CefExecuteProcess below.
+  if (rook::IsBrowserProcess(argc, argv)) {
+    const rook::A11yDecision a11y = rook::DecideAccessibilityBridge();
+    if (a11y.bridge_disabled) {
+      std::fprintf(stderr, "[rook] accessibility bridge off: %s\n",
+                   a11y.reason.c_str());
+    }
+  }
   if (!gtk_init_check(nullptr, nullptr)) {
     std::fprintf(stderr,
                  "[rook] no usable display (DISPLAY=%s). The shell needs X11; "
-                 "QA runs it under Xvfb :99.\n",
+                 "QA runs it on a private Xvfb display.\n",
                  g_getenv("DISPLAY") != nullptr ? g_getenv("DISPLAY") : "(unset)");
     return 1;
   }
@@ -115,8 +127,8 @@ int main(int argc, char* argv[]) {
   }
 
   std::fprintf(stderr,
-               "[rook] rook %s (CEF %s), profile %s\n", "0.3.0-M3",
-               CEF_VERSION, options.profile_dir.c_str());
+               "[rook] rook %s (CEF %s), profiles in %s\n", "0.4.0-M4",
+               CEF_VERSION, options.profiles_root.c_str());
 
   int exit_code = 1;
   {

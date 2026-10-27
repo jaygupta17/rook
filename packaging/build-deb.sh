@@ -14,7 +14,8 @@ set -euo pipefail
 # shellcheck source=common.sh
 . "$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/common.sh"
 
-VERSION="$(version)"
+rook_resolve_version
+VERSION="$rook_version"
 DEB_NAME="rook_${VERSION}_${ROOK_ARCH}.deb"
 OUT_DIR="$pkg_dir/out"
 STAGE_ROOT="$work_dir/deb-root"
@@ -65,7 +66,8 @@ DEB_DEPENDS="libc6 (>= 2.38),
 
 say "preflight"
 preflight
-step "version" "$VERSION"
+step "version" "$VERSION (from $rook_version_from)"
+check_version "$VERSION"
 step "arch" "$ROOK_ARCH"
 step "node" "$ROOK_NODE ($("$ROOK_NODE" -v))"
 step "host binary" "$ROOK_HOST_BIN ($(human "$ROOK_HOST_BIN"))"
@@ -94,9 +96,11 @@ Section: web
 Priority: optional
 Description: agent browser with isolated spaces for agent work
  Rook is a web browser built around agent work: the window you browse in,
- plus separate spaces that agents drive. Each space is its own Chromium storage
- context, so an agent session never sees the cookies of the space you use, and
- a handoff can move a space between the two.
+ plus separate spaces that agents drive. A profile is the isolation boundary:
+ each profile is its own Chromium storage context, so a space in one profile
+ never sees another profile's cookies, and the spaces inside a profile share
+ that profile's logins the way browser tabs do. Handing a space to the user,
+ or taking it back, does not move its storage.
  .
  This package is a GTK3 shell around the stock Chromium engine (CEF 156). The
  ego-browser command runs the agent runtime on the Node.js interpreter bundled

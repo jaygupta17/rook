@@ -18,7 +18,8 @@ set -euo pipefail
 # shellcheck source=common.sh
 . "$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/common.sh"
 
-VERSION="$(version)"
+rook_resolve_version
+VERSION="$rook_version"
 OUT_DIR="$pkg_dir/out"
 APPDIR="$work_dir/appdir"
 TOOLS="$work_dir/tools"
@@ -43,7 +44,8 @@ skip() {
 
 say "preflight"
 preflight
-step "version" "$VERSION"
+step "version" "$VERSION (from $rook_version_from)"
+check_version "$VERSION"
 step "arch" "$ROOK_ARCH (AppImage: $APPIMAGE_ARCH)"
 
 say "appimagetool"

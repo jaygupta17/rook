@@ -1,0 +1,17 @@
+== app run 1: alpha ==
+phase1 1 ALPHA
+phase1_exit=0
+host ids after phase1 [[1, 'alpha', 'sp2', '2241614@5073026']]
+app1_alive_after_stop=no
+== app run 2: beta takes sp2 ==
+phase2 beta 2 BETA
+phase2_exit=0
+host ids after phase2 [[1, 'alpha', 'sp2', '2241614@5073026'], [2, 'beta', 'sp2', '2241815@5073175']]
+== resume alpha after the restart ==
+resumed alpha 1 [{"label":"p2","title":"ALPHA"}]
+alpha actually sees ALPHA
+alpha_resume_exit=0
+host ids after resume [[1, 'alpha', 'sp3', '2241815@5073175'], [2, 'beta', 'sp2', '2241815@5073175']]
+== beta still sees its own tab ==
+beta sees BETA
+beta_resume_exit=0

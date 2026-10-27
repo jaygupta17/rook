@@ -2,7 +2,7 @@
 # Proves the Chromium sandbox decision on this machine, both paths, without
 # root, without installing anything.
 #
-#   scripts/sandbox-probe.sh --bin host/build/bin/rook [--display :99]
+#   scripts/sandbox-probe.sh --bin host/build/bin/rook [--display :131]
 #   scripts/sandbox-probe.sh --no-live          # decision table only, no display
 #
 # Cases:
@@ -26,7 +26,7 @@ here="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 root="$(cd "$here/.." && pwd)"
 
 bin="${ROOK_BIN:-$root/build/bin/rook}"
-display="${ROOK_DISPLAY:-:99}"
+display="${ROOK_DISPLAY:-:131}"
 live=1
 
 while [ $# -gt 0 ]; do

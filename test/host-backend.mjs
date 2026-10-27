@@ -5,17 +5,22 @@
  *   node test/host-backend.mjs
  *
  * What it covers: backend selection, JSON-RPC framing and id correlation, the
- * task-space/tab mapping onto host ops, the three DevTools calls the app
- * re-maps (`Target.createTarget`, `Target.activateTarget`, `Target.closeTarget`),
- * `Target.getTargets` narrowing, push filtering, and reconnect after EOF.
- * The real app is exercised by scripts/demo-host.mjs and the upstream E2E slice.
+ * task-space/tab mapping onto host ops, profiles (the app's list passed through,
+ * two spaces of one profile sharing storage, two profiles not), the three
+ * DevTools calls the app re-maps (`Target.createTarget`, `Target.activateTarget`,
+ * `Target.closeTarget`), `Target.getTargets` narrowing, the handoff gate in both
+ * directions (the bridge's own handoff, and a takeover in the window the bridge
+ * never saw) with takeover restoring mutations, push filtering, and reconnect
+ * after EOF. The real app is exercised by `scripts/demo-host.mjs`, the profile
+ * proof in `test/profile-e2e.mjs` and the upstream E2E slice.
  */
-import { mkdtemp, rm } from "node:fs/promises";
+import { mkdtemp, readFile, rm } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 
 import { createEgoRuntime } from "../runtime/index.js";
 import { resetBackendSelection, resolveSelection } from "../runtime/backends/index.js";
+import { StandaloneBackend } from "../runtime/backends/standalone.js";
 import { StubHost } from "./host-stub.mjs";
 
 let failures = 0;
@@ -42,10 +47,14 @@ async function waitFor(label, predicate, timeoutMs = 3000) {
 async function main() {
   const root = await mkdtemp(join(tmpdir(), "rook-host-"));
   const socketPath = join(root, "rook-000.sock");
-  process.env.EGO_BROWSER_STATE_DIR = join(root, "state");
+  const stateDir = join(root, "state");
+  process.env.EGO_BROWSER_STATE_DIR = stateDir;
   process.env.ROOK_HOST_SOCKET = socketPath;
   process.env.ROOK_BACKEND = "host";
   resetBackendSelection();
+
+  const readSpaces = async () =>
+    JSON.parse(await readFile(join(stateDir, "spaces.json"), "utf8"));
 
   // -- the app is not running --------------------------------------------
   const missing = await createEgoRuntime();
@@ -88,12 +97,66 @@ async function main() {
   check(forced.mode === "standalone", "--standalone overrides the environment", forced.mode);
   resetBackendSelection();
 
+  // -- both backends answer the profile ops --------------------------------
+  // The interface is shared, so the standalone side must have the methods the
+  // host side learned; there a profile is a Chrome user-data directory and
+  // spaces are isolated per context instead.
+  process.env.ROOK_HOME = join(root, "browser-home");
+  const standalone = new StandaloneBackend({ profileId: "Default" });
+  const chromeProfiles = await standalone.listProfiles();
+  check(
+    chromeProfiles.length === 1 &&
+      chromeProfiles[0].id === "Default" &&
+      chromeProfiles[0].isDefault === true,
+    "standalone lists its default Chrome profile",
+    JSON.stringify(chromeProfiles),
+  );
+  const createdProfile = await standalone.createProfile("Work laptop");
+  check(
+    createdProfile.id === "work-laptop" && createdProfile.isDefault === false,
+    "standalone can create a Chrome profile directory",
+    JSON.stringify(createdProfile),
+  );
+  check(
+    (await standalone.listProfiles()).some((profile) => profile.name === "Work laptop"),
+    "a created standalone profile is listed under its name",
+    JSON.stringify(await standalone.listProfiles()),
+  );
+  let duplicateProfile = null;
+  try {
+    await standalone.createProfile("Work laptop");
+  } catch (error) {
+    duplicateProfile = error;
+  }
+  check(
+    duplicateProfile?.error_code === "EGO_INVALID_ARGUMENT",
+    "a duplicate standalone profile name is refused",
+    duplicateProfile?.message,
+  );
+
   // -- the surface, over the socket --------------------------------------
   const replies = [];
   const sendErrors = [];
   const ego = createEgoRuntime();
   ego.onCDPMessage = (text) => replies.push(JSON.parse(text));
   ego.onSendCDPMessageError = (message, code) => sendErrors.push({ message, code });
+
+  /** One CDP round trip through the harness pipe, awaited by id. */
+  let probeId = 900;
+  async function evaluate(expression, timeoutMs = 4000) {
+    probeId += 1;
+    const id = probeId;
+    ego.sendCDPMessage(
+      JSON.stringify({ id, method: "Runtime.evaluate", params: { expression, returnByValue: true } }),
+    );
+    const deadline = Date.now() + timeoutMs;
+    while (Date.now() < deadline) {
+      const reply = replies.find((item) => item.id === id);
+      if (reply) return reply.result?.result?.value;
+      await sleep(20);
+    }
+    throw new Error(`no reply to Runtime.evaluate ${expression}`);
+  }
 
   const space = await ego.createTaskSpace("stub space");
   check(space?.id === 1, "createTaskSpace allocates the first numeric id", JSON.stringify(space));
@@ -104,6 +167,21 @@ async function main() {
 
   const hostSpaceId = [...stub.spaces.keys()][0];
   const firstTab = [...stub.tabs.values()][0];
+
+  // -- protocol 3: the app owns the profiles ------------------------------
+  const appProfiles = await ego.listProfiles();
+  check(
+    JSON.stringify(appProfiles) ===
+      JSON.stringify({ profiles: [{ id: "default", name: "You", isDefault: true }] }),
+    "listProfiles passes the app's list through in the SDK's shape",
+    JSON.stringify(appProfiles),
+  );
+  check(
+    stub.countCalls("listProfiles") >= 1 && stub.spaces.get(hostSpaceId).profileId === "default",
+    "a space created without a profile lands in the app's default profile",
+    JSON.stringify(stub.spaces.get(hostSpaceId)),
+  );
+
   const tabs = await ego.listTabs();
   check(
     tabs.tabs?.length === 1 && tabs.tabs[0].targetId === firstTab.targetId,
@@ -165,7 +243,7 @@ async function main() {
   const targetIds = (targetsReply?.result?.targetInfos ?? []).map((info) => info.targetId);
   check(
     !targetIds.includes("T-foreign-page"),
-    "another space's page is filtered out of Target.getTargets",
+    "another profile's page is filtered out of Target.getTargets",
     JSON.stringify(targetIds),
   );
   check(
@@ -289,20 +367,112 @@ async function main() {
     JSON.stringify(replies.slice(beforeForeignPush)),
   );
 
-  // -- ownership --------------------------------------------------------
+  // -- ownership: a handoff the bridge makes ----------------------------
   const handed = await ego.handOffTaskSpace();
   check(/handed off/.test(String(handed)), "handOffTaskSpace reports the handoff", String(handed));
   check(stub.countCalls("handOff") === 1, "handOff reached the host");
-  ego.sendCDPMessage(JSON.stringify({ id: 17, method: "Runtime.evaluate", params: {} }));
-  await waitFor("user control error", () => sendErrors.length > 0);
   check(
-    sendErrors[0]?.code === "EGO_TASK_SPACE_USER_IN_CONTROL",
+    stub.spaces.get(hostSpaceId).ownership === "user",
+    "the app itself now has the space handed off",
+    stub.spaces.get(hostSpaceId).ownership,
+  );
+  const errorsBeforeLocalGate = sendErrors.length;
+  ego.sendCDPMessage(JSON.stringify({ id: 17, method: "Runtime.evaluate", params: {} }));
+  await waitFor("user control error", () => sendErrors.length > errorsBeforeLocalGate);
+  check(
+    sendErrors[errorsBeforeLocalGate]?.code === "EGO_TASK_SPACE_USER_IN_CONTROL",
     "a handed-off space refuses sends with the user-control code",
-    JSON.stringify(sendErrors[0]),
+    JSON.stringify(sendErrors[errorsBeforeLocalGate]),
+  );
+  check(
+    !replies.some((reply) => reply.id === 17),
+    "the refused send is not answered as if it had run",
+  );
+  const handedTabs = await ego.listTabs();
+  check(
+    handedTabs.tabs?.some((tab) => tab.targetId === firstTab.targetId),
+    "a handed-off space is still readable (listTabs keeps working)",
+    JSON.stringify(handedTabs),
   );
   const taken = await ego.takeOverTaskSpace();
   check(/taken over/.test(String(taken)), "takeOverTaskSpace reports the takeover", String(taken));
   check(stub.countCalls("takeOver") === 1, "takeOver reached the host");
+  check(
+    stub.spaces.get(hostSpaceId).ownership === "agent",
+    "the app lets agent mutations through again after takeOver",
+    stub.spaces.get(hostSpaceId).ownership,
+  );
+
+  // -- ownership: a takeover in the window the bridge never saw -----------
+  // The user clicks "take over" in the app: the bridge's own record still says
+  // agent, so this is the only path that proves the app's gate reaches the SDK.
+  stub.handOff(hostSpaceId);
+  const beforeHostGate = sendErrors.length;
+  const gateStartedAt = Date.now();
+  ego.sendCDPMessage(
+    JSON.stringify({ id: 40, method: "Runtime.evaluate", params: { expression: "1 + 1" } }),
+  );
+  await waitFor("host gate error", () => sendErrors.length > beforeHostGate, 2000);
+  const gateElapsed = Date.now() - gateStartedAt;
+  check(
+    sendErrors[beforeHostGate]?.code === "EGO_TASK_SPACE_USER_IN_CONTROL",
+    "a mutation the app refuses carries the exact ego code into onSendCDPMessageError",
+    JSON.stringify(sendErrors[beforeHostGate]),
+  );
+  check(
+    gateElapsed < 2000,
+    "it fails fast instead of waiting for a CDP timeout",
+    `${gateElapsed}ms`,
+  );
+  check(
+    !replies.some((reply) => reply.id === 40),
+    "the refused send gets no CDP reply that would look like success",
+  );
+  // The bridge follows the app: subsequent mutations are refused locally, and
+  // the SDK's own control probe (snapshot) sees the same code.
+  check(
+    (await readSpaces()).spaces.find((item) => item.id === space.id)?.ownership ===
+      "agentDelegatedToUser",
+    "the bridge's record follows an app-side takeover",
+    JSON.stringify((await readSpaces()).spaces),
+  );
+  let probeError = null;
+  try {
+    await ego.snapshot();
+  } catch (error) {
+    probeError = error;
+  }
+  check(
+    probeError?.error_code === "EGO_TASK_SPACE_USER_IN_CONTROL",
+    "snapshot refuses with the user-control code while the user has control",
+    probeError?.message,
+  );
+  const callsBeforeLocalRefusal = stub.countCalls("cdp.send");
+  const secondGate = sendErrors.length;
+  ego.sendCDPMessage(JSON.stringify({ id: 42, method: "Runtime.evaluate", params: {} }));
+  await waitFor("local gate", () => sendErrors.length > secondGate);
+  check(
+    stub.countCalls("cdp.send") === callsBeforeLocalRefusal,
+    "the second attempt is refused by the bridge without another round trip",
+    String(stub.countCalls("cdp.send")),
+  );
+  const readableWhileUser = await ego.listTabs();
+  check(
+    readableWhileUser.tabs?.some((tab) => tab.targetId === firstTab.targetId),
+    "reads keep working while the user holds control",
+    JSON.stringify(readableWhileUser),
+  );
+  const restore = await ego.takeOverTaskSpace();
+  check(/taken over/.test(String(restore)), "takeOverTaskSpace lifts an app-side takeover", String(restore));
+  ego.sendCDPMessage(
+    JSON.stringify({ id: 41, method: "Runtime.evaluate", params: { expression: "1 + 1" } }),
+  );
+  await waitFor("mutation after takeover", () => replies.some((reply) => reply.id === 41));
+  check(
+    replies.find((reply) => reply.id === 41)?.result?.result?.value === "stub",
+    "a mutation works again after takeover",
+    JSON.stringify(replies.find((reply) => reply.id === 41)),
+  );
 
   // -- agent chrome ------------------------------------------------------
   await ego.setAgentTaskState("reading");
@@ -486,6 +656,100 @@ async function main() {
   stub.push("tab.closed", { spaceId: hostSpaceId, tabId: earlyPopup.tabId });
   await sleep(200);
 
+  // -- protocol 3: a profile is the storage boundary ----------------------
+  // Two spaces of one profile read the same cookies and localStorage; a space
+  // in another profile reads neither. This used to be the other way round when
+  // every space had its own request context.
+  await evaluate("localStorage.setItem('rook-login','alpha')");
+  await evaluate("document.cookie='rook-login=alpha; path=/'");
+  check(
+    (await evaluate("localStorage.getItem('rook-login')")) === "alpha" &&
+      (await evaluate("document.cookie")) === "rook-login=alpha",
+    "the first space can read back what it wrote",
+  );
+
+  const work = await ego.createProfile("Work laptop");
+  check(
+    work?.profileId === "work-laptop" && work?.name === "Work laptop" && work?.isDefault === false,
+    "createProfile reports the app's profile in the SDK shape",
+    JSON.stringify(work),
+  );
+  const profilesNow = await ego.listProfiles();
+  check(
+    profilesNow.profiles.length === 2 &&
+      profilesNow.profiles.some((profile) => profile.id === "work-laptop" && profile.isDefault === false),
+    "a created profile appears in listProfiles",
+    JSON.stringify(profilesNow),
+  );
+
+  const sibling = await ego.createTaskSpace("same profile");
+  check(
+    sibling?.profileId === "default",
+    "a second space defaults to the same profile",
+    JSON.stringify(sibling),
+  );
+  const siblingHostId = [...stub.spaces.values()].find((entry) => entry.name === "same profile")?.spaceId;
+  check(
+    typeof siblingHostId === "string" && stub.spaces.get(siblingHostId).profileId === "default",
+    "the default profile travelled to createSpace",
+    JSON.stringify([...stub.spaces.values()]),
+  );
+  check(
+    (await evaluate("localStorage.getItem('rook-login')")) === "alpha",
+    "a second space of the same profile is already signed in (localStorage)",
+  );
+  check(
+    (await evaluate("document.cookie")) === "rook-login=alpha",
+    "a second space of the same profile shares the cookie jar",
+  );
+
+  const workSpace = await ego.createTaskSpace("work space", "work-laptop");
+  check(
+    workSpace?.profileId === "work-laptop" && workSpace?.profileName === "Work laptop",
+    "createTaskSpace(name, profileId) records the app's profile",
+    JSON.stringify(workSpace),
+  );
+  const workHostId = [...stub.spaces.values()].find((entry) => entry.name === "work space")?.spaceId;
+  check(
+    stub.spaces.get(workHostId)?.profileId === "work-laptop",
+    "the named profile reached createSpace",
+    JSON.stringify(stub.spaces.get(workHostId)),
+  );
+  check(
+    (await evaluate("localStorage.getItem('rook-login')")) === null &&
+      (await evaluate("document.cookie")) === "",
+    "a space in another profile is signed out",
+  );
+  await evaluate("localStorage.setItem('rook-login','beta')");
+  check(
+    (await evaluate("localStorage.getItem('rook-login')")) === "beta",
+    "the second profile keeps its own value",
+  );
+  ego.useTaskSpace(sibling.id);
+  await ego.listTabs();
+  check(
+    (await evaluate("localStorage.getItem('rook-login')")) === "alpha",
+    "writing in the second profile does not touch the first",
+  );
+
+  const refusedProfile = await ego.createTaskSpace("bad profile", "__missing_profile__");
+  check(
+    refusedProfile?.error_code === "EGO_PROFILE_NOT_FOUND",
+    "an unknown profile id is refused with EGO_PROFILE_NOT_FOUND",
+    JSON.stringify(refusedProfile),
+  );
+  check(
+    ![...stub.spaces.values()].some((entry) => entry.name === "bad profile"),
+    "an unknown profile does not leave a space behind",
+  );
+
+  ego.useTaskSpace(sibling.id);
+  await ego.closeTaskSpace();
+  ego.useTaskSpace(workSpace.id);
+  await ego.closeTaskSpace();
+  ego.useTaskSpace(space.id);
+  await ego.listTabs();
+
   // -- reconnect after EOF ----------------------------------------------
   await stub.stop();
   let survivorError = null;
@@ -509,9 +773,14 @@ async function main() {
   );
 
   // -- close ------------------------------------------------------------
+  const closesBefore = stub.countCalls("closeSpace");
   const closed = await ego.closeTaskSpace();
   check(String(closed).includes("closed"), "closeTaskSpace reports the close", String(closed));
-  check(stub.countCalls("closeSpace") === 1, "closeSpace reached the host");
+  check(
+    stub.countCalls("closeSpace") === closesBefore + 1,
+    "closeSpace reached the host",
+    `${stub.countCalls("closeSpace")} vs ${closesBefore}`,
+  );
   const remaining = await ego.listTaskSpaces();
   check(remaining.taskSpaces.length === 0, "a closed space disappears from listTaskSpaces");
 

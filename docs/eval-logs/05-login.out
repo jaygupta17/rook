@@ -1,0 +1,30 @@
+=== round 1: login page snapshot ===
+space 4
+[p1 "Sign in" | space "login-space"(4): 1 managed, 0 untracked — p1* "Sign in"]
+root
+  heading "Sign in"
+    text "Sign in"
+  form
+    labeltext
+      text "Username"
+    textbox "Username" [ref=1, loc=css:#user]
+      generic
+    labeltext
+      text "Password"
+    textbox "Password" [ref=2, loc=css:#pass]
+      generic
+    button "Sign in" [ref=3, loc=css:#login]
+      text "Sign in"
+round1_exit=0
+=== round 2: sign in ===
+url http://127.0.0.1:8781/private.html
+[p1 "Private area" | space "login-space"(4): 1 managed, 0 untracked — p1* "Private area"]
+root
+  heading "Private area"
+    text "Private area"
+  paragraph
+    text "PRIVATE-OK"
+  paragraph
+    text "sid=ok-123"
+cookie sid=ok-123
+round2_exit=0

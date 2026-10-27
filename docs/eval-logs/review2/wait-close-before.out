@@ -1,0 +1,12 @@
+APP version=0.4.0-M4 protocol=3
+CASE control {"waitStartedAt":"291ms","to_error_ms":1204,"result":"error","code":null,"message":"page.waitForSelector timed out after 1200ms: #never"}
+CASE-EVENT tab-close closed sp3/tb4
+CASE tab-close {"waitStartedAt":"348ms","to_error_ms":419,"result":"error","code":null,"message":"Session with given id not found."}
+CASE-EVENT space-close closed sp4
+CASE space-close {"waitStartedAt":"311ms","to_error_ms":425,"result":"error","code":null,"message":"Target closed: no browser tb7"}
+CASE-EVENT tab-close-busy closed sp5/tb8
+CASE tab-close-busy {"waitStartedAt":"409ms","to_error_ms":30007,"result":"error","code":null,"message":"page.waitForSelector timed out after 30000ms: #never"}
+CASE close-in-process {"waitStartedAt":"382ms","to_error_ms":3005,"result":"error","code":null,"message":"page.waitForSelector timed out after 3000ms: #never"}
+CASE-EVENT app-kill killed pid 2591379
+CASE app-kill {"waitStartedAt":"378ms","to_error_ms":423,"result":"error","code":null,"message":"no tab to send this command to in the task space"}
+DONE appLog=/tmp/rook-wait-close-AWol8e/app.log

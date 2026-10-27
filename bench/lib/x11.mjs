@@ -12,10 +12,18 @@ import { fileURLToPath } from "node:url";
 const HERE = dirname(fileURLToPath(import.meta.url));
 const POLLER = join(HERE, "..", "xpoll.py");
 
-// Xvfb comes from PATH unless ROOK_BENCH_XVFB points at a specific binary;
-// ROOK_BENCH_XVFB_LIB is only needed for an extracted copy with its own libs.
-const XVFB_BIN = process.env.ROOK_BENCH_XVFB || "Xvfb";
-const XVFB_LIB = process.env.ROOK_BENCH_XVFB_LIB || "";
+// Xvfb comes from ROOK_BENCH_XVFB, else PATH, else the copy extracted under
+// /tmp/opencode (this box has no system Xvfb). ROOK_BENCH_XVFB_LIB is only
+// needed for a copy that carries its own libraries.
+const EXTRACTED = "/tmp/opencode/xvfb-root";
+const XVFB_BIN =
+  process.env.ROOK_BENCH_XVFB ||
+  process.env.EGO_BENCH_XVFB ||
+  (existsSync(`${EXTRACTED}/usr/bin/Xvfb`) ? `${EXTRACTED}/usr/bin/Xvfb` : "Xvfb");
+const XVFB_LIB =
+  process.env.ROOK_BENCH_XVFB_LIB ||
+  process.env.EGO_BENCH_XVFB_LIB ||
+  (XVFB_BIN.startsWith(EXTRACTED) ? `${EXTRACTED}/usr/lib/x86_64-linux-gnu` : "");
 
 const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 

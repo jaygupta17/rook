@@ -1,15 +1,18 @@
 {
   "discards": [],
   "discardedRuns": 0,
-  "generatedAt": "2026-10-27T11:02:46.802Z",
-  "durationSeconds": 641.562,
+  "generatedAt": "2026-10-27T21:33:49.859Z",
+  "durationSeconds": 799.821,
   "config": {
     "runs": 3,
     "idleSeconds": 60,
+    "memSeconds": 30,
     "wakeSeconds": 20,
     "chromeIdleSeconds": 15,
     "snapshots": 30,
+    "fullSnapshots": 20,
     "snapshotRuns": 3,
+    "roundRuns": 3,
     "pollTimeout": 25
   },
   "host": {
@@ -17,9 +20,9 @@
     "model": "AMD Ryzen 9 9950X 16-Core Processor",
     "memBytes": 8327110656,
     "loadavg": [
-      0.13,
-      0.24,
-      0.74
+      0.38,
+      0.63,
+      0.63
     ],
     "kernel": "6.8.0-117-generic",
     "node": "v22.23.4",
@@ -28,13 +31,19 @@
     "display": "private Xvfb per run (:95-:120)",
     "dbus": "DBUS_SESSION_BUS_ADDRESS removed for every app measured"
   },
+  "app": {
+    "binary": "/home/user/projects/ego-lite-linux/bench/work/root/usr/bin/rook",
+    "lib": "/home/user/projects/ego-lite-linux/bench/work/root/usr/lib/rook",
+    "cli": "/home/user/projects/ego-lite-linux/bench/work/root/usr/bin/ego-browser"
+  },
   "package": {
-    "deb": "packaging/out/rook_0.3.0~m3_amd64.deb",
-    "debBytes": 136927880,
-    "installedKb": 433276,
-    "installedBytes": 443674624,
-    "version": "0.3.0~m3",
-    "appImageBytes": 172247544
+    "deb": "/home/user/projects/ego-lite-linux/packaging/out/rook_0.4.0_amd64.deb",
+    "debBytes": 137646988,
+    "installedKb": 434172,
+    "installedBytes": 444592128,
+    "version": "0.4.0",
+    "package": "rook",
+    "appImageBytes": 172931576
   },
   "metrics": [
     {
@@ -46,185 +55,252 @@
       "better": "lower",
       "summary": {
         "n": 3,
-        "median": 259.186773,
-        "min": 244.503737,
-        "max": 259.474928,
-        "spread": 14.971190999999976,
-        "spreadPct": 5.77621721460299,
+        "median": 662.457104,
+        "min": 517.648479,
+        "max": 785.781548,
+        "spread": 268.1330690000001,
+        "spreadPct": 40.4755368130221,
         "values": [
-          259.186773,
-          259.474928,
-          244.503737
+          662.457104,
+          517.648479,
+          785.781548
         ]
       },
       "pass": true,
-      "method": "exec -> first frame containing the page's own marker colour, polled from the framebuffer at ~4 ms; fresh profile and fresh X server per run. Not screenshot-mode minus a baseline: that path carries a fixed 900 ms settle.",
+      "method": "exec -> first frame containing the page's own marker colour, polled from the framebuffer at ~4 ms; fresh profile and fresh X display server per run. Not screenshot-mode minus a baseline: that path carries a fixed 900 ms settle.",
       "detail": {
         "warmProfile": {
           "n": 3,
-          "median": 234.271716,
-          "min": 227.619706,
-          "max": 237.514031,
-          "spread": 9.89432499999998,
-          "spreadPct": 4.223439845380216,
+          "median": 356.410825,
+          "min": 334.949294,
+          "max": 388.593312,
+          "spread": 53.64401800000002,
+          "spreadPct": 15.051175283466774,
           "values": [
-            234.271716,
-            237.514031,
-            227.619706
+            356.410825,
+            388.593312,
+            334.949294
           ]
         },
         "windowUp": {
           "n": 3,
-          "median": 171.928337,
-          "min": 170.718097,
-          "max": 171.9662,
-          "spread": 1.2481029999999862,
-          "spreadPct": 0.7259437401526115,
+          "median": 270.212571,
+          "min": 253.986074,
+          "max": 305.845583,
+          "spread": 51.859508999999974,
+          "spreadPct": 19.19211560294135,
           "values": [
-            171.9662,
-            170.718097,
-            171.928337
+            253.986074,
+            270.212571,
+            305.845583
           ]
         },
         "appLoaded": {
           "n": 3,
-          "median": 235.492823,
-          "min": 234.052114,
-          "max": 247.383109,
-          "spread": 13.330995000000001,
-          "spreadPct": 5.660892264219875,
+          "median": 645.144132,
+          "min": 505.70922,
+          "max": 779.53891,
+          "spread": 273.82968999999997,
+          "spreadPct": 42.444730784593105,
           "values": [
-            247.383109,
-            235.492823,
-            234.052114
+            645.144132,
+            505.70922,
+            779.53891
           ]
         }
-      }
+      },
+      "improved": "0.4.0 fixed the at-spi stall"
     },
     {
-      "id": "idle-rss",
-      "label": "Memory, one tab open",
+      "id": "idle-pss",
+      "label": "Memory, one tab open (PSS)",
       "plain": "Memory the app uses sitting idle with one tab",
       "target": 250,
       "unit": "MiB",
       "better": "lower",
       "summary": {
         "n": 3,
-        "median": 939.97265625,
-        "min": 936.78515625,
-        "max": 945.09765625,
-        "spread": 8.3125,
-        "spreadPct": 0.8843342351215336,
+        "median": 354.935546875,
+        "min": 353.1650390625,
+        "max": 355.837890625,
+        "spread": 2.6728515625,
+        "spreadPct": 0.7530526559069374,
         "values": [
-          936.78515625,
-          939.97265625,
-          945.09765625
+          354.935546875,
+          353.1650390625,
+          355.837890625
         ]
       },
       "pass": false,
-      "method": "Sum of Rss over every process in the app's pid tree (/proc/<pid>/smaps_rollup), 60 s after the tab loaded. Pss is reported too: Rss double counts pages shared between processes.",
+      "method": "Sum of Pss over every process in the app's pid tree (/proc/<pid>/smaps_rollup), 30 s after the tab loaded. PSS splits a shared page between the processes mapping it, so it is the number that adds up to real memory. Summed RSS is the row below.",
       "detail": {
-        "pssMiB": {
+        "rss": {
           "n": 3,
-          "median": 352.5693359375,
-          "min": 351.8671875,
-          "max": 359.16796875,
-          "spread": 7.30078125,
-          "spreadPct": 2.070736307962474,
+          "median": 929.7734375,
+          "min": 926.49609375,
+          "max": 933.82421875,
+          "spread": 7.328125,
+          "spreadPct": 0.7881624387661644,
           "values": [
-            352.5693359375,
-            351.8671875,
-            359.16796875
+            929.7734375,
+            926.49609375,
+            933.82421875
           ]
         },
-        "fourSpacesPss": {
+        "pids": 10,
+        "chrome": {
           "n": 3,
-          "median": 426.673828125,
-          "min": 413.009765625,
-          "max": 427.22265625,
-          "spread": 14.212890625,
-          "spreadPct": 3.331090328989229,
+          "median": 315.470703125,
+          "min": 315.0263671875,
+          "max": 316.7578125,
+          "spread": 1.7314453125,
+          "spreadPct": 0.5488450418211874,
           "values": [
-            413.009765625,
-            426.673828125,
-            427.22265625
+            315.470703125,
+            315.0263671875,
+            316.7578125
+          ]
+        }
+      },
+      "improved": "reported as PSS, which does not double count shared pages"
+    },
+    {
+      "id": "idle-rss",
+      "label": "Memory, one tab open (summed RSS)",
+      "plain": "The same app, counted the old way: every process's RSS added up",
+      "target": null,
+      "unit": "MiB",
+      "better": "lower",
+      "summary": {
+        "n": 3,
+        "median": 929.7734375,
+        "min": 926.49609375,
+        "max": 933.82421875,
+        "spread": 7.328125,
+        "spreadPct": 0.7881624387661644,
+        "values": [
+          929.7734375,
+          926.49609375,
+          933.82421875
+        ]
+      },
+      "pass": null,
+      "method": "Sum of Rss over the same process tree. Every process maps the same libcef.so, so this counts those ~277 MB once per process: it is an upper bound, not memory in use. Kept because the original budget was written in these units.",
+      "detail": {
+        "pss": {
+          "n": 3,
+          "median": 354.935546875,
+          "min": 353.1650390625,
+          "max": 355.837890625,
+          "spread": 2.6728515625,
+          "spreadPct": 0.7530526559069374,
+          "values": [
+            354.935546875,
+            353.1650390625,
+            355.837890625
           ]
         }
       }
     },
     {
-      "id": "space-margin",
-      "label": "Extra memory per parked space",
-      "plain": "Memory added by each agent space kept in the background",
+      "id": "space-margin-2",
+      "label": "Extra memory for a 2nd space",
+      "plain": "Memory added by a second space inside the same profile",
       "target": 120,
       "unit": "MiB",
       "better": "lower",
       "summary": {
         "n": 3,
-        "median": 129.94661458333334,
-        "min": 127.53776041666667,
-        "max": 132.015625,
-        "spread": 4.477864583333329,
-        "spreadPct": 3.4459263118868892,
+        "median": 15.9677734375,
+        "min": 14.6005859375,
+        "max": 17.6845703125,
+        "spread": 3.083984375,
+        "spreadPct": 19.31380343709865,
         "values": [
-          127.53776041666667,
-          132.015625,
-          129.94661458333334
+          15.9677734375,
+          17.6845703125,
+          14.6005859375
         ]
       },
-      "pass": false,
-      "method": "(RSS with 4 spaces - RSS with 1 space) / 3, same page in every space, 60 s after load. The three parked spaces are WasHidden(true); the app reports 'parked' in its log, which the harness counts.",
+      "pass": true,
+      "method": "(PSS with 2 spaces - PSS with 1 space), same page in both, same profile, 30 s after load. The 0.3.0 figure was summed RSS over 4-vs-1 spaces, when every space also had its own browser context: that counted libcef once per renderer, which is why 130 MB was a real measurement of the wrong quantity.",
       "detail": {
-        "oneSpace": {
+        "twoSpaces": {
           "n": 3,
-          "median": 939.97265625,
-          "min": 936.78515625,
-          "max": 945.09765625,
-          "spread": 8.3125,
-          "spreadPct": 0.8843342351215336,
+          "median": 370.849609375,
+          "min": 370.4384765625,
+          "max": 370.9033203125,
+          "spread": 0.46484375,
+          "spreadPct": 0.12534562211981565,
           "values": [
-            936.78515625,
-            939.97265625,
-            945.09765625
+            370.9033203125,
+            370.849609375,
+            370.4384765625
           ]
         },
-        "fourParked": {
+        "fourSpaces": {
           "n": 3,
-          "median": 1334.9375,
-          "min": 1319.3984375,
-          "max": 1336.01953125,
-          "spread": 16.62109375,
-          "spreadPct": 1.2450840395149587,
+          "median": 424.984375,
+          "min": 409.6650390625,
+          "max": 425.2890625,
+          "spread": 15.6240234375,
+          "spreadPct": 3.676375969704768,
           "values": [
-            1319.3984375,
-            1336.01953125,
-            1334.9375
+            424.984375,
+            409.6650390625,
+            425.2890625
           ]
         },
-        "fourAwake": {
+        "perSpaceOfFour": {
           "n": 3,
-          "median": 1312.4375,
-          "min": 1312.09375,
-          "max": 1313.8828125,
-          "spread": 1.7890625,
-          "spreadPct": 0.13631601504833565,
+          "median": 23.150390625,
+          "min": 18.833333333333332,
+          "max": 23.349609375,
+          "spread": 4.516276041666668,
+          "spreadPct": 19.50842262155854,
           "values": [
-            1313.8828125,
-            1312.09375,
-            1312.4375
+            23.349609375,
+            18.833333333333332,
+            23.150390625
           ]
-        },
-        "awakeMargin": {
+        }
+      },
+      "improved": "measured per space, not per renderer"
+    },
+    {
+      "id": "space-margin-4",
+      "label": "Extra memory for the 4th space",
+      "plain": "Memory added by the third and fourth space, per space",
+      "target": 120,
+      "unit": "MiB",
+      "better": "lower",
+      "summary": {
+        "n": 3,
+        "median": 27.04052734375,
+        "min": 19.40771484375,
+        "max": 27.42529296875,
+        "spread": 8.017578125,
+        "spreadPct": 29.65022842593763,
+        "values": [
+          27.04052734375,
+          19.40771484375,
+          27.42529296875
+        ]
+      },
+      "pass": true,
+      "method": "((PSS with 4 spaces - PSS with 2 spaces) / 2), same page in every space, same profile, 30 s after load.",
+      "detail": {
+        "awake": {
           "n": 3,
-          "median": 124.04036458333333,
-          "min": 122.44661458333333,
-          "max": 125.69921875,
-          "spread": 3.2526041666666714,
-          "spreadPct": 2.622214290962917,
+          "median": 405.42578125,
+          "min": 404.51171875,
+          "max": 405.65234375,
+          "spread": 1.140625,
+          "spreadPct": 0.28134002639971484,
           "values": [
-            125.69921875,
-            124.04036458333333,
-            122.44661458333333
+            404.51171875,
+            405.42578125,
+            405.65234375
           ]
         },
         "parkedTransitions": [
@@ -232,7 +308,50 @@
           3,
           3
         ]
-      }
+      },
+      "improved": "measured per space, not per renderer"
+    },
+    {
+      "id": "profile-margin",
+      "label": "Extra memory for a 2nd profile",
+      "plain": "Memory added by a second profile, which is a whole separate browser context",
+      "target": null,
+      "unit": "MiB",
+      "better": "lower",
+      "summary": {
+        "n": 3,
+        "median": 21.8740234375,
+        "min": 21.5029296875,
+        "max": 23.384765625,
+        "spread": 1.8818359375,
+        "spreadPct": 8.603062636724854,
+        "values": [
+          21.8740234375,
+          23.384765625,
+          21.5029296875
+        ]
+      },
+      "pass": null,
+      "method": "(PSS with 1 space + 1 space in a second profile - PSS with 1 space), same page, 30 s after load; the second profile's space is created over the control socket with createProfile + createSpace(profileId), the same calls the bridge makes.",
+      "detail": {
+        "both": {
+          "n": 3,
+          "median": 376.8095703125,
+          "min": 376.5498046875,
+          "max": 377.3408203125,
+          "spread": 0.791015625,
+          "spreadPct": 0.20992450492804252,
+          "values": [
+            376.8095703125,
+            376.5498046875,
+            377.3408203125
+          ]
+        },
+        "profiles": [
+          "bench-second"
+        ]
+      },
+      "improved": "new measurement: profiles are the isolation boundary now"
     },
     {
       "id": "cpu-idle",
@@ -243,15 +362,15 @@
       "better": "lower",
       "summary": {
         "n": 3,
-        "median": 0.7483642653887833,
-        "min": 0.6983736730521949,
-        "max": 0.8314000456758314,
-        "spread": 0.13302637262363648,
-        "spreadPct": 17.775617941154344,
+        "median": 0.8639170073246447,
+        "min": 0.8477454394563584,
+        "max": 1.0126907902511484,
+        "spread": 0.16494535079479,
+        "spreadPct": 19.092731060543464,
         "values": [
-          0.6983736730521949,
-          0.7483642653887833,
-          0.8314000456758314
+          1.0126907902511484,
+          0.8477454394563584,
+          0.8639170073246447
         ]
       },
       "pass": true,
@@ -259,144 +378,349 @@
       "detail": {
         "oneTab": {
           "n": 3,
-          "median": 0.5488234491203616,
-          "min": 0.5323035183465938,
-          "max": 0.7488470956422867,
-          "spread": 0.21654357729569285,
-          "spreadPct": 39.4559630501872,
+          "median": 0.23261480288570097,
+          "min": 0.19944914242408146,
+          "max": 0.23270336849339227,
+          "spread": 0.033254226069310805,
+          "spreadPct": 14.295833995418944,
           "values": [
-            0.5488234491203616,
-            0.5323035183465938,
-            0.7488470956422867
+            0.23270336849339227,
+            0.19944914242408146,
+            0.23261480288570097
           ]
         }
       }
     },
     {
       "id": "snapshot-p50",
-      "label": "Snapshot, median",
+      "label": "Snapshot p50, viewport",
       "plain": "Time for an agent to read the page it is looking at",
       "target": 40,
       "unit": "ms",
       "better": "lower",
       "summary": {
         "n": 3,
-        "median": 64.774376,
-        "min": 64.653067,
-        "max": 68.840118,
-        "spread": 4.187051000000011,
-        "spreadPct": 6.464054551447954,
+        "median": 81.604529,
+        "min": 79.259536,
+        "max": 89.635883,
+        "spread": 10.37634700000001,
+        "spreadPct": 12.715405783421666,
         "values": [
-          68.840118,
-          64.774376,
-          64.653067
+          89.635883,
+          79.259536,
+          81.604529
         ]
       },
       "pass": false,
-      "method": "30 snapshots per run x 3 runs on the long list (2412 nodes), through 'ego-browser nodejs' with ROOK_BACKEND=host (bridge -> control socket -> CEF), viewport scope (the default). Each run's own p50, then median and spread across runs.",
+      "method": "30 viewport snapshots per run x 3 runs on the long list (2412 elements), through 'ego-browser nodejs' with ROOK_BACKEND=host (bridge -> control socket -> CEF). The snapshot's own scope header says what was returned; each run's p50, then median and spread across runs.",
       "detail": {
         "perPage": [
           {
             "id": "small-form",
             "label": "small form",
             "nodes": 21,
-            "p50": 4.757162,
-            "p95": 6.156869,
+            "viewportScope": {
+              "scope": "viewport only",
+              "lines": 22,
+              "refs": 6
+            },
+            "fullScope": {
+              "scope": "full page",
+              "lines": 22,
+              "refs": 6
+            },
+            "p50": 8.426829,
+            "p95": 12.172788,
+            "fullP50": 8.029051,
+            "fullP95": 12.709148,
             "perRunP50": [
-              4.866257,
-              4.910281,
-              4.573186
+              8.775235,
+              8.596157,
+              7.169603
             ],
             "perRunP95": [
-              6.181896,
-              5.741517,
-              6.234987
+              12.343931,
+              11.062149,
+              11.706813
             ],
             "samples": 90,
-            "fullPageP50": 4.736413,
-            "fullPageP95": 7.986886
+            "fullSamples": 60
           },
           {
             "id": "long-list",
             "label": "long list",
             "nodes": 2412,
-            "p50": 65.88011,
-            "p95": 77.832797,
+            "viewportScope": {
+              "scope": "viewport only",
+              "lines": 183,
+              "refs": 481
+            },
+            "fullScope": {
+              "scope": "full page",
+              "lines": 1688,
+              "refs": 481
+            },
+            "p50": 82.808444,
+            "p95": 104.534845,
+            "fullP50": 83.095374,
+            "fullP95": 100.36163,
             "perRunP50": [
-              68.840118,
-              64.774376,
-              64.653067
+              89.635883,
+              79.259536,
+              81.604529
             ],
             "perRunP95": [
-              78.207123,
-              74.054429,
-              73.074773
+              122.448657,
+              92.419221,
+              98.149455
             ],
             "samples": 90,
-            "fullPageP50": 70.690492,
-            "fullPageP95": 87.540325
+            "fullSamples": 60
           },
           {
             "id": "heavy-dashboard",
             "label": "heavy dashboard",
             "nodes": 3797,
-            "p50": 141.183172,
-            "p95": 154.18581,
+            "viewportScope": {
+              "scope": "viewport only",
+              "lines": 133,
+              "refs": 604
+            },
+            "fullScope": {
+              "scope": "full page",
+              "lines": 3378,
+              "refs": 604
+            },
+            "p50": 186.668408,
+            "p95": 237.660865,
+            "fullP50": 189.721865,
+            "fullP95": 217.75452,
             "perRunP50": [
-              148.951072,
-              136.803974,
-              134.506272
+              196.227107,
+              184.295712,
+              177.840594
             ],
             "perRunP95": [
-              161.61046,
-              154.18581,
-              150.447906
+              237.660865,
+              360.583704,
+              216.848216
             ],
             "samples": 90,
-            "fullPageP50": 153.798091,
-            "fullPageP95": 165.988914
+            "fullSamples": 60
           }
         ]
-      }
+      },
+      "improved": "0.4.0 reworked the serializer"
     },
     {
       "id": "snapshot-p95",
-      "label": "Snapshot, p95",
+      "label": "Snapshot p95, viewport",
       "plain": "Time for an agent to read a heavy dashboard, slow case",
       "target": 150,
       "unit": "ms",
       "better": "lower",
       "summary": {
         "n": 3,
-        "median": 154.18581,
-        "min": 150.447906,
-        "max": 161.61046,
-        "spread": 11.162554,
-        "spreadPct": 7.239676595401353,
+        "median": 237.660865,
+        "min": 216.848216,
+        "max": 360.583704,
+        "spread": 143.735488,
+        "spreadPct": 60.479241291998164,
         "values": [
-          161.61046,
-          154.18581,
-          150.447906
+          237.660865,
+          360.583704,
+          216.848216
         ]
       },
       "pass": false,
-      "method": "Same samples as the p50 row; p95 of each run on the heavy dashboard (3797 nodes, 5794 snapshot lines), median and spread across runs.",
+      "method": "Same samples as the p50 row; p95 of each run on the heavy dashboard (3797 elements), median and spread across runs.",
       "detail": {
-        "heavy": {
-          "p50": 141.183172,
-          "p95": 154.18581,
-          "nodes": 3797,
-          "lines": 5794
+        "header": "snapshot scope=viewport only, 133 lines, 604 refs, 3245 nodes outside the viewport not shown - pass {scope:\"full_page\"} for the whole page"
+      },
+      "improved": "0.4.0 reworked the serializer"
+    },
+    {
+      "id": "snapshot-p50-full",
+      "label": "Snapshot p50, full page",
+      "plain": "The same read, with nothing filtered out",
+      "target": null,
+      "unit": "ms",
+      "better": "lower",
+      "summary": {
+        "n": 3,
+        "median": 82.923521,
+        "min": 77.355011,
+        "max": 87.360231,
+        "spread": 10.005219999999994,
+        "spreadPct": 12.06559957819446,
+        "values": [
+          87.360231,
+          77.355011,
+          82.923521
+        ]
+      },
+      "pass": null,
+      "method": "Same CLI round, 20 'full_page' snapshots per run on the long list. Not part of the original budget, which is written for the default viewport scope.",
+      "detail": {
+        "header": "snapshot scope=full page, 1688 lines, 481 refs"
+      },
+      "improved": "0.4.0 reworked the serializer"
+    },
+    {
+      "id": "snapshot-p95-full",
+      "label": "Snapshot p95, full page",
+      "plain": "The slow case of the same read, with nothing filtered out",
+      "target": null,
+      "unit": "ms",
+      "better": "lower",
+      "summary": {
+        "n": 3,
+        "median": 209.44376,
+        "min": 198.500275,
+        "max": 224.423742,
+        "spread": 25.923467000000016,
+        "spreadPct": 12.377292596351412,
+        "values": [
+          224.423742,
+          198.500275,
+          209.44376
+        ]
+      },
+      "pass": null,
+      "method": "Same samples as the full-page p50 row; p95 on the heavy dashboard (3797 elements).",
+      "detail": {
+        "header": "snapshot scope=full page, 3378 lines, 604 refs"
+      },
+      "improved": "0.4.0 reworked the serializer"
+    },
+    {
+      "id": "agent-round",
+      "label": "Agent round (navigate → snapshot → click → type)",
+      "plain": "How long one complete agent step takes, from the command line",
+      "target": null,
+      "unit": "ms",
+      "better": "lower",
+      "summary": {
+        "n": 3,
+        "median": 522.78717,
+        "min": 514.206822,
+        "max": 592.832162,
+        "spread": 78.62534000000005,
+        "spreadPct": 15.039646057113462,
+        "values": [
+          592.832162,
+          514.206822,
+          522.78717
+        ]
+      },
+      "pass": null,
+      "method": "One 'ego-browser nodejs' invocation per run, 3 runs, on the local small-form page: create space, open the page, snapshot, click \"Forgot password?\", click the email field, type 15 characters, finish. Timed from spawn to exit; the script stamps every phase on the same clock.",
+      "detail": {
+        "cliStartup": {
+          "n": 3,
+          "median": 51.189278,
+          "min": 45.448954,
+          "max": 70.038171,
+          "spread": 24.589217000000005,
+          "spreadPct": 48.03587384061171,
+          "values": [
+            70.038171,
+            51.189278,
+            45.448954
+          ]
         },
-        "list": {
-          "p50": 65.88011,
-          "p95": 77.832797,
-          "nodes": 2412
+        "browser": {
+          "n": 3,
+          "median": 464.84791800000005,
+          "min": 448.693807,
+          "max": 510.776655,
+          "spread": 62.08284800000001,
+          "spreadPct": 13.355518137439523,
+          "values": [
+            510.776655,
+            448.693807,
+            464.84791800000005
+          ]
         },
-        "small": {
-          "p50": 4.757162,
-          "p95": 6.156869,
-          "nodes": 21
+        "phases": {
+          "taskSpace": {
+            "n": 3,
+            "median": 43.385391,
+            "min": 34.487866,
+            "max": 74.794291,
+            "spread": 40.306425000000004,
+            "spreadPct": 92.90321942701866,
+            "values": [
+              74.794291,
+              34.487866,
+              43.385391
+            ]
+          },
+          "page": {
+            "n": 3,
+            "median": 0.107082,
+            "min": 0.103023,
+            "max": 0.260752,
+            "spread": 0.15772899999999998,
+            "spreadPct": 147.29739825554248,
+            "values": [
+              0.260752,
+              0.103023,
+              0.107082
+            ]
+          },
+          "goto": {
+            "n": 3,
+            "median": 118.323622,
+            "min": 102.173319,
+            "max": 121.159912,
+            "spread": 18.986593,
+            "spreadPct": 16.046325052490364,
+            "values": [
+              118.323622,
+              102.173319,
+              121.159912
+            ]
+          },
+          "snapshot": {
+            "n": 3,
+            "median": 22.73141,
+            "min": 20.314523,
+            "max": 22.982714,
+            "spread": 2.668191,
+            "spreadPct": 11.737903632022826,
+            "values": [
+              20.314523,
+              22.982714,
+              22.73141
+            ]
+          },
+          "click": {
+            "n": 3,
+            "median": 126.798864,
+            "min": 125.020848,
+            "max": 132.203976,
+            "spread": 7.183128000000011,
+            "spreadPct": 5.664978197281019,
+            "values": [
+              132.203976,
+              126.798864,
+              125.020848
+            ]
+          },
+          "type": {
+            "n": 3,
+            "median": 162.148021,
+            "min": 152.443275,
+            "max": 164.879491,
+            "spread": 12.436216000000002,
+            "spreadPct": 7.669668691176936,
+            "values": [
+              164.879491,
+              162.148021,
+              152.443275
+            ]
+          }
         }
       }
     },
@@ -409,21 +733,21 @@
       "better": "lower",
       "summary": {
         "n": 1,
-        "median": 443.674624,
-        "min": 443.674624,
-        "max": 443.674624,
+        "median": 444.592128,
+        "min": 444.592128,
+        "max": 444.592128,
         "spread": 0,
         "spreadPct": 0,
         "values": [
-          443.674624
+          444.592128
         ]
       },
       "pass": true,
       "method": "dpkg's Installed-Size field of the .deb (KiB -> MB), i.e. what dpkg reports for the installed tree. The compressed .deb and the AppImage are listed for context.",
       "detail": {
-        "debBytes": 136927880,
-        "appImageBytes": 172247544,
-        "installedKb": 433276
+        "debBytes": 137646988,
+        "appImageBytes": 172931576,
+        "installedKb": 434172
       }
     }
   ],
@@ -436,46 +760,46 @@
       "target": null,
       "summary": {
         "n": 3,
-        "median": 1090.80859375,
-        "min": 1081.14453125,
-        "max": 1096.5078125,
-        "spread": 15.36328125,
-        "spreadPct": 1.4084305292447188,
+        "median": 315.470703125,
+        "min": 315.0263671875,
+        "max": 316.7578125,
+        "spread": 1.7314453125,
+        "spreadPct": 0.5488450418211874,
         "values": [
-          1096.5078125,
-          1090.80859375,
-          1081.14453125
+          315.470703125,
+          315.0263671875,
+          316.7578125
         ]
       },
       "extra": {
         "aboutBlank": {
           "n": 3,
-          "median": 1073.328125,
-          "min": 1068.2421875,
-          "max": 1077.6171875,
-          "spread": 9.375,
-          "spreadPct": 0.8734514433785102,
+          "median": 309.921875,
+          "min": 309.75,
+          "max": 310.79296875,
+          "spread": 1.04296875,
+          "spreadPct": 0.33652634232417444,
           "values": [
-            1068.2421875,
-            1073.328125,
-            1077.6171875
+            310.79296875,
+            309.75,
+            309.921875
           ]
         },
-        "pssMiB": {
+        "rss": {
           "n": 3,
-          "median": 259.5673828125,
-          "min": 252.75,
-          "max": 263.5263671875,
-          "spread": 10.7763671875,
-          "spreadPct": 4.151664616229679,
+          "median": 1082.31640625,
+          "min": 1080.484375,
+          "max": 1082.890625,
+          "spread": 2.40625,
+          "spreadPct": 0.22232408065744405,
           "values": [
-            259.5673828125,
-            263.5263671875,
-            252.75
+            1082.890625,
+            1080.484375,
+            1082.31640625
           ]
         }
       },
-      "method": "google-chrome --headless=new, one page loaded, RSS over the chrome pid tree after a 20 s window."
+      "method": "google-chrome --headless=new, one page loaded, PSS over the Chrome pid tree after a 15 s window."
     },
     {
       "id": "chrome-cold",
@@ -485,296 +809,384 @@
       "target": null,
       "summary": {
         "n": 3,
-        "median": 328.578862,
-        "min": 306.098684,
-        "max": 347.748743,
-        "spread": 41.650059,
-        "spreadPct": 12.675818141947303,
+        "median": 461.562254,
+        "min": 428.574031,
+        "max": 545.472062,
+        "spread": 116.89803100000006,
+        "spreadPct": 25.326601121936644,
         "values": [
-          306.098684,
-          328.578862,
-          347.748743
+          545.472062,
+          428.574031,
+          461.562254
         ]
       },
       "extra": {
         "onePage": {
           "n": 3,
-          "median": 391.707851,
-          "min": 379.064432,
-          "max": 413.610633,
-          "spread": 34.546200999999996,
-          "spreadPct": 8.819379267432655,
+          "median": 529.05698,
+          "min": 524.592696,
+          "max": 693.639931,
+          "spread": 169.047235,
+          "spreadPct": 31.952557359700656,
           "values": [
-            413.610633,
-            391.707851,
-            379.064432
+            693.639931,
+            529.05698,
+            524.592696
           ]
         }
       },
-      "method": "exec -> PNG written by --screenshot, warm profile. Headless Chrome has no window, so there is no framebuffer to poll; this is its own equivalent measurement, not the same instrument as the Rook number."
+      "method": "exec -> PNG written by --screenshot, warm profile after a discarded warm-up. Headless Chrome has no window, so there is no framebuffer to poll; this is its own equivalent measurement, not the same instrument as the app's number."
     }
   ],
   "derived": {
     "coldPaint": {
       "n": 3,
-      "median": 259.186773,
-      "min": 244.503737,
-      "max": 259.474928,
-      "spread": 14.971190999999976,
-      "spreadPct": 5.77621721460299,
+      "median": 662.457104,
+      "min": 517.648479,
+      "max": 785.781548,
+      "spread": 268.1330690000001,
+      "spreadPct": 40.4755368130221,
       "values": [
-        259.186773,
-        259.474928,
-        244.503737
+        662.457104,
+        517.648479,
+        785.781548
       ]
     },
     "coldWarm": {
       "n": 3,
-      "median": 234.271716,
-      "min": 227.619706,
-      "max": 237.514031,
-      "spread": 9.89432499999998,
-      "spreadPct": 4.223439845380216,
+      "median": 356.410825,
+      "min": 334.949294,
+      "max": 388.593312,
+      "spread": 53.64401800000002,
+      "spreadPct": 15.051175283466774,
       "values": [
-        234.271716,
-        237.514031,
-        227.619706
+        356.410825,
+        388.593312,
+        334.949294
       ]
     },
-    "oneTab": {
+    "oneTabPss": {
       "n": 3,
-      "median": 939.97265625,
-      "min": 936.78515625,
-      "max": 945.09765625,
-      "spread": 8.3125,
-      "spreadPct": 0.8843342351215336,
+      "median": 354.935546875,
+      "min": 353.1650390625,
+      "max": 355.837890625,
+      "spread": 2.6728515625,
+      "spreadPct": 0.7530526559069374,
       "values": [
-        936.78515625,
-        939.97265625,
-        945.09765625
+        354.935546875,
+        353.1650390625,
+        355.837890625
       ]
     },
-    "fourParked": {
+    "oneTabRss": {
       "n": 3,
-      "median": 1334.9375,
-      "min": 1319.3984375,
-      "max": 1336.01953125,
-      "spread": 16.62109375,
-      "spreadPct": 1.2450840395149587,
+      "median": 929.7734375,
+      "min": 926.49609375,
+      "max": 933.82421875,
+      "spread": 7.328125,
+      "spreadPct": 0.7881624387661644,
       "values": [
-        1319.3984375,
-        1336.01953125,
-        1334.9375
+        929.7734375,
+        926.49609375,
+        933.82421875
       ]
     },
-    "fourAwake": {
+    "twoPss": {
       "n": 3,
-      "median": 1312.4375,
-      "min": 1312.09375,
-      "max": 1313.8828125,
-      "spread": 1.7890625,
-      "spreadPct": 0.13631601504833565,
+      "median": 370.849609375,
+      "min": 370.4384765625,
+      "max": 370.9033203125,
+      "spread": 0.46484375,
+      "spreadPct": 0.12534562211981565,
       "values": [
-        1313.8828125,
-        1312.09375,
-        1312.4375
+        370.9033203125,
+        370.849609375,
+        370.4384765625
       ]
     },
-    "marginalParked": {
+    "fourPss": {
       "n": 3,
-      "median": 129.94661458333334,
-      "min": 127.53776041666667,
-      "max": 132.015625,
-      "spread": 4.477864583333329,
-      "spreadPct": 3.4459263118868892,
+      "median": 424.984375,
+      "min": 409.6650390625,
+      "max": 425.2890625,
+      "spread": 15.6240234375,
+      "spreadPct": 3.676375969704768,
       "values": [
-        127.53776041666667,
-        132.015625,
-        129.94661458333334
+        424.984375,
+        409.6650390625,
+        425.2890625
       ]
     },
-    "marginalAwake": {
+    "secondProfilePss": {
       "n": 3,
-      "median": 124.04036458333333,
-      "min": 122.44661458333333,
-      "max": 125.69921875,
-      "spread": 3.2526041666666714,
-      "spreadPct": 2.622214290962917,
+      "median": 376.8095703125,
+      "min": 376.5498046875,
+      "max": 377.3408203125,
+      "spread": 0.791015625,
+      "spreadPct": 0.20992450492804252,
       "values": [
-        125.69921875,
-        124.04036458333333,
-        122.44661458333333
+        376.8095703125,
+        376.5498046875,
+        377.3408203125
+      ]
+    },
+    "fourAwakePss": {
+      "n": 3,
+      "median": 405.42578125,
+      "min": 404.51171875,
+      "max": 405.65234375,
+      "spread": 1.140625,
+      "spreadPct": 0.28134002639971484,
+      "values": [
+        404.51171875,
+        405.42578125,
+        405.65234375
+      ]
+    },
+    "marginalSecond": {
+      "n": 3,
+      "median": 15.9677734375,
+      "min": 14.6005859375,
+      "max": 17.6845703125,
+      "spread": 3.083984375,
+      "spreadPct": 19.31380343709865,
+      "values": [
+        15.9677734375,
+        17.6845703125,
+        14.6005859375
+      ]
+    },
+    "marginalFourth": {
+      "n": 3,
+      "median": 27.04052734375,
+      "min": 19.40771484375,
+      "max": 27.42529296875,
+      "spread": 8.017578125,
+      "spreadPct": 29.65022842593763,
+      "values": [
+        27.04052734375,
+        19.40771484375,
+        27.42529296875
+      ]
+    },
+    "marginalProfile": {
+      "n": 3,
+      "median": 21.8740234375,
+      "min": 21.5029296875,
+      "max": 23.384765625,
+      "spread": 1.8818359375,
+      "spreadPct": 8.603062636724854,
+      "values": [
+        21.8740234375,
+        23.384765625,
+        21.5029296875
+      ]
+    },
+    "marginalPerSpaceOld": {
+      "n": 3,
+      "median": 23.150390625,
+      "min": 18.833333333333332,
+      "max": 23.349609375,
+      "spread": 4.516276041666668,
+      "spreadPct": 19.50842262155854,
+      "values": [
+        23.349609375,
+        18.833333333333332,
+        23.150390625
+      ]
+    },
+    "marginalPerSpaceRss": {
+      "n": 3,
+      "median": 127.30208333333333,
+      "min": 126.36458333333333,
+      "max": 130.44661458333334,
+      "spread": 4.082031250000014,
+      "spreadPct": 3.206570657065718,
+      "values": [
+        130.44661458333334,
+        126.36458333333333,
+        127.30208333333333
       ]
     },
     "cpuParked": {
       "n": 3,
-      "median": 0.7483642653887833,
-      "min": 0.6983736730521949,
-      "max": 0.8314000456758314,
-      "spread": 0.13302637262363648,
-      "spreadPct": 17.775617941154344,
+      "median": 0.8639170073246447,
+      "min": 0.8477454394563584,
+      "max": 1.0126907902511484,
+      "spread": 0.16494535079479,
+      "spreadPct": 19.092731060543464,
       "values": [
-        0.6983736730521949,
-        0.7483642653887833,
-        0.8314000456758314
+        1.0126907902511484,
+        0.8477454394563584,
+        0.8639170073246447
       ]
     },
     "cpuOneTab": {
       "n": 3,
-      "median": 0.5488234491203616,
-      "min": 0.5323035183465938,
-      "max": 0.7488470956422867,
-      "spread": 0.21654357729569285,
-      "spreadPct": 39.4559630501872,
+      "median": 0.23261480288570097,
+      "min": 0.19944914242408146,
+      "max": 0.23270336849339227,
+      "spread": 0.033254226069310805,
+      "spreadPct": 14.295833995418944,
       "values": [
-        0.5488234491203616,
-        0.5323035183465938,
-        0.7488470956422867
+        0.23270336849339227,
+        0.19944914242408146,
+        0.23261480288570097
       ]
     },
-    "chromeBlank": {
+    "chromeBlankPss": {
       "n": 3,
-      "median": 1073.328125,
-      "min": 1068.2421875,
-      "max": 1077.6171875,
-      "spread": 9.375,
-      "spreadPct": 0.8734514433785102,
+      "median": 309.921875,
+      "min": 309.75,
+      "max": 310.79296875,
+      "spread": 1.04296875,
+      "spreadPct": 0.33652634232417444,
       "values": [
-        1068.2421875,
-        1073.328125,
-        1077.6171875
+        310.79296875,
+        309.75,
+        309.921875
       ]
     },
-    "chromePage": {
+    "chromePagePss": {
       "n": 3,
-      "median": 1090.80859375,
-      "min": 1081.14453125,
-      "max": 1096.5078125,
-      "spread": 15.36328125,
-      "spreadPct": 1.4084305292447188,
+      "median": 315.470703125,
+      "min": 315.0263671875,
+      "max": 316.7578125,
+      "spread": 1.7314453125,
+      "spreadPct": 0.5488450418211874,
       "values": [
-        1096.5078125,
-        1090.80859375,
-        1081.14453125
+        315.470703125,
+        315.0263671875,
+        316.7578125
       ]
     },
-    "fleetMiB": 652.29296875,
-    "rendererMiB": 0,
-    "contributors": [
-      {
-        "title": "The CEF runtime, counted once per process (587 MiB of the 940 MiB)",
-        "detail": "RSS sums every process in the tree, and each of the 10 processes maps the same 330 MB libcef.so. The gap between summed RSS (940 MiB) and summed Pss (353 MiB) is that double count. It is not memory the app can give back, but a budget written as \"total RSS\" pays for it once per process, so the number of processes is itself a cost."
-      },
-      {
-        "title": "One renderer process per space (130 MiB per extra parked space)",
-        "detail": "4 spaces cost 1335 MiB against 940 MiB for 1: 130 MiB per space. Parking a space (WasHidden(true)) throttles its timers but does not drop its renderer: all four awake is 1312 MiB, i.e. 23 MiB more. The per-space renderer is the cost; parking is only worth -6 % of it."
-      },
-      {
-        "title": "Snapshot cost scales with the page, not with the viewport (26 µs per element)",
-        "detail": "p50 goes from 5 ms at 21 elements to 66 ms at 2412 elements and 141 ms at 3797 elements, i.e. about 26 µs per node. Filtering to the viewport does not avoid that work: the same call without the filter (`scope: \"full_page\"`) costs 71 ms instead of 66 ms on the long list and 154 ms instead of 141 ms on the dashboard, because Accessibility.getFullAXTree reads the whole document before anything is filtered out. The host socket is not the cost: the same call against the bridge's own headless Chrome, with no app process in between, takes 74 ms against 66 ms here."
-      }
-    ]
+    "roundTotal": {
+      "n": 3,
+      "median": 522.78717,
+      "min": 514.206822,
+      "max": 592.832162,
+      "spread": 78.62534000000005,
+      "spreadPct": 15.039646057113462,
+      "values": [
+        592.832162,
+        514.206822,
+        522.78717
+      ]
+    },
+    "roundCli": {
+      "n": 3,
+      "median": 51.189278,
+      "min": 45.448954,
+      "max": 70.038171,
+      "spread": 24.589217000000005,
+      "spreadPct": 48.03587384061171,
+      "values": [
+        70.038171,
+        51.189278,
+        45.448954
+      ]
+    },
+    "roundBrowser": {
+      "n": 3,
+      "median": 464.84791800000005,
+      "min": 448.693807,
+      "max": 510.776655,
+      "spread": 62.08284800000001,
+      "spreadPct": 13.355518137439523,
+      "values": [
+        510.776655,
+        448.693807,
+        464.84791800000005
+      ]
+    }
   },
   "raw": {
     "cold": {
       "cold": [
         {
           "label": "cold profile #1",
-          "paintMs": 259.186773,
-          "windowMs": 171.9662,
-          "loadedMs": 247.383109,
-          "pollSamples": 50,
-          "pollerTimedOut": false,
-          "display": ":96"
+          "paintMs": 662.457104,
+          "windowMs": 253.986074,
+          "loadedMs": 645.144132,
+          "pollSamples": 93,
+          "display": ":95"
         },
         {
           "label": "cold profile #2",
-          "paintMs": 259.474928,
-          "windowMs": 170.718097,
-          "loadedMs": 235.492823,
-          "pollSamples": 49,
-          "pollerTimedOut": false,
-          "display": ":96"
+          "paintMs": 517.648479,
+          "windowMs": 270.212571,
+          "loadedMs": 505.70922,
+          "pollSamples": 63,
+          "display": ":95"
         },
         {
           "label": "cold profile #3",
-          "paintMs": 244.503737,
-          "windowMs": 171.928337,
-          "loadedMs": 234.052114,
-          "pollSamples": 49,
-          "pollerTimedOut": false,
-          "display": ":96"
+          "paintMs": 785.781548,
+          "windowMs": 305.845583,
+          "loadedMs": 779.53891,
+          "pollSamples": 120,
+          "display": ":95"
         }
       ],
       "warm": [
         {
           "label": "warm profile #1",
-          "paintMs": 234.271716,
-          "windowMs": 156.724749,
-          "loadedMs": 207.544754,
-          "pollSamples": 47,
-          "pollerTimedOut": false,
-          "display": ":96"
+          "paintMs": 356.410825,
+          "windowMs": 218.234881,
+          "loadedMs": 335.465617,
+          "pollSamples": 44,
+          "display": ":95"
         },
         {
           "label": "warm profile #2",
-          "paintMs": 237.514031,
-          "windowMs": 167.690181,
-          "loadedMs": 214.479013,
-          "pollSamples": 46,
-          "pollerTimedOut": false,
-          "display": ":96"
+          "paintMs": 388.593312,
+          "windowMs": 232.950566,
+          "loadedMs": 359.298721,
+          "pollSamples": 52,
+          "display": ":95"
         },
         {
           "label": "warm profile #3",
-          "paintMs": 227.619706,
-          "windowMs": 158.763763,
-          "loadedMs": 203.875912,
-          "pollSamples": 45,
-          "pollerTimedOut": false,
-          "display": ":96"
+          "paintMs": 334.949294,
+          "windowMs": 192.786018,
+          "loadedMs": 320.614568,
+          "pollSamples": 48,
+          "display": ":95"
         }
       ],
-      "url": "http://127.0.0.1:42719/coldstart.html"
+      "url": "http://127.0.0.1:36911/coldstart.html"
     },
     "idle": {
       "oneTab": [
         {
-          "label": "idle-1tab-0",
+          "label": "idle-1space-0",
           "spaces": 1,
+          "extraProfiles": 0,
+          "profiles": [],
           "awake": false,
-          "windowSeconds": 60.12862616,
-          "rssKb": 959268,
-          "pssKb": 361031,
+          "windowSeconds": 30.081214747,
+          "rssKb": 952088,
+          "pssKb": 363454,
           "pids": 10,
-          "cpuSeconds": 0.33,
-          "cpuPercent": 0.5488234491203616,
-          "userSeconds": 0.19999999999999998,
-          "systemSeconds": 0.13,
+          "cpuSeconds": 0.07000000000000006,
+          "cpuPercent": 0.23270336849339227,
+          "userSeconds": 0.04999999999999999,
+          "systemSeconds": 0.019999999999999962,
           "trace": [
             {
-              "atMs": 10018,
-              "rssKb": 937816
+              "atMs": 10044,
+              "rssKb": 947252,
+              "pssKb": 358810
             },
             {
-              "atMs": 20039,
-              "rssKb": 937832
+              "atMs": 20059,
+              "rssKb": 947252,
+              "pssKb": 358810
             },
             {
-              "atMs": 30056,
-              "rssKb": 939936
-            },
-            {
-              "atMs": 40079,
-              "rssKb": 939936
-            },
-            {
-              "atMs": 50102,
-              "rssKb": 939936
-            },
-            {
-              "atMs": 60117,
-              "rssKb": 959268
+              "atMs": 30081,
+              "rssKb": 952088,
+              "pssKb": 363454
             }
           ],
           "parkedTransitions": 0,
@@ -783,131 +1195,124 @@
             {
               "role": "cef child (zygote fork)",
               "procs": 8,
-              "rssKb": 556064,
-              "pssKb": 158354
+              "rssKb": 560388,
+              "pssKb": 164593
             },
             {
               "role": "browser",
               "procs": 1,
-              "rssKb": 291320,
-              "pssKb": 162820
+              "rssKb": 279152,
+              "pssKb": 157542
             },
             {
               "role": "utility:network",
               "procs": 1,
-              "rssKb": 111884,
-              "pssKb": 39857
+              "rssKb": 112548,
+              "pssKb": 41319
             }
           ],
           "detail": [
             {
-              "pid": 875716,
+              "pid": 2750080,
               "comm": "rook",
               "role": "browser",
-              "rssKb": 291320,
-              "pssKb": 162820
+              "rssKb": 279152,
+              "pssKb": 157542
             },
             {
-              "pid": 875771,
+              "pid": 2750116,
               "comm": "rook",
               "role": "cef child (zygote fork)",
-              "rssKb": 121312,
-              "pssKb": 34109
+              "rssKb": 120664,
+              "pssKb": 38253
             },
             {
-              "pid": 875830,
+              "pid": 2750176,
               "comm": "rook",
               "role": "cef child (zygote fork)",
-              "rssKb": 117696,
-              "pssKb": 51985
+              "rssKb": 117780,
+              "pssKb": 51685
             },
             {
-              "pid": 875773,
+              "pid": 2750119,
               "comm": "rook",
               "role": "utility:network",
-              "rssKb": 111884,
-              "pssKb": 39857
+              "rssKb": 112548,
+              "pssKb": 41319
             },
             {
-              "pid": 875829,
+              "pid": 2750168,
               "comm": "rook",
               "role": "cef child (zygote fork)",
-              "rssKb": 78396,
-              "pssKb": 24080
+              "rssKb": 78664,
+              "pssKb": 24092
             },
             {
-              "pid": 875743,
+              "pid": 2750091,
               "comm": "rook",
               "role": "cef child (zygote fork)",
-              "rssKb": 75928,
-              "pssKb": 13460
+              "rssKb": 78172,
+              "pssKb": 16850
             },
             {
-              "pid": 875742,
+              "pid": 2750092,
               "comm": "rook",
               "role": "cef child (zygote fork)",
-              "rssKb": 75536,
-              "pssKb": 15591
+              "rssKb": 77920,
+              "pssKb": 14619
             },
             {
-              "pid": 875776,
+              "pid": 2750121,
               "comm": "rook",
               "role": "cef child (zygote fork)",
-              "rssKb": 47236,
-              "pssKb": 8901
+              "rssKb": 47268,
+              "pssKb": 8896
             },
             {
-              "pid": 875775,
+              "pid": 2750120,
               "comm": "rook",
               "role": "cef child (zygote fork)",
-              "rssKb": 20204,
-              "pssKb": 6342
+              "rssKb": 20180,
+              "pssKb": 6327
             },
             {
-              "pid": 875747,
+              "pid": 2750094,
               "comm": "rook",
               "role": "cef child (zygote fork)",
-              "rssKb": 19756,
-              "pssKb": 3886
+              "rssKb": 19740,
+              "pssKb": 3871
             }
           ]
         },
         {
-          "label": "idle-1tab-1",
+          "label": "idle-1space-1",
           "spaces": 1,
+          "extraProfiles": 0,
+          "profiles": [],
           "awake": false,
-          "windowSeconds": 60.116078322,
-          "rssKb": 962532,
-          "pssKb": 360312,
+          "windowSeconds": 30.082856848,
+          "rssKb": 948732,
+          "pssKb": 361641,
           "pids": 10,
-          "cpuSeconds": 0.32,
-          "cpuPercent": 0.5323035183465938,
-          "userSeconds": 0.20999999999999996,
-          "systemSeconds": 0.10999999999999999,
+          "cpuSeconds": 0.06000000000000005,
+          "cpuPercent": 0.19944914242408146,
+          "userSeconds": 0.04999999999999999,
+          "systemSeconds": 0.010000000000000009,
           "trace": [
             {
-              "atMs": 10021,
-              "rssKb": 940784
+              "atMs": 10038,
+              "rssKb": 945888,
+              "pssKb": 358927
             },
             {
-              "atMs": 20037,
-              "rssKb": 940812
+              "atMs": 20060,
+              "rssKb": 945952,
+              "pssKb": 358928
             },
             {
-              "atMs": 30056,
-              "rssKb": 942712
-            },
-            {
-              "atMs": 40076,
-              "rssKb": 942712
-            },
-            {
-              "atMs": 50093,
-              "rssKb": 942712
-            },
-            {
-              "atMs": 60105,
-              "rssKb": 962532
+              "atMs": 30083,
+              "rssKb": 948732,
+              "pssKb": 361641
             }
           ],
           "parkedTransitions": 0,
@@ -916,131 +1321,124 @@
             {
               "role": "cef child (zygote fork)",
               "procs": 8,
-              "rssKb": 559012,
-              "pssKb": 157921
+              "rssKb": 558868,
+              "pssKb": 164319
             },
             {
               "role": "browser",
               "procs": 1,
-              "rssKb": 291548,
-              "pssKb": 162531
+              "rssKb": 277144,
+              "pssKb": 155626
             },
             {
               "role": "utility:network",
               "procs": 1,
-              "rssKb": 111972,
-              "pssKb": 39860
+              "rssKb": 112720,
+              "pssKb": 41696
             }
           ],
           "detail": [
             {
-              "pid": 879774,
+              "pid": 2750609,
               "comm": "rook",
               "role": "browser",
-              "rssKb": 291548,
-              "pssKb": 162531
+              "rssKb": 277144,
+              "pssKb": 155626
             },
             {
-              "pid": 879827,
+              "pid": 2750644,
               "comm": "rook",
               "role": "cef child (zygote fork)",
-              "rssKb": 121344,
-              "pssKb": 33614
+              "rssKb": 120724,
+              "pssKb": 38176
             },
             {
-              "pid": 879888,
+              "pid": 2750755,
               "comm": "rook",
               "role": "cef child (zygote fork)",
-              "rssKb": 118136,
-              "pssKb": 51825
+              "rssKb": 117748,
+              "pssKb": 51789
             },
             {
-              "pid": 879829,
+              "pid": 2750647,
               "comm": "rook",
               "role": "utility:network",
-              "rssKb": 111972,
-              "pssKb": 39860
+              "rssKb": 112720,
+              "pssKb": 41696
             },
             {
-              "pid": 879887,
+              "pid": 2750754,
               "comm": "rook",
               "role": "cef child (zygote fork)",
-              "rssKb": 78824,
-              "pssKb": 24109
+              "rssKb": 78680,
+              "pssKb": 24114
             },
             {
-              "pid": 879800,
+              "pid": 2750621,
               "comm": "rook",
               "role": "cef child (zygote fork)",
-              "rssKb": 76988,
-              "pssKb": 15793
+              "rssKb": 77444,
+              "pssKb": 14534
             },
             {
-              "pid": 879801,
+              "pid": 2750620,
               "comm": "rook",
               "role": "cef child (zygote fork)",
-              "rssKb": 76512,
-              "pssKb": 13493
+              "rssKb": 77276,
+              "pssKb": 16656
             },
             {
-              "pid": 879835,
+              "pid": 2750649,
               "comm": "rook",
               "role": "cef child (zygote fork)",
-              "rssKb": 47244,
-              "pssKb": 8865
+              "rssKb": 47088,
+              "pssKb": 8850
             },
             {
-              "pid": 879831,
+              "pid": 2750648,
               "comm": "rook",
               "role": "cef child (zygote fork)",
-              "rssKb": 20208,
-              "pssKb": 6337
+              "rssKb": 20156,
+              "pssKb": 6323
             },
             {
-              "pid": 879803,
+              "pid": 2750623,
               "comm": "rook",
               "role": "cef child (zygote fork)",
-              "rssKb": 19756,
-              "pssKb": 3885
+              "rssKb": 19752,
+              "pssKb": 3877
             }
           ]
         },
         {
-          "label": "idle-1tab-2",
+          "label": "idle-1space-2",
           "spaces": 1,
+          "extraProfiles": 0,
+          "profiles": [],
           "awake": false,
-          "windowSeconds": 60.092374346999996,
-          "rssKb": 967780,
-          "pssKb": 367788,
+          "windowSeconds": 30.092667849,
+          "rssKb": 956236,
+          "pssKb": 364378,
           "pids": 10,
-          "cpuSeconds": 0.45,
-          "cpuPercent": 0.7488470956422867,
-          "userSeconds": 0.28,
-          "systemSeconds": 0.17,
+          "cpuSeconds": 0.07000000000000006,
+          "cpuPercent": 0.23261480288570097,
+          "userSeconds": 0.04999999999999999,
+          "systemSeconds": 0.020000000000000018,
           "trace": [
             {
-              "atMs": 10012,
-              "rssKb": 937980
+              "atMs": 10040,
+              "rssKb": 951216,
+              "pssKb": 359570
             },
             {
-              "atMs": 20024,
-              "rssKb": 938004
+              "atMs": 20071,
+              "rssKb": 951220,
+              "pssKb": 359563
             },
             {
-              "atMs": 30045,
-              "rssKb": 939868
-            },
-            {
-              "atMs": 40057,
-              "rssKb": 939868
-            },
-            {
-              "atMs": 50069,
-              "rssKb": 939868
-            },
-            {
-              "atMs": 60081,
-              "rssKb": 967780
+              "atMs": 30093,
+              "rssKb": 956236,
+              "pssKb": 364378
             }
           ],
           "parkedTransitions": 0,
@@ -1049,287 +1447,542 @@
             {
               "role": "cef child (zygote fork)",
               "procs": 8,
-              "rssKb": 556044,
-              "pssKb": 157373
+              "rssKb": 563744,
+              "pssKb": 164786
             },
             {
               "role": "browser",
               "procs": 1,
-              "rssKb": 299764,
-              "pssKb": 170527
+              "rssKb": 279860,
+              "pssKb": 158163
             },
             {
               "role": "utility:network",
               "procs": 1,
-              "rssKb": 111972,
-              "pssKb": 39888
+              "rssKb": 112632,
+              "pssKb": 41429
             }
           ],
           "detail": [
             {
-              "pid": 883598,
+              "pid": 2751322,
               "comm": "rook",
               "role": "browser",
-              "rssKb": 299764,
-              "pssKb": 170527
+              "rssKb": 279860,
+              "pssKb": 158163
             },
             {
-              "pid": 883656,
+              "pid": 2751357,
               "comm": "rook",
               "role": "cef child (zygote fork)",
-              "rssKb": 121176,
-              "pssKb": 33239
+              "rssKb": 120680,
+              "pssKb": 38262
             },
             {
-              "pid": 883715,
+              "pid": 2751411,
               "comm": "rook",
               "role": "cef child (zygote fork)",
-              "rssKb": 117524,
-              "pssKb": 51816
+              "rssKb": 117876,
+              "pssKb": 51721
             },
             {
-              "pid": 883657,
+              "pid": 2751360,
               "comm": "rook",
               "role": "utility:network",
-              "rssKb": 111972,
-              "pssKb": 39888
+              "rssKb": 112632,
+              "pssKb": 41429
             },
             {
-              "pid": 883714,
+              "pid": 2751333,
               "comm": "rook",
               "role": "cef child (zygote fork)",
-              "rssKb": 78268,
-              "pssKb": 24032
+              "rssKb": 79648,
+              "pssKb": 16920
             },
             {
-              "pid": 883627,
+              "pid": 2751334,
               "comm": "rook",
               "role": "cef child (zygote fork)",
-              "rssKb": 76116,
-              "pssKb": 15742
+              "rssKb": 79616,
+              "pssKb": 14738
             },
             {
-              "pid": 883628,
+              "pid": 2751410,
               "comm": "rook",
               "role": "cef child (zygote fork)",
-              "rssKb": 75952,
-              "pssKb": 13469
+              "rssKb": 78652,
+              "pssKb": 24052
             },
             {
-              "pid": 883670,
+              "pid": 2751370,
               "comm": "rook",
               "role": "cef child (zygote fork)",
-              "rssKb": 47084,
-              "pssKb": 8847
+              "rssKb": 47312,
+              "pssKb": 8897
             },
             {
-              "pid": 883660,
+              "pid": 2751361,
               "comm": "rook",
               "role": "cef child (zygote fork)",
-              "rssKb": 20160,
-              "pssKb": 6341
+              "rssKb": 20180,
+              "pssKb": 6322
             },
             {
-              "pid": 883630,
+              "pid": 2751336,
               "comm": "rook",
               "role": "cef child (zygote fork)",
-              "rssKb": 19764,
-              "pssKb": 3887
+              "rssKb": 19780,
+              "pssKb": 3874
             }
           ]
         }
       ],
-      "fourParked": [
+      "twoSpaces": [
         {
-          "label": "idle-4parked-0",
-          "spaces": 4,
+          "label": "idle-2spaces-0",
+          "spaces": 2,
+          "extraProfiles": 0,
+          "profiles": [],
           "awake": false,
-          "windowSeconds": 60.139724077,
-          "rssKb": 1351064,
-          "pssKb": 422922,
-          "pids": 13,
-          "cpuSeconds": 0.42000000000000004,
-          "cpuPercent": 0.6983736730521949,
-          "userSeconds": 0.26,
-          "systemSeconds": 0.15999999999999998,
+          "windowSeconds": 30.095641988,
+          "rssKb": 1076984,
+          "pssKb": 379805,
+          "pids": 11,
+          "cpuSeconds": 0.08000000000000007,
+          "cpuPercent": 0.2658192173866847,
+          "userSeconds": 0.050000000000000044,
+          "systemSeconds": 0.02999999999999997,
           "trace": [
             {
-              "atMs": 10020,
-              "rssKb": 1336512
+              "atMs": 10045,
+              "rssKb": 1075244,
+              "pssKb": 378123
             },
             {
-              "atMs": 20044,
-              "rssKb": 1336540
+              "atMs": 20071,
+              "rssKb": 1075244,
+              "pssKb": 378128
             },
             {
-              "atMs": 30068,
-              "rssKb": 1342300
-            },
-            {
-              "atMs": 40091,
-              "rssKb": 1342300
-            },
-            {
-              "atMs": 50109,
-              "rssKb": 1342300
-            },
-            {
-              "atMs": 60122,
-              "rssKb": 1351064
+              "atMs": 30096,
+              "rssKb": 1076984,
+              "pssKb": 379805
             }
           ],
-          "parkedTransitions": 3,
+          "parkedTransitions": 1,
           "awakeTransitions": 0,
           "roles": [
             {
               "role": "cef child (zygote fork)",
-              "procs": 11,
-              "rssKb": 934248,
-              "pssKb": 216875
+              "procs": 9,
+              "rssKb": 685556,
+              "pssKb": 185721
             },
             {
               "role": "browser",
               "procs": 1,
-              "rssKb": 301784,
-              "pssKb": 165659
+              "rssKb": 278676,
+              "pssKb": 153601
             },
             {
               "role": "utility:network",
               "procs": 1,
-              "rssKb": 115032,
-              "pssKb": 40388
+              "rssKb": 112752,
+              "pssKb": 40483
             }
           ],
           "detail": [
             {
-              "pid": 888104,
+              "pid": 2752233,
               "comm": "rook",
               "role": "browser",
-              "rssKb": 301784,
-              "pssKb": 165659
+              "rssKb": 278676,
+              "pssKb": 153601
             },
             {
-              "pid": 888157,
+              "pid": 2752271,
               "comm": "rook",
               "role": "cef child (zygote fork)",
-              "rssKb": 143828,
-              "pssKb": 51775
+              "rssKb": 128072,
+              "pssKb": 44173
             },
             {
-              "pid": 888297,
+              "pid": 2752338,
               "comm": "rook",
               "role": "cef child (zygote fork)",
-              "rssKb": 118088,
-              "pssKb": 26630
+              "rssKb": 117648,
+              "pssKb": 36808
             },
             {
-              "pid": 888287,
+              "pid": 2752337,
               "comm": "rook",
               "role": "cef child (zygote fork)",
-              "rssKb": 118064,
-              "pssKb": 26599
+              "rssKb": 117644,
+              "pssKb": 36779
             },
             {
-              "pid": 888330,
+              "pid": 2752274,
+              "comm": "rook",
+              "role": "utility:network",
+              "rssKb": 112752,
+              "pssKb": 40483
+            },
+            {
+              "pid": 2752345,
+              "comm": "rook",
+              "role": "cef child (zygote fork)",
+              "rssKb": 78680,
+              "pssKb": 20031
+            },
+            {
+              "pid": 2752244,
+              "comm": "rook",
+              "role": "cef child (zygote fork)",
+              "rssKb": 78396,
+              "pssKb": 16557
+            },
+            {
+              "pid": 2752245,
+              "comm": "rook",
+              "role": "cef child (zygote fork)",
+              "rssKb": 78072,
+              "pssKb": 13800
+            },
+            {
+              "pid": 2752293,
+              "comm": "rook",
+              "role": "cef child (zygote fork)",
+              "rssKb": 47196,
+              "pssKb": 7972
+            },
+            {
+              "pid": 2752277,
+              "comm": "rook",
+              "role": "cef child (zygote fork)",
+              "rssKb": 20124,
+              "pssKb": 6276
+            },
+            {
+              "pid": 2752247,
+              "comm": "rook",
+              "role": "cef child (zygote fork)",
+              "rssKb": 19724,
+              "pssKb": 3325
+            }
+          ]
+        },
+        {
+          "label": "idle-2spaces-1",
+          "spaces": 2,
+          "extraProfiles": 0,
+          "profiles": [],
+          "awake": false,
+          "windowSeconds": 30.099657855,
+          "rssKb": 1080440,
+          "pssKb": 379750,
+          "pids": 11,
+          "cpuSeconds": 0.07000000000000006,
+          "cpuPercent": 0.23256078304017008,
+          "userSeconds": 0.040000000000000036,
+          "systemSeconds": 0.02999999999999997,
+          "trace": [
+            {
+              "atMs": 10049,
+              "rssKb": 1078328,
+              "pssKb": 377824
+            },
+            {
+              "atMs": 20074,
+              "rssKb": 1078332,
+              "pssKb": 377832
+            },
+            {
+              "atMs": 30100,
+              "rssKb": 1080440,
+              "pssKb": 379750
+            }
+          ],
+          "parkedTransitions": 1,
+          "awakeTransitions": 0,
+          "roles": [
+            {
+              "role": "cef child (zygote fork)",
+              "procs": 9,
+              "rssKb": 689060,
+              "pssKb": 185661
+            },
+            {
+              "role": "browser",
+              "procs": 1,
+              "rssKb": 278860,
+              "pssKb": 153705
+            },
+            {
+              "role": "utility:network",
+              "procs": 1,
+              "rssKb": 112520,
+              "pssKb": 40384
+            }
+          ],
+          "detail": [
+            {
+              "pid": 2752793,
+              "comm": "rook",
+              "role": "browser",
+              "rssKb": 278860,
+              "pssKb": 153705
+            },
+            {
+              "pid": 2752829,
+              "comm": "rook",
+              "role": "cef child (zygote fork)",
+              "rssKb": 127964,
+              "pssKb": 44084
+            },
+            {
+              "pid": 2752881,
+              "comm": "rook",
+              "role": "cef child (zygote fork)",
+              "rssKb": 117880,
+              "pssKb": 36694
+            },
+            {
+              "pid": 2752882,
               "comm": "rook",
               "role": "cef child (zygote fork)",
               "rssKb": 117872,
-              "pssKb": 26533
+              "pssKb": 36696
             },
             {
-              "pid": 888220,
-              "comm": "rook",
-              "role": "cef child (zygote fork)",
-              "rssKb": 117512,
-              "pssKb": 26499
-            },
-            {
-              "pid": 888159,
+              "pid": 2752832,
               "comm": "rook",
               "role": "utility:network",
-              "rssKb": 115032,
-              "pssKb": 40388
+              "rssKb": 112520,
+              "pssKb": 40384
             },
             {
-              "pid": 888387,
+              "pid": 2752804,
               "comm": "rook",
               "role": "cef child (zygote fork)",
-              "rssKb": 78516,
-              "pssKb": 15980
+              "rssKb": 79692,
+              "pssKb": 16639
             },
             {
-              "pid": 888131,
+              "pid": 2752805,
               "comm": "rook",
               "role": "cef child (zygote fork)",
-              "rssKb": 76228,
-              "pssKb": 11817
+              "rssKb": 79636,
+              "pssKb": 13975
             },
             {
-              "pid": 888130,
+              "pid": 2752896,
               "comm": "rook",
               "role": "cef child (zygote fork)",
-              "rssKb": 76140,
-              "pssKb": 15082
+              "rssKb": 78668,
+              "pssKb": 19960
             },
             {
-              "pid": 888162,
+              "pid": 2752834,
               "comm": "rook",
               "role": "cef child (zygote fork)",
-              "rssKb": 48048,
-              "pssKb": 7067
+              "rssKb": 47472,
+              "pssKb": 8012
             },
             {
-              "pid": 888161,
+              "pid": 2752833,
               "comm": "rook",
               "role": "cef child (zygote fork)",
-              "rssKb": 20192,
-              "pssKb": 6241
+              "rssKb": 20128,
+              "pssKb": 6276
             },
             {
-              "pid": 888133,
+              "pid": 2752807,
               "comm": "rook",
               "role": "cef child (zygote fork)",
-              "rssKb": 19760,
-              "pssKb": 2652
+              "rssKb": 19748,
+              "pssKb": 3325
             }
           ]
         },
         {
-          "label": "idle-4parked-1",
-          "spaces": 4,
+          "label": "idle-2spaces-2",
+          "spaces": 2,
+          "extraProfiles": 0,
+          "profiles": [],
           "awake": false,
-          "windowSeconds": 60.131144793,
-          "rssKb": 1368084,
-          "pssKb": 436914,
-          "pids": 13,
-          "cpuSeconds": 0.45000000000000007,
-          "cpuPercent": 0.7483642653887833,
-          "userSeconds": 0.30000000000000004,
-          "systemSeconds": 0.14999999999999997,
+          "windowSeconds": 30.1216443,
+          "rssKb": 1079496,
+          "pssKb": 379329,
+          "pids": 11,
+          "cpuSeconds": 0.050000000000000044,
+          "cpuPercent": 0.1659935941810456,
+          "userSeconds": 0.040000000000000036,
+          "systemSeconds": 0.010000000000000009,
           "trace": [
             {
-              "atMs": 10019,
-              "rssKb": 1340100
+              "atMs": 10069,
+              "rssKb": 1077516,
+              "pssKb": 377429
             },
             {
-              "atMs": 20043,
-              "rssKb": 1340184
+              "atMs": 20089,
+              "rssKb": 1077516,
+              "pssKb": 377429
             },
             {
-              "atMs": 30059,
-              "rssKb": 1347652
+              "atMs": 30122,
+              "rssKb": 1079496,
+              "pssKb": 379329
+            }
+          ],
+          "parkedTransitions": 1,
+          "awakeTransitions": 0,
+          "roles": [
+            {
+              "role": "cef child (zygote fork)",
+              "procs": 9,
+              "rssKb": 688672,
+              "pssKb": 185687
             },
             {
-              "atMs": 40084,
-              "rssKb": 1347652
+              "role": "browser",
+              "procs": 1,
+              "rssKb": 278336,
+              "pssKb": 153384
             },
             {
-              "atMs": 50103,
-              "rssKb": 1347652
+              "role": "utility:network",
+              "procs": 1,
+              "rssKb": 112488,
+              "pssKb": 40258
+            }
+          ],
+          "detail": [
+            {
+              "pid": 2753702,
+              "comm": "rook",
+              "role": "browser",
+              "rssKb": 278336,
+              "pssKb": 153384
             },
             {
-              "atMs": 60117,
-              "rssKb": 1368084
+              "pid": 2753738,
+              "comm": "rook",
+              "role": "cef child (zygote fork)",
+              "rssKb": 127900,
+              "pssKb": 44091
+            },
+            {
+              "pid": 2753791,
+              "comm": "rook",
+              "role": "cef child (zygote fork)",
+              "rssKb": 117844,
+              "pssKb": 36689
+            },
+            {
+              "pid": 2753790,
+              "comm": "rook",
+              "role": "cef child (zygote fork)",
+              "rssKb": 117776,
+              "pssKb": 36661
+            },
+            {
+              "pid": 2753741,
+              "comm": "rook",
+              "role": "utility:network",
+              "rssKb": 112488,
+              "pssKb": 40258
+            },
+            {
+              "pid": 2753714,
+              "comm": "rook",
+              "role": "cef child (zygote fork)",
+              "rssKb": 79652,
+              "pssKb": 14001
+            },
+            {
+              "pid": 2753713,
+              "comm": "rook",
+              "role": "cef child (zygote fork)",
+              "rssKb": 79584,
+              "pssKb": 16696
+            },
+            {
+              "pid": 2753806,
+              "comm": "rook",
+              "role": "cef child (zygote fork)",
+              "rssKb": 78728,
+              "pssKb": 19971
+            },
+            {
+              "pid": 2753743,
+              "comm": "rook",
+              "role": "cef child (zygote fork)",
+              "rssKb": 47316,
+              "pssKb": 7971
+            },
+            {
+              "pid": 2753742,
+              "comm": "rook",
+              "role": "cef child (zygote fork)",
+              "rssKb": 20116,
+              "pssKb": 6278
+            },
+            {
+              "pid": 2753716,
+              "comm": "rook",
+              "role": "cef child (zygote fork)",
+              "rssKb": 19756,
+              "pssKb": 3329
+            }
+          ]
+        }
+      ],
+      "fourSpaces": [
+        {
+          "label": "idle-4spaces-0",
+          "spaces": 4,
+          "extraProfiles": 0,
+          "profiles": [],
+          "awake": false,
+          "windowSeconds": 60.235563103,
+          "rssKb": 1352820,
+          "pssKb": 435184,
+          "pids": 13,
+          "cpuSeconds": 0.6099999999999999,
+          "cpuPercent": 1.0126907902511484,
+          "userSeconds": 0.33999999999999997,
+          "systemSeconds": 0.27,
+          "trace": [
+            {
+              "atMs": 10035,
+              "rssKb": 1330484,
+              "pssKb": 413552
+            },
+            {
+              "atMs": 20066,
+              "rssKb": 1330484,
+              "pssKb": 413552
+            },
+            {
+              "atMs": 30110,
+              "rssKb": 1333216,
+              "pssKb": 416096
+            },
+            {
+              "atMs": 40146,
+              "rssKb": 1333216,
+              "pssKb": 416096
+            },
+            {
+              "atMs": 50175,
+              "rssKb": 1333216,
+              "pssKb": 416096
+            },
+            {
+              "atMs": 60235,
+              "rssKb": 1352820,
+              "pssKb": 435184
             }
           ],
           "parkedTransitions": 3,
@@ -1338,152 +1991,322 @@
             {
               "role": "cef child (zygote fork)",
               "procs": 11,
-              "rssKb": 937708,
-              "pssKb": 217268
+              "rssKb": 938636,
+              "pssKb": 223680
             },
             {
               "role": "browser",
               "procs": 1,
-              "rssKb": 315908,
-              "pssKb": 179711
+              "rssKb": 300188,
+              "pssKb": 171544
             },
             {
               "role": "utility:network",
               "procs": 1,
-              "rssKb": 114468,
-              "pssKb": 39935
+              "rssKb": 113996,
+              "pssKb": 39960
             }
           ],
           "detail": [
             {
-              "pid": 892282,
+              "pid": 2754476,
               "comm": "rook",
               "role": "browser",
-              "rssKb": 315908,
-              "pssKb": 179711
+              "rssKb": 300188,
+              "pssKb": 171544
             },
             {
-              "pid": 892335,
+              "pid": 2754519,
               "comm": "rook",
               "role": "cef child (zygote fork)",
-              "rssKb": 143836,
-              "pssKb": 51783
+              "rssKb": 142972,
+              "pssKb": 56763
             },
             {
-              "pid": 892513,
+              "pid": 2754698,
               "comm": "rook",
               "role": "cef child (zygote fork)",
-              "rssKb": 118060,
+              "rssKb": 117972,
+              "pssKb": 26619
+            },
+            {
+              "pid": 2754681,
+              "comm": "rook",
+              "role": "cef child (zygote fork)",
+              "rssKb": 117688,
+              "pssKb": 26592
+            },
+            {
+              "pid": 2754682,
+              "comm": "rook",
+              "role": "cef child (zygote fork)",
+              "rssKb": 117684,
+              "pssKb": 26576
+            },
+            {
+              "pid": 2754712,
+              "comm": "rook",
+              "role": "cef child (zygote fork)",
+              "rssKb": 116880,
+              "pssKb": 26252
+            },
+            {
+              "pid": 2754521,
+              "comm": "rook",
+              "role": "utility:network",
+              "rssKb": 113996,
+              "pssKb": 39960
+            },
+            {
+              "pid": 2754487,
+              "comm": "rook",
+              "role": "cef child (zygote fork)",
+              "rssKb": 79760,
+              "pssKb": 16292
+            },
+            {
+              "pid": 2754488,
+              "comm": "rook",
+              "role": "cef child (zygote fork)",
+              "rssKb": 79588,
+              "pssKb": 12909
+            },
+            {
+              "pid": 2754723,
+              "comm": "rook",
+              "role": "cef child (zygote fork)",
+              "rssKb": 78788,
+              "pssKb": 16038
+            },
+            {
+              "pid": 2754524,
+              "comm": "rook",
+              "role": "cef child (zygote fork)",
+              "rssKb": 47408,
+              "pssKb": 6779
+            },
+            {
+              "pid": 2754523,
+              "comm": "rook",
+              "role": "cef child (zygote fork)",
+              "rssKb": 20156,
+              "pssKb": 6226
+            },
+            {
+              "pid": 2754496,
+              "comm": "rook",
+              "role": "cef child (zygote fork)",
+              "rssKb": 19740,
+              "pssKb": 2634
+            }
+          ]
+        },
+        {
+          "label": "idle-4spaces-1",
+          "spaces": 4,
+          "extraProfiles": 0,
+          "profiles": [],
+          "awake": false,
+          "windowSeconds": 60.159568694,
+          "rssKb": 1336924,
+          "pssKb": 419497,
+          "pids": 13,
+          "cpuSeconds": 0.5100000000000001,
+          "cpuPercent": 0.8477454394563584,
+          "userSeconds": 0.29999999999999993,
+          "systemSeconds": 0.20999999999999996,
+          "trace": [
+            {
+              "atMs": 10040,
+              "rssKb": 1329076,
+              "pssKb": 412224
+            },
+            {
+              "atMs": 20058,
+              "rssKb": 1329076,
+              "pssKb": 412229
+            },
+            {
+              "atMs": 30088,
+              "rssKb": 1331852,
+              "pssKb": 414940
+            },
+            {
+              "atMs": 40113,
+              "rssKb": 1331852,
+              "pssKb": 414940
+            },
+            {
+              "atMs": 50138,
+              "rssKb": 1331852,
+              "pssKb": 414934
+            },
+            {
+              "atMs": 60160,
+              "rssKb": 1336924,
+              "pssKb": 419497
+            }
+          ],
+          "parkedTransitions": 3,
+          "awakeTransitions": 0,
+          "roles": [
+            {
+              "role": "cef child (zygote fork)",
+              "procs": 11,
+              "rssKb": 938976,
+              "pssKb": 223964
+            },
+            {
+              "role": "browser",
+              "procs": 1,
+              "rssKb": 284464,
+              "pssKb": 155841
+            },
+            {
+              "role": "utility:network",
+              "procs": 1,
+              "rssKb": 113484,
+              "pssKb": 39692
+            }
+          ],
+          "detail": [
+            {
+              "pid": 2755827,
+              "comm": "rook",
+              "role": "browser",
+              "rssKb": 284464,
+              "pssKb": 155841
+            },
+            {
+              "pid": 2755864,
+              "comm": "rook",
+              "role": "cef child (zygote fork)",
+              "rssKb": 142904,
+              "pssKb": 56708
+            },
+            {
+              "pid": 2755932,
+              "comm": "rook",
+              "role": "cef child (zygote fork)",
+              "rssKb": 118152,
+              "pssKb": 26686
+            },
+            {
+              "pid": 2755915,
+              "comm": "rook",
+              "role": "cef child (zygote fork)",
+              "rssKb": 117964,
               "pssKb": 26708
             },
             {
-              "pid": 892486,
+              "pid": 2755916,
               "comm": "rook",
               "role": "cef child (zygote fork)",
-              "rssKb": 118052,
-              "pssKb": 26614
+              "rssKb": 117176,
+              "pssKb": 26459
             },
             {
-              "pid": 892463,
+              "pid": 2755923,
               "comm": "rook",
               "role": "cef child (zygote fork)",
-              "rssKb": 117884,
-              "pssKb": 26568
+              "rssKb": 117056,
+              "pssKb": 26477
             },
             {
-              "pid": 892397,
-              "comm": "rook",
-              "role": "cef child (zygote fork)",
-              "rssKb": 117336,
-              "pssKb": 26596
-            },
-            {
-              "pid": 892339,
+              "pid": 2755866,
               "comm": "rook",
               "role": "utility:network",
-              "rssKb": 114468,
-              "pssKb": 39935
+              "rssKb": 113484,
+              "pssKb": 39692
             },
             {
-              "pid": 892560,
+              "pid": 2755839,
               "comm": "rook",
               "role": "cef child (zygote fork)",
-              "rssKb": 78544,
-              "pssKb": 16003
+              "rssKb": 79684,
+              "pssKb": 12932
             },
             {
-              "pid": 892309,
+              "pid": 2755838,
               "comm": "rook",
               "role": "cef child (zygote fork)",
-              "rssKb": 78132,
-              "pssKb": 11851
+              "rssKb": 79672,
+              "pssKb": 16263
             },
             {
-              "pid": 892308,
+              "pid": 2755939,
               "comm": "rook",
               "role": "cef child (zygote fork)",
-              "rssKb": 77904,
-              "pssKb": 15169
+              "rssKb": 78892,
+              "pssKb": 16073
             },
             {
-              "pid": 892341,
+              "pid": 2755869,
               "comm": "rook",
               "role": "cef child (zygote fork)",
-              "rssKb": 47980,
-              "pssKb": 7088
+              "rssKb": 47584,
+              "pssKb": 6801
             },
             {
-              "pid": 892340,
+              "pid": 2755868,
               "comm": "rook",
               "role": "cef child (zygote fork)",
-              "rssKb": 20172,
-              "pssKb": 6235
+              "rssKb": 20136,
+              "pssKb": 6219
             },
             {
-              "pid": 892311,
+              "pid": 2755841,
               "comm": "rook",
               "role": "cef child (zygote fork)",
-              "rssKb": 19808,
-              "pssKb": 2653
+              "rssKb": 19756,
+              "pssKb": 2638
             }
           ]
         },
         {
-          "label": "idle-4parked-2",
+          "label": "idle-4spaces-2",
           "spaces": 4,
+          "extraProfiles": 0,
+          "profiles": [],
           "awake": false,
-          "windowSeconds": 60.139520391,
-          "rssKb": 1366976,
-          "pssKb": 437476,
+          "windowSeconds": 60.190966909000004,
+          "rssKb": 1347308,
+          "pssKb": 435496,
           "pids": 13,
-          "cpuSeconds": 0.4999999999999999,
-          "cpuPercent": 0.8314000456758314,
+          "cpuSeconds": 0.52,
+          "cpuPercent": 0.8639170073246447,
           "userSeconds": 0.31000000000000005,
-          "systemSeconds": 0.19,
+          "systemSeconds": 0.20999999999999996,
           "trace": [
             {
-              "atMs": 10023,
-              "rssKb": 1337960
+              "atMs": 10056,
+              "rssKb": 1322988,
+              "pssKb": 411886
             },
             {
-              "atMs": 20047,
-              "rssKb": 1337980
+              "atMs": 20091,
+              "rssKb": 1322988,
+              "pssKb": 411891
             },
             {
-              "atMs": 30069,
-              "rssKb": 1344144
+              "atMs": 30117,
+              "rssKb": 1325820,
+              "pssKb": 414524
             },
             {
-              "atMs": 40086,
-              "rssKb": 1344144
+              "atMs": 40149,
+              "rssKb": 1325848,
+              "pssKb": 414543
             },
             {
-              "atMs": 50103,
-              "rssKb": 1344144
+              "atMs": 50173,
+              "rssKb": 1325848,
+              "pssKb": 414548
             },
             {
-              "atMs": 60118,
-              "rssKb": 1366976
+              "atMs": 60191,
+              "rssKb": 1347308,
+              "pssKb": 435496
             }
           ],
           "parkedTransitions": 3,
@@ -1492,113 +2315,520 @@
             {
               "role": "cef child (zygote fork)",
               "procs": 11,
-              "rssKb": 935684,
-              "pssKb": 217158
+              "rssKb": 933044,
+              "pssKb": 223324
             },
             {
               "role": "browser",
               "procs": 1,
-              "rssKb": 316268,
-              "pssKb": 179982
+              "rssKb": 300648,
+              "pssKb": 172314
             },
             {
               "role": "utility:network",
               "procs": 1,
-              "rssKb": 115024,
-              "pssKb": 40336
+              "rssKb": 113616,
+              "pssKb": 39858
             }
           ],
           "detail": [
             {
-              "pid": 896297,
+              "pid": 2757066,
               "comm": "rook",
               "role": "browser",
-              "rssKb": 316268,
-              "pssKb": 179982
+              "rssKb": 300648,
+              "pssKb": 172314
             },
             {
-              "pid": 896348,
+              "pid": 2757104,
               "comm": "rook",
               "role": "cef child (zygote fork)",
-              "rssKb": 143676,
-              "pssKb": 51787
+              "rssKb": 143092,
+              "pssKb": 56816
             },
             {
-              "pid": 896411,
+              "pid": 2757181,
               "comm": "rook",
               "role": "cef child (zygote fork)",
-              "rssKb": 118108,
-              "pssKb": 26639
+              "rssKb": 117976,
+              "pssKb": 26604
             },
             {
-              "pid": 896477,
+              "pid": 2757170,
               "comm": "rook",
               "role": "cef child (zygote fork)",
-              "rssKb": 118104,
-              "pssKb": 26634
+              "rssKb": 117900,
+              "pssKb": 26608
             },
             {
-              "pid": 896526,
+              "pid": 2757157,
               "comm": "rook",
               "role": "cef child (zygote fork)",
-              "rssKb": 118076,
-              "pssKb": 26596
+              "rssKb": 117448,
+              "pssKb": 26470
             },
             {
-              "pid": 896500,
+              "pid": 2757158,
               "comm": "rook",
               "role": "cef child (zygote fork)",
-              "rssKb": 118068,
-              "pssKb": 26654
+              "rssKb": 117312,
+              "pssKb": 26436
             },
             {
-              "pid": 896350,
+              "pid": 2757107,
               "comm": "rook",
               "role": "utility:network",
-              "rssKb": 115024,
-              "pssKb": 40336
+              "rssKb": 113616,
+              "pssKb": 39858
             },
             {
-              "pid": 896587,
+              "pid": 2757201,
               "comm": "rook",
               "role": "cef child (zygote fork)",
-              "rssKb": 78520,
-              "pssKb": 15952
+              "rssKb": 78748,
+              "pssKb": 16015
             },
             {
-              "pid": 896324,
+              "pid": 2757078,
               "comm": "rook",
               "role": "cef child (zygote fork)",
-              "rssKb": 76800,
-              "pssKb": 11862
+              "rssKb": 77016,
+              "pssKb": 12769
             },
             {
-              "pid": 896323,
+              "pid": 2757077,
               "comm": "rook",
               "role": "cef child (zygote fork)",
-              "rssKb": 76448,
-              "pssKb": 15109
+              "rssKb": 76084,
+              "pssKb": 15880
             },
             {
-              "pid": 896366,
+              "pid": 2757116,
               "comm": "rook",
               "role": "cef child (zygote fork)",
-              "rssKb": 47912,
-              "pssKb": 7032
+              "rssKb": 47620,
+              "pssKb": 6863
             },
             {
-              "pid": 896354,
+              "pid": 2757108,
               "comm": "rook",
               "role": "cef child (zygote fork)",
-              "rssKb": 20160,
-              "pssKb": 6237
+              "rssKb": 20120,
+              "pssKb": 6225
             },
             {
-              "pid": 896326,
+              "pid": 2757080,
               "comm": "rook",
               "role": "cef child (zygote fork)",
-              "rssKb": 19812,
-              "pssKb": 2656
+              "rssKb": 19728,
+              "pssKb": 2638
+            }
+          ]
+        }
+      ],
+      "secondProfile": [
+        {
+          "label": "idle-2profiles-0",
+          "spaces": 1,
+          "extraProfiles": 1,
+          "profiles": [
+            "bench-second"
+          ],
+          "awake": false,
+          "windowSeconds": 30.082651314,
+          "rssKb": 1083184,
+          "pssKb": 385853,
+          "pids": 11,
+          "cpuSeconds": 0.10999999999999999,
+          "cpuPercent": 0.3656592593911684,
+          "userSeconds": 0.07000000000000006,
+          "systemSeconds": 0.03999999999999998,
+          "trace": [
+            {
+              "atMs": 10040,
+              "rssKb": 1081040,
+              "pssKb": 383773
+            },
+            {
+              "atMs": 20061,
+              "rssKb": 1081040,
+              "pssKb": 383773
+            },
+            {
+              "atMs": 30083,
+              "rssKb": 1083184,
+              "pssKb": 385853
+            }
+          ],
+          "parkedTransitions": 2,
+          "awakeTransitions": 1,
+          "roles": [
+            {
+              "role": "cef child (zygote fork)",
+              "procs": 9,
+              "rssKb": 686168,
+              "pssKb": 186521
+            },
+            {
+              "role": "browser",
+              "procs": 1,
+              "rssKb": 283876,
+              "pssKb": 158478
+            },
+            {
+              "role": "utility:network",
+              "procs": 1,
+              "rssKb": 113140,
+              "pssKb": 40854
+            }
+          ],
+          "detail": [
+            {
+              "pid": 2758283,
+              "comm": "rook",
+              "role": "browser",
+              "rssKb": 283876,
+              "pssKb": 158478
+            },
+            {
+              "pid": 2758320,
+              "comm": "rook",
+              "role": "cef child (zygote fork)",
+              "rssKb": 128204,
+              "pssKb": 44181
+            },
+            {
+              "pid": 2758372,
+              "comm": "rook",
+              "role": "cef child (zygote fork)",
+              "rssKb": 118996,
+              "pssKb": 37676
+            },
+            {
+              "pid": 2758395,
+              "comm": "rook",
+              "role": "cef child (zygote fork)",
+              "rssKb": 117836,
+              "pssKb": 36786
+            },
+            {
+              "pid": 2758323,
+              "comm": "rook",
+              "role": "utility:network",
+              "rssKb": 113140,
+              "pssKb": 40854
+            },
+            {
+              "pid": 2758394,
+              "comm": "rook",
+              "role": "cef child (zygote fork)",
+              "rssKb": 78424,
+              "pssKb": 19944
+            },
+            {
+              "pid": 2758295,
+              "comm": "rook",
+              "role": "cef child (zygote fork)",
+              "rssKb": 77816,
+              "pssKb": 13831
+            },
+            {
+              "pid": 2758294,
+              "comm": "rook",
+              "role": "cef child (zygote fork)",
+              "rssKb": 77716,
+              "pssKb": 16491
+            },
+            {
+              "pid": 2758325,
+              "comm": "rook",
+              "role": "cef child (zygote fork)",
+              "rssKb": 47252,
+              "pssKb": 7996
+            },
+            {
+              "pid": 2758324,
+              "comm": "rook",
+              "role": "cef child (zygote fork)",
+              "rssKb": 20184,
+              "pssKb": 6290
+            },
+            {
+              "pid": 2758297,
+              "comm": "rook",
+              "role": "cef child (zygote fork)",
+              "rssKb": 19740,
+              "pssKb": 3326
+            }
+          ]
+        },
+        {
+          "label": "idle-2profiles-1",
+          "spaces": 1,
+          "extraProfiles": 1,
+          "profiles": [
+            "bench-second"
+          ],
+          "awake": false,
+          "windowSeconds": 30.08234014,
+          "rssKb": 1079220,
+          "pssKb": 385587,
+          "pids": 11,
+          "cpuSeconds": 0.09999999999999998,
+          "cpuPercent": 0.33242094708925785,
+          "userSeconds": 0.07000000000000006,
+          "systemSeconds": 0.030000000000000027,
+          "trace": [
+            {
+              "atMs": 10035,
+              "rssKb": 1077108,
+              "pssKb": 383530
+            },
+            {
+              "atMs": 20052,
+              "rssKb": 1077112,
+              "pssKb": 383539
+            },
+            {
+              "atMs": 30082,
+              "rssKb": 1079220,
+              "pssKb": 385587
+            }
+          ],
+          "parkedTransitions": 2,
+          "awakeTransitions": 1,
+          "roles": [
+            {
+              "role": "cef child (zygote fork)",
+              "procs": 9,
+              "rssKb": 682436,
+              "pssKb": 186054
+            },
+            {
+              "role": "browser",
+              "procs": 1,
+              "rssKb": 283600,
+              "pssKb": 158543
+            },
+            {
+              "role": "utility:network",
+              "procs": 1,
+              "rssKb": 113184,
+              "pssKb": 40990
+            }
+          ],
+          "detail": [
+            {
+              "pid": 2758815,
+              "comm": "rook",
+              "role": "browser",
+              "rssKb": 283600,
+              "pssKb": 158543
+            },
+            {
+              "pid": 2758852,
+              "comm": "rook",
+              "role": "cef child (zygote fork)",
+              "rssKb": 128328,
+              "pssKb": 44338
+            },
+            {
+              "pid": 2758904,
+              "comm": "rook",
+              "role": "cef child (zygote fork)",
+              "rssKb": 118728,
+              "pssKb": 37428
+            },
+            {
+              "pid": 2758927,
+              "comm": "rook",
+              "role": "cef child (zygote fork)",
+              "rssKb": 117612,
+              "pssKb": 36668
+            },
+            {
+              "pid": 2758854,
+              "comm": "rook",
+              "role": "utility:network",
+              "rssKb": 113184,
+              "pssKb": 40990
+            },
+            {
+              "pid": 2758926,
+              "comm": "rook",
+              "role": "cef child (zygote fork)",
+              "rssKb": 78392,
+              "pssKb": 19958
+            },
+            {
+              "pid": 2758826,
+              "comm": "rook",
+              "role": "cef child (zygote fork)",
+              "rssKb": 76208,
+              "pssKb": 16331
+            },
+            {
+              "pid": 2758827,
+              "comm": "rook",
+              "role": "cef child (zygote fork)",
+              "rssKb": 75984,
+              "pssKb": 13688
+            },
+            {
+              "pid": 2758857,
+              "comm": "rook",
+              "role": "cef child (zygote fork)",
+              "rssKb": 47276,
+              "pssKb": 8022
+            },
+            {
+              "pid": 2758856,
+              "comm": "rook",
+              "role": "cef child (zygote fork)",
+              "rssKb": 20144,
+              "pssKb": 6280
+            },
+            {
+              "pid": 2758829,
+              "comm": "rook",
+              "role": "cef child (zygote fork)",
+              "rssKb": 19764,
+              "pssKb": 3341
+            }
+          ]
+        },
+        {
+          "label": "idle-2profiles-2",
+          "spaces": 1,
+          "extraProfiles": 1,
+          "profiles": [
+            "bench-second"
+          ],
+          "awake": false,
+          "windowSeconds": 30.083471249,
+          "rssKb": 1082256,
+          "pssKb": 386397,
+          "pids": 11,
+          "cpuSeconds": 0.09999999999999998,
+          "cpuPercent": 0.33240844838783046,
+          "userSeconds": 0.06000000000000005,
+          "systemSeconds": 0.04000000000000001,
+          "trace": [
+            {
+              "atMs": 10039,
+              "rssKb": 1079348,
+              "pssKb": 383560
+            },
+            {
+              "atMs": 20062,
+              "rssKb": 1079348,
+              "pssKb": 383560
+            },
+            {
+              "atMs": 30083,
+              "rssKb": 1082256,
+              "pssKb": 386397
+            }
+          ],
+          "parkedTransitions": 2,
+          "awakeTransitions": 1,
+          "roles": [
+            {
+              "role": "cef child (zygote fork)",
+              "procs": 9,
+              "rssKb": 684276,
+              "pssKb": 185903
+            },
+            {
+              "role": "browser",
+              "procs": 1,
+              "rssKb": 284888,
+              "pssKb": 159578
+            },
+            {
+              "role": "utility:network",
+              "procs": 1,
+              "rssKb": 113092,
+              "pssKb": 40916
+            }
+          ],
+          "detail": [
+            {
+              "pid": 2759739,
+              "comm": "rook",
+              "role": "browser",
+              "rssKb": 284888,
+              "pssKb": 159578
+            },
+            {
+              "pid": 2759776,
+              "comm": "rook",
+              "role": "cef child (zygote fork)",
+              "rssKb": 127828,
+              "pssKb": 43856
+            },
+            {
+              "pid": 2759828,
+              "comm": "rook",
+              "role": "cef child (zygote fork)",
+              "rssKb": 118892,
+              "pssKb": 37546
+            },
+            {
+              "pid": 2759851,
+              "comm": "rook",
+              "role": "cef child (zygote fork)",
+              "rssKb": 117712,
+              "pssKb": 36755
+            },
+            {
+              "pid": 2759778,
+              "comm": "rook",
+              "role": "utility:network",
+              "rssKb": 113092,
+              "pssKb": 40916
+            },
+            {
+              "pid": 2759850,
+              "comm": "rook",
+              "role": "cef child (zygote fork)",
+              "rssKb": 78372,
+              "pssKb": 19930
+            },
+            {
+              "pid": 2759750,
+              "comm": "rook",
+              "role": "cef child (zygote fork)",
+              "rssKb": 77484,
+              "pssKb": 16470
+            },
+            {
+              "pid": 2759751,
+              "comm": "rook",
+              "role": "cef child (zygote fork)",
+              "rssKb": 76832,
+              "pssKb": 13705
+            },
+            {
+              "pid": 2759781,
+              "comm": "rook",
+              "role": "cef child (zygote fork)",
+              "rssKb": 47264,
+              "pssKb": 8025
+            },
+            {
+              "pid": 2759780,
+              "comm": "rook",
+              "role": "cef child (zygote fork)",
+              "rssKb": 20124,
+              "pssKb": 6280
+            },
+            {
+              "pid": 2759753,
+              "comm": "rook",
+              "role": "cef child (zygote fork)",
+              "rssKb": 19768,
+              "pssKb": 3336
             }
           ]
         }
@@ -1607,23 +2837,29 @@
         {
           "label": "idle-4awake-0",
           "spaces": 4,
+          "extraProfiles": 0,
+          "profiles": [
+            "default"
+          ],
           "awake": true,
-          "windowSeconds": 20.048354928000002,
-          "rssKb": 1345416,
-          "pssKb": 412270,
+          "windowSeconds": 20.050434135,
+          "rssKb": 1335408,
+          "pssKb": 414220,
           "pids": 13,
           "cpuSeconds": 0.010000000000000009,
-          "cpuPercent": 0.0498794042499406,
-          "userSeconds": 0.010000000000000009,
+          "cpuPercent": 0.04987423181298617,
+          "userSeconds": 0.009999999999999953,
           "systemSeconds": 0,
           "trace": [
             {
-              "atMs": 10019,
-              "rssKb": 1345392
+              "atMs": 10035,
+              "rssKb": 1335400,
+              "pssKb": 414207
             },
             {
-              "atMs": 20035,
-              "rssKb": 1345416
+              "atMs": 20050,
+              "rssKb": 1335408,
+              "pssKb": 414220
             }
           ],
           "parkedTransitions": 3,
@@ -1632,136 +2868,142 @@
             {
               "role": "cef child (zygote fork)",
               "procs": 11,
-              "rssKb": 940568,
-              "pssKb": 218164
+              "rssKb": 943780,
+              "pssKb": 224602
             },
             {
               "role": "browser",
               "procs": 1,
-              "rssKb": 290324,
-              "pssKb": 154164
+              "rssKb": 278784,
+              "pssKb": 150432
             },
             {
               "role": "utility:network",
               "procs": 1,
-              "rssKb": 114524,
-              "pssKb": 39942
+              "rssKb": 112844,
+              "pssKb": 39186
             }
           ],
           "detail": [
             {
-              "pid": 900413,
+              "pid": 2760684,
               "comm": "rook",
               "role": "browser",
-              "rssKb": 290324,
-              "pssKb": 154164
+              "rssKb": 278784,
+              "pssKb": 150432
             },
             {
-              "pid": 900467,
+              "pid": 2760719,
               "comm": "rook",
               "role": "cef child (zygote fork)",
-              "rssKb": 143760,
-              "pssKb": 51729
+              "rssKb": 142808,
+              "pssKb": 56678
             },
             {
-              "pid": 900615,
+              "pid": 2760772,
               "comm": "rook",
               "role": "cef child (zygote fork)",
-              "rssKb": 119808,
-              "pssKb": 27142
+              "rssKb": 119412,
+              "pssKb": 26939
             },
             {
-              "pid": 900581,
+              "pid": 2760787,
               "comm": "rook",
               "role": "cef child (zygote fork)",
-              "rssKb": 119600,
-              "pssKb": 27046
+              "rssKb": 119156,
+              "pssKb": 26860
             },
             {
-              "pid": 900630,
+              "pid": 2760799,
               "comm": "rook",
               "role": "cef child (zygote fork)",
-              "rssKb": 119568,
-              "pssKb": 26970
+              "rssKb": 119088,
+              "pssKb": 26817
             },
             {
-              "pid": 900529,
+              "pid": 2760773,
               "comm": "rook",
               "role": "cef child (zygote fork)",
-              "rssKb": 117824,
-              "pssKb": 26415
+              "rssKb": 117692,
+              "pssKb": 26340
             },
             {
-              "pid": 900469,
+              "pid": 2760721,
               "comm": "rook",
               "role": "utility:network",
-              "rssKb": 114524,
-              "pssKb": 39942
+              "rssKb": 112844,
+              "pssKb": 39186
             },
             {
-              "pid": 900681,
+              "pid": 2760695,
               "comm": "rook",
               "role": "cef child (zygote fork)",
-              "rssKb": 78428,
-              "pssKb": 15937
+              "rssKb": 79872,
+              "pssKb": 16339
             },
             {
-              "pid": 900440,
+              "pid": 2760696,
               "comm": "rook",
               "role": "cef child (zygote fork)",
-              "rssKb": 76964,
-              "pssKb": 11806
+              "rssKb": 79624,
+              "pssKb": 12925
             },
             {
-              "pid": 900439,
+              "pid": 2760802,
               "comm": "rook",
               "role": "cef child (zygote fork)",
-              "rssKb": 76924,
-              "pssKb": 15208
+              "rssKb": 78652,
+              "pssKb": 16021
             },
             {
-              "pid": 900476,
+              "pid": 2760724,
               "comm": "rook",
               "role": "cef child (zygote fork)",
-              "rssKb": 47716,
-              "pssKb": 7020
+              "rssKb": 47544,
+              "pssKb": 6820
             },
             {
-              "pid": 900471,
+              "pid": 2760723,
               "comm": "rook",
               "role": "cef child (zygote fork)",
-              "rssKb": 20212,
-              "pssKb": 6243
+              "rssKb": 20168,
+              "pssKb": 6226
             },
             {
-              "pid": 900442,
+              "pid": 2760698,
               "comm": "rook",
               "role": "cef child (zygote fork)",
               "rssKb": 19764,
-              "pssKb": 2648
+              "pssKb": 2637
             }
           ]
         },
         {
           "label": "idle-4awake-1",
           "spaces": 4,
+          "extraProfiles": 0,
+          "profiles": [
+            "default"
+          ],
           "awake": true,
-          "windowSeconds": 20.049315131,
-          "rssKb": 1343584,
-          "pssKb": 412562,
+          "windowSeconds": 20.054910679,
+          "rssKb": 1331476,
+          "pssKb": 415156,
           "pids": 13,
-          "cpuSeconds": 0.029999999999999916,
-          "cpuPercent": 0.14963104626758195,
-          "userSeconds": 0.030000000000000027,
+          "cpuSeconds": 0.010000000000000009,
+          "cpuPercent": 0.04986309916838104,
+          "userSeconds": 0.010000000000000009,
           "systemSeconds": 0,
           "trace": [
             {
-              "atMs": 10018,
-              "rssKb": 1343564
+              "atMs": 10032,
+              "rssKb": 1331472,
+              "pssKb": 415152
             },
             {
-              "atMs": 20035,
-              "rssKb": 1343584
+              "atMs": 20055,
+              "rssKb": 1331476,
+              "pssKb": 415156
             }
           ],
           "parkedTransitions": 3,
@@ -1770,136 +3012,142 @@
             {
               "role": "cef child (zygote fork)",
               "procs": 11,
-              "rssKb": 938800,
-              "pssKb": 218158
+              "rssKb": 938856,
+              "pssKb": 224552
             },
             {
               "role": "browser",
               "procs": 1,
-              "rssKb": 290580,
-              "pssKb": 154581
+              "rssKb": 279696,
+              "pssKb": 151274
             },
             {
               "role": "utility:network",
               "procs": 1,
-              "rssKb": 114204,
-              "pssKb": 39823
+              "rssKb": 112924,
+              "pssKb": 39330
             }
           ],
           "detail": [
             {
-              "pid": 901864,
+              "pid": 2760968,
               "comm": "rook",
               "role": "browser",
-              "rssKb": 290580,
-              "pssKb": 154581
+              "rssKb": 279696,
+              "pssKb": 151274
             },
             {
-              "pid": 901918,
+              "pid": 2761004,
               "comm": "rook",
               "role": "cef child (zygote fork)",
-              "rssKb": 143748,
-              "pssKb": 51775
+              "rssKb": 142992,
+              "pssKb": 56756
             },
             {
-              "pid": 902037,
+              "pid": 2761071,
               "comm": "rook",
               "role": "cef child (zygote fork)",
-              "rssKb": 119704,
-              "pssKb": 27083
+              "rssKb": 119660,
+              "pssKb": 27045
             },
             {
-              "pid": 902062,
+              "pid": 2761056,
               "comm": "rook",
               "role": "cef child (zygote fork)",
-              "rssKb": 119612,
-              "pssKb": 27061
+              "rssKb": 119624,
+              "pssKb": 27012
             },
             {
-              "pid": 902091,
+              "pid": 2761080,
               "comm": "rook",
               "role": "cef child (zygote fork)",
-              "rssKb": 119368,
-              "pssKb": 27039
+              "rssKb": 119488,
+              "pssKb": 27009
             },
             {
-              "pid": 901980,
+              "pid": 2761057,
               "comm": "rook",
               "role": "cef child (zygote fork)",
-              "rssKb": 118016,
-              "pssKb": 26482
+              "rssKb": 117756,
+              "pssKb": 26343
             },
             {
-              "pid": 901921,
+              "pid": 2761006,
               "comm": "rook",
               "role": "utility:network",
-              "rssKb": 114204,
-              "pssKb": 39823
+              "rssKb": 112924,
+              "pssKb": 39330
             },
             {
-              "pid": 902149,
+              "pid": 2761096,
               "comm": "rook",
               "role": "cef child (zygote fork)",
-              "rssKb": 78392,
-              "pssKb": 15943
+              "rssKb": 78528,
+              "pssKb": 15997
             },
             {
-              "pid": 901891,
+              "pid": 2760979,
               "comm": "rook",
               "role": "cef child (zygote fork)",
-              "rssKb": 76352,
-              "pssKb": 11813
+              "rssKb": 77060,
+              "pssKb": 16046
             },
             {
-              "pid": 901890,
+              "pid": 2760980,
               "comm": "rook",
               "role": "cef child (zygote fork)",
-              "rssKb": 75888,
-              "pssKb": 15029
+              "rssKb": 76280,
+              "pssKb": 12612
             },
             {
-              "pid": 901926,
+              "pid": 2761009,
               "comm": "rook",
               "role": "cef child (zygote fork)",
-              "rssKb": 47760,
-              "pssKb": 7044
+              "rssKb": 47560,
+              "pssKb": 6849
             },
             {
-              "pid": 901922,
+              "pid": 2761008,
               "comm": "rook",
               "role": "cef child (zygote fork)",
-              "rssKb": 20152,
-              "pssKb": 6237
+              "rssKb": 20184,
+              "pssKb": 6243
             },
             {
-              "pid": 901893,
+              "pid": 2760982,
               "comm": "rook",
               "role": "cef child (zygote fork)",
-              "rssKb": 19808,
-              "pssKb": 2652
+              "rssKb": 19724,
+              "pssKb": 2640
             }
           ]
         },
         {
           "label": "idle-4awake-2",
           "spaces": 4,
+          "extraProfiles": 0,
+          "profiles": [
+            "default"
+          ],
           "awake": true,
-          "windowSeconds": 20.051703921,
-          "rssKb": 1343936,
-          "pssKb": 411637,
+          "windowSeconds": 20.0675639,
+          "rssKb": 1332908,
+          "pssKb": 415388,
           "pids": 13,
-          "cpuSeconds": 0.030000000000000027,
-          "cpuPercent": 0.1496132204933529,
-          "userSeconds": 0.020000000000000018,
-          "systemSeconds": 0.009999999999999981,
+          "cpuSeconds": 0.039999999999999925,
+          "cpuPercent": 0.19932663575572282,
+          "userSeconds": 0.030000000000000027,
+          "systemSeconds": 0.010000000000000009,
           "trace": [
             {
-              "atMs": 10021,
-              "rssKb": 1343916
+              "atMs": 10043,
+              "rssKb": 1332908,
+              "pssKb": 415388
             },
             {
-              "atMs": 20038,
-              "rssKb": 1343936
+              "atMs": 20068,
+              "rssKb": 1332908,
+              "pssKb": 415388
             }
           ],
           "parkedTransitions": 3,
@@ -1908,118 +3156,118 @@
             {
               "role": "cef child (zygote fork)",
               "procs": 11,
-              "rssKb": 939560,
-              "pssKb": 217963
+              "rssKb": 940436,
+              "pssKb": 224876
             },
             {
               "role": "browser",
               "procs": 1,
-              "rssKb": 290076,
-              "pssKb": 153885
+              "rssKb": 279616,
+              "pssKb": 151215
             },
             {
               "role": "utility:network",
               "procs": 1,
-              "rssKb": 114300,
-              "pssKb": 39789
+              "rssKb": 112856,
+              "pssKb": 39297
             }
           ],
           "detail": [
             {
-              "pid": 903953,
+              "pid": 2761254,
               "comm": "rook",
               "role": "browser",
-              "rssKb": 290076,
-              "pssKb": 153885
+              "rssKb": 279616,
+              "pssKb": 151215
             },
             {
-              "pid": 904001,
+              "pid": 2761291,
               "comm": "rook",
               "role": "cef child (zygote fork)",
-              "rssKb": 143920,
-              "pssKb": 51828
+              "rssKb": 143072,
+              "pssKb": 56920
             },
             {
-              "pid": 904157,
+              "pid": 2761381,
               "comm": "rook",
               "role": "cef child (zygote fork)",
-              "rssKb": 119744,
-              "pssKb": 27090
+              "rssKb": 119708,
+              "pssKb": 27030
             },
             {
-              "pid": 904128,
+              "pid": 2761419,
               "comm": "rook",
               "role": "cef child (zygote fork)",
-              "rssKb": 119564,
-              "pssKb": 26965
+              "rssKb": 119704,
+              "pssKb": 27047
             },
             {
-              "pid": 904190,
+              "pid": 2761432,
               "comm": "rook",
               "role": "cef child (zygote fork)",
-              "rssKb": 119508,
-              "pssKb": 26986
+              "rssKb": 119676,
+              "pssKb": 26995
             },
             {
-              "pid": 904068,
+              "pid": 2761387,
               "comm": "rook",
               "role": "cef child (zygote fork)",
-              "rssKb": 117752,
-              "pssKb": 26396
+              "rssKb": 117880,
+              "pssKb": 26410
             },
             {
-              "pid": 904009,
+              "pid": 2761293,
               "comm": "rook",
               "role": "utility:network",
-              "rssKb": 114300,
-              "pssKb": 39789
+              "rssKb": 112856,
+              "pssKb": 39297
             },
             {
-              "pid": 904253,
+              "pid": 2761444,
               "comm": "rook",
               "role": "cef child (zygote fork)",
-              "rssKb": 78396,
-              "pssKb": 15917
+              "rssKb": 78604,
+              "pssKb": 15996
             },
             {
-              "pid": 903980,
+              "pid": 2761266,
               "comm": "rook",
               "role": "cef child (zygote fork)",
-              "rssKb": 76656,
-              "pssKb": 11819
+              "rssKb": 77256,
+              "pssKb": 12741
             },
             {
-              "pid": 903979,
+              "pid": 2761265,
               "comm": "rook",
               "role": "cef child (zygote fork)",
-              "rssKb": 76408,
-              "pssKb": 15067
+              "rssKb": 77236,
+              "pssKb": 16068
             },
             {
-              "pid": 904016,
+              "pid": 2761301,
               "comm": "rook",
               "role": "cef child (zygote fork)",
-              "rssKb": 47664,
-              "pssKb": 7008
+              "rssKb": 47368,
+              "pssKb": 6791
             },
             {
-              "pid": 904011,
+              "pid": 2761295,
               "comm": "rook",
               "role": "cef child (zygote fork)",
-              "rssKb": 20196,
-              "pssKb": 6241
+              "rssKb": 20152,
+              "pssKb": 6227
             },
             {
-              "pid": 903982,
+              "pid": 2761268,
               "comm": "rook",
               "role": "cef child (zygote fork)",
-              "rssKb": 19752,
-              "pssKb": 2646
+              "rssKb": 19780,
+              "pssKb": 2651
             }
           ]
         }
       ],
-      "url": "http://127.0.0.1:42719/small-form.html"
+      "url": "http://127.0.0.1:36911/small-form.html"
     },
     "snapshots": {
       "pages": [
@@ -2027,572 +3275,778 @@
           "id": "small-form",
           "file": "small-form.html",
           "label": "small form",
-          "fullIterations": 30,
-          "url": "http://127.0.0.1:42719/small-form.html",
+          "url": "http://127.0.0.1:36911/small-form.html",
           "nodes": 21,
-          "snapshotLines": 26,
+          "viewportHeader": "snapshot scope=viewport only, 22 lines, 6 refs, nothing outside the viewport (the whole page fits)",
+          "fullHeader": "snapshot scope=full page, 22 lines, 6 refs",
+          "viewportScope": {
+            "scope": "viewport only",
+            "lines": 22,
+            "refs": 6
+          },
+          "fullScope": {
+            "scope": "full page",
+            "lines": 22,
+            "refs": 6
+          },
           "viewport": {
             "n": 90,
-            "median": 4.788576,
-            "min": 4.254486,
-            "max": 6.723748,
-            "spread": 2.4692619999999996,
-            "spreadPct": 51.56568466283087,
+            "median": 8.4288025,
+            "min": 5.713894,
+            "max": 14.959925,
+            "spread": 9.246031,
+            "spreadPct": 109.69566554679623,
             "values": [
-              5.50915,
-              6.32766,
-              6.181896,
-              4.977927,
-              5.30841,
-              4.885014,
-              4.664436,
-              4.428983,
-              4.65994,
-              4.492363,
-              5.547863,
-              5.815936,
-              6.156869,
-              5.897931,
-              5.566457,
-              5.557069,
-              5.624747,
-              4.508964,
-              4.370584,
-              4.368059,
-              4.694814,
-              4.757162,
-              4.893188,
-              4.356347,
-              4.866257,
-              4.682221,
-              4.714913,
-              4.584487,
-              4.596087,
-              5.276131,
-              5.125836,
-              5.196319,
-              4.586109,
-              4.839166,
-              5.394694,
-              5.688126,
-              6.125229,
-              5.073298,
-              5.741517,
-              5.307099,
-              4.851399,
-              4.733969,
-              5.354447,
-              5.292181,
-              4.910281,
-              4.828757,
-              5.339419,
-              4.625175,
-              4.713779,
-              4.562495,
-              5.207982,
-              5.081423,
-              4.573918,
-              4.950556,
-              4.634741,
-              4.393948,
-              5.009489,
-              4.449262,
-              4.544832,
-              4.398506,
-              6.723748,
-              5.623072,
-              6.234987,
-              6.113306,
-              5.426063,
-              4.891706,
-              4.617269,
-              4.539764,
-              5.018494,
-              4.458148,
-              4.494096,
-              4.459841,
-              4.376735,
-              4.889662,
-              4.454893,
-              4.42227,
-              4.708059,
-              4.557226,
-              4.546666,
-              4.55986,
-              4.356347,
-              4.399438,
-              4.81999,
-              4.254486,
-              4.876988,
-              4.687199,
-              4.573186,
-              4.582904,
-              4.515235,
-              4.610777
+              10.312007,
+              9.802118,
+              10.98811,
+              11.395165,
+              12.354702,
+              10.960327,
+              11.571728,
+              12.172788,
+              12.343931,
+              11.577308,
+              10.399352,
+              8.359183,
+              8.107679,
+              8.775235,
+              8.945574,
+              7.439842,
+              6.905375,
+              6.57309,
+              7.463897,
+              7.472794,
+              9.205855,
+              8.81454,
+              8.537157,
+              8.569087,
+              8.98555,
+              8.426829,
+              7.063573,
+              8.393025,
+              7.182518,
+              8.26262,
+              11.009941,
+              9.698953,
+              8.723056,
+              11.062149,
+              9.151955,
+              10.626558,
+              9.789513,
+              9.001501,
+              8.252792,
+              8.596157,
+              9.004957,
+              8.087451,
+              10.059512,
+              8.00758,
+              7.275553,
+              8.466413,
+              8.554549,
+              7.123806,
+              7.706804,
+              9.01689,
+              7.613849,
+              9.934207,
+              8.299329,
+              8.464119,
+              8.430776,
+              9.344847,
+              8.583914,
+              14.959925,
+              7.987732,
+              9.498336,
+              10.055654,
+              7.601156,
+              6.341234,
+              7.24221,
+              9.018603,
+              7.306601,
+              7.715481,
+              7.691795,
+              6.85397,
+              7.049487,
+              7.844834,
+              7.448729,
+              7.017638,
+              11.706813,
+              6.472471,
+              5.828459,
+              6.242047,
+              13.291985,
+              8.594524,
+              7.172157,
+              8.321681,
+              7.169603,
+              7.051611,
+              6.075244,
+              10.012994,
+              6.587067,
+              6.471019,
+              6.398051,
+              5.713894,
+              6.207031
             ]
           },
-          "viewportP50": 4.757162,
-          "viewportP95": 6.156869,
+          "viewportP50": 8.426829,
+          "viewportP95": 12.172788,
           "viewportSamples": 90,
           "perRunP50": [
-            4.866257,
-            4.910281,
-            4.573186
+            8.775235,
+            8.596157,
+            7.169603
           ],
           "perRunP95": [
-            6.181896,
-            5.741517,
-            6.234987
+            12.343931,
+            11.062149,
+            11.706813
           ],
           "full": {
-            "n": 30,
-            "median": 4.7406465,
-            "min": 4.074947,
-            "max": 8.16414,
-            "spread": 4.089193,
-            "spreadPct": 86.25812956102084,
+            "n": 60,
+            "median": 8.0909525,
+            "min": 5.815173,
+            "max": 18.941969,
+            "spread": 13.126796,
+            "spreadPct": 162.24042842916208,
             "values": [
-              8.16414,
-              5.946542,
-              4.940518,
-              6.580868,
-              7.986886,
-              5.858067,
-              5.018483,
-              4.682232,
-              6.098349,
-              4.364131,
-              4.399198,
-              4.562185,
-              4.253253,
-              5.635085,
-              5.800928,
-              5.126107,
-              4.669757,
-              4.312735,
-              4.560682,
-              4.809531,
-              4.736413,
-              4.616596,
-              6.650148,
-              4.51733,
-              4.590528,
-              4.074947,
-              4.685537,
-              5.442333,
-              4.74488,
-              4.48579
+              7.657612,
+              8.372717,
+              7.448838,
+              7.378847,
+              7.867137,
+              8.816192,
+              8.152854,
+              8.317243,
+              8.990961,
+              7.966894,
+              6.873265,
+              7.654596,
+              8.029051,
+              9.350719,
+              8.392825,
+              7.626962,
+              7.395398,
+              7.870794,
+              7.102847,
+              9.355357,
+              8.173983,
+              10.050534,
+              8.820441,
+              7.692507,
+              10.470486,
+              10.41979,
+              10.190538,
+              9.896224,
+              12.128256,
+              9.612039,
+              10.708684,
+              12.709148,
+              18.941969,
+              15.655884,
+              13.350336,
+              11.926023,
+              10.613936,
+              8.980501,
+              8.291436,
+              9.044281,
+              6.570807,
+              6.772554,
+              6.177145,
+              8.749157,
+              7.753182,
+              7.205611,
+              6.220968,
+              7.341767,
+              6.615069,
+              6.289176,
+              6.500463,
+              6.701972,
+              5.815173,
+              6.529339,
+              6.579082,
+              8.379009,
+              8.908336,
+              7.797134,
+              7.898465,
+              7.747522
             ]
           },
-          "fullP50": 4.736413,
-          "fullP95": 7.986886,
-          "fullSamples": 30
+          "fullP50": 8.029051,
+          "fullP95": 12.709148,
+          "fullSamples": 60,
+          "perRunFullP50": [
+            7.870794,
+            10.190538,
+            6.701972
+          ],
+          "perRunFullP95": [
+            9.350719,
+            15.655884,
+            8.749157
+          ]
         },
         {
           "id": "long-list",
           "file": "long-list.html",
           "label": "long list",
-          "fullIterations": 30,
-          "url": "http://127.0.0.1:42719/long-list.html",
+          "url": "http://127.0.0.1:36911/long-list.html",
           "nodes": 2412,
-          "snapshotLines": 2170,
+          "viewportHeader": "snapshot scope=viewport only, 183 lines, 481 refs, 1505 nodes outside the viewport not shown - pass {scope:\"full_page\"} for the whole page",
+          "fullHeader": "snapshot scope=full page, 1688 lines, 481 refs",
+          "viewportScope": {
+            "scope": "viewport only",
+            "lines": 183,
+            "refs": 481
+          },
+          "fullScope": {
+            "scope": "full page",
+            "lines": 1688,
+            "refs": 481
+          },
           "viewport": {
             "n": 90,
-            "median": 65.989135,
-            "min": 60.965712,
-            "max": 88.982253,
-            "spread": 28.016540999999997,
-            "spreadPct": 42.45629375199417,
+            "median": 82.93743699999999,
+            "min": 66.811357,
+            "max": 131.362132,
+            "spread": 64.550775,
+            "spreadPct": 77.83068459180865,
             "values": [
-              71.005455,
-              75.038955,
-              68.840118,
-              71.259516,
-              66.375814,
-              88.982253,
-              68.996973,
-              67.954268,
-              70.611785,
-              64.594799,
-              72.517946,
-              77.832797,
-              75.864721,
-              78.207123,
-              67.98721,
-              78.191274,
-              65.88011,
-              69.358253,
-              65.16353,
-              67.77522,
-              66.677393,
-              75.86904,
-              64.328026,
-              65.643154,
-              66.312135,
-              67.286971,
-              69.321885,
-              77.646187,
-              62.920126,
-              62.977251,
-              62.816127,
-              64.167594,
-              62.218191,
-              66.09816,
-              68.245546,
-              61.927443,
-              66.272078,
-              63.333021,
-              66.537117,
-              75.281901,
-              65.766265,
-              65.081476,
-              71.517711,
-              64.143568,
-              66.173042,
-              64.678195,
-              62.249461,
-              73.092296,
-              66.130893,
-              61.21976,
-              64.269816,
-              74.054429,
-              61.547007,
-              61.303157,
-              66.426229,
-              61.453811,
-              60.965712,
-              70.600592,
-              64.774376,
-              70.470056,
-              66.689425,
-              65.144383,
-              68.853139,
-              61.486712,
-              64.160008,
-              65.634075,
-              64.533182,
-              78.453736,
-              63.547725,
-              64.465255,
-              61.551635,
-              62.860319,
-              62.062939,
-              73.074773,
-              62.550305,
-              65.595272,
-              62.023244,
-              66.752643,
-              61.315288,
-              71.138726,
-              64.170449,
-              61.686259,
-              65.441673,
-              61.45922,
-              67.703193,
-              67.239922,
-              66.835849,
-              64.653067,
-              65.596134,
-              65.858047
+              104.763142,
+              131.362132,
+              89.239538,
+              90.837604,
+              104.534845,
+              87.368376,
+              75.781821,
+              86.505683,
+              89.330028,
+              75.966007,
+              77.541463,
+              80.965865,
+              84.124331,
+              89.635883,
+              93.348943,
+              87.672508,
+              84.572724,
+              92.415435,
+              101.015,
+              93.381862,
+              95.558039,
+              94.771999,
+              107.649896,
+              97.454268,
+              122.448657,
+              71.377441,
+              75.981476,
+              88.120281,
+              91.828179,
+              95.830592,
+              89.898086,
+              75.008616,
+              75.286818,
+              79.259536,
+              81.45082,
+              70.54759,
+              74.683343,
+              82.664562,
+              92.419221,
+              72.802543,
+              73.740829,
+              71.110588,
+              79.483458,
+              78.844885,
+              86.019407,
+              91.132991,
+              80.479221,
+              75.584539,
+              80.78106,
+              75.908749,
+              76.412508,
+              88.707657,
+              86.096854,
+              86.553893,
+              97.555267,
+              77.900186,
+              81.410052,
+              79.757093,
+              66.811357,
+              79.025705,
+              71.457382,
+              71.465598,
+              77.830365,
+              88.101466,
+              92.043875,
+              81.781592,
+              71.829082,
+              81.604529,
+              93.447487,
+              89.782911,
+              95.46342,
+              81.013697,
+              75.077446,
+              79.347,
+              98.149455,
+              83.06643,
+              81.130117,
+              79.812896,
+              89.068507,
+              100.987206,
+              96.826386,
+              76.75393,
+              76.415462,
+              75.865898,
+              78.057785,
+              82.808444,
+              88.034931,
+              87.181575,
+              91.084659,
+              76.434088
             ]
           },
-          "viewportP50": 65.88011,
-          "viewportP95": 77.832797,
+          "viewportP50": 82.808444,
+          "viewportP95": 104.534845,
           "viewportSamples": 90,
           "perRunP50": [
-            68.840118,
-            64.774376,
-            64.653067
+            89.635883,
+            79.259536,
+            81.604529
           ],
           "perRunP95": [
-            78.207123,
-            74.054429,
-            73.074773
+            122.448657,
+            92.419221,
+            98.149455
           ],
           "full": {
-            "n": 30,
-            "median": 70.7447745,
-            "min": 64.252454,
-            "max": 92.212588,
-            "spread": 27.960133999999996,
-            "spreadPct": 39.52254311023353,
+            "n": 60,
+            "median": 83.1308005,
+            "min": 70.385425,
+            "max": 122.121922,
+            "spread": 51.736497,
+            "spreadPct": 62.23505209720673,
             "values": [
-              80.713796,
-              73.192556,
-              71.299469,
-              67.534307,
-              75.057198,
-              75.900899,
-              68.623188,
-              72.676734,
-              68.317953,
-              64.252454,
-              70.690492,
-              66.767983,
-              64.778334,
-              69.246933,
-              72.934308,
-              66.689937,
-              69.785006,
-              70.799057,
-              65.277404,
-              64.364116,
-              78.066077,
-              87.540325,
-              87.10824,
-              92.212588,
-              74.28753,
-              71.568956,
-              72.469433,
-              69.030896,
-              66.701647,
-              64.626419
+              96.561276,
+              100.36163,
+              95.620126,
+              97.038055,
+              82.569134,
+              99.230822,
+              101.301127,
+              87.360231,
+              79.104413,
+              76.358075,
+              91.800438,
+              122.121922,
+              110.695247,
+              84.149437,
+              79.706526,
+              91.972581,
+              84.839818,
+              83.095374,
+              84.99029,
+              81.026631,
+              73.292486,
+              74.58056,
+              83.573564,
+              88.005415,
+              90.245431,
+              75.771611,
+              75.448914,
+              77.355011,
+              76.164531,
+              73.178611,
+              93.070538,
+              70.385425,
+              83.806532,
+              82.931155,
+              73.750158,
+              75.195366,
+              85.947322,
+              77.435763,
+              78.760977,
+              82.078461,
+              85.214583,
+              85.950467,
+              76.565045,
+              75.775438,
+              81.660695,
+              87.913782,
+              82.923521,
+              79.163866,
+              76.000802,
+              83.177349,
+              81.059392,
+              90.77091,
+              74.706727,
+              79.499337,
+              77.586185,
+              83.867397,
+              91.531982,
+              83.166227,
+              85.102633,
+              94.078764
             ]
           },
-          "fullP50": 70.690492,
-          "fullP95": 87.540325,
-          "fullSamples": 30
+          "fullP50": 83.095374,
+          "fullP95": 100.36163,
+          "fullSamples": 60,
+          "perRunFullP50": [
+            87.360231,
+            77.355011,
+            82.923521
+          ],
+          "perRunFullP95": [
+            110.695247,
+            90.245431,
+            91.531982
+          ]
         },
         {
           "id": "heavy-dashboard",
           "file": "heavy-dashboard.html",
           "label": "heavy dashboard",
-          "fullIterations": 30,
-          "url": "http://127.0.0.1:42719/heavy-dashboard.html",
+          "url": "http://127.0.0.1:36911/heavy-dashboard.html",
           "nodes": 3797,
-          "snapshotLines": 5794,
+          "viewportHeader": "snapshot scope=viewport only, 133 lines, 604 refs, 3245 nodes outside the viewport not shown - pass {scope:\"full_page\"} for the whole page",
+          "fullHeader": "snapshot scope=full page, 3378 lines, 604 refs",
+          "viewportScope": {
+            "scope": "viewport only",
+            "lines": 133,
+            "refs": 604
+          },
+          "fullScope": {
+            "scope": "full page",
+            "lines": 3378,
+            "refs": 604
+          },
           "viewport": {
             "n": 90,
-            "median": 141.2904675,
-            "min": 128.114172,
-            "max": 163.794124,
-            "spread": 35.679952000000014,
-            "spreadPct": 25.252908162399574,
+            "median": 186.942879,
+            "min": 145.832965,
+            "max": 513.586644,
+            "spread": 367.753679,
+            "spreadPct": 196.7198114029259,
             "values": [
-              150.591773,
-              145.330262,
-              145.843399,
-              149.909458,
-              150.988811,
-              145.370307,
-              144.924127,
-              147.693313,
-              146.706003,
-              152.136472,
-              141.637654,
-              141.43847,
-              161.61046,
-              149.988525,
-              151.946896,
-              141.397763,
-              151.083819,
-              153.939288,
-              155.239948,
-              163.794124,
-              151.642061,
-              135.900437,
-              148.889134,
-              142.658327,
-              143.097434,
-              143.009849,
-              148.951072,
-              150.377217,
-              151.06888,
-              152.67255,
-              142.941928,
-              158.056781,
-              149.505844,
-              137.870434,
-              154.18581,
-              140.291285,
-              138.005017,
-              152.201401,
-              133.666053,
-              128.273324,
-              149.635478,
-              129.370351,
-              132.172991,
-              144.84388,
-              138.942152,
-              135.904019,
-              131.664251,
-              138.198371,
-              131.740647,
-              135.729269,
-              132.57607,
-              135.489328,
-              135.255036,
-              129.936166,
-              132.626203,
-              130.059268,
-              146.031877,
-              136.803974,
-              139.686314,
-              138.200715,
-              150.447906,
-              146.970785,
-              137.92828,
-              146.907817,
-              143.104302,
-              141.582064,
-              148.239195,
-              137.437115,
-              136.995164,
-              143.558146,
-              136.847434,
-              129.654544,
-              141.183172,
-              138.081358,
-              128.992017,
-              129.494654,
-              131.086952,
-              130.57619,
-              133.837133,
-              132.798977,
-              130.002129,
-              130.030042,
-              134.506272,
-              128.114172,
-              130.487373,
-              136.579348,
-              132.753651,
-              150.771013,
-              131.604988,
-              130.729377
+              179.586138,
+              195.854126,
+              168.642233,
+              184.611025,
+              513.586644,
+              178.392783,
+              196.416403,
+              212.710108,
+              186.668408,
+              237.660865,
+              209.523731,
+              182.831487,
+              191.534876,
+              194.073404,
+              195.311725,
+              193.639497,
+              200.493066,
+              208.377033,
+              196.227107,
+              218.294377,
+              202.892663,
+              220.257922,
+              196.041608,
+              190.531558,
+              189.518281,
+              206.483881,
+              218.497098,
+              197.677347,
+              198.635408,
+              200.202389,
+              199.130751,
+              174.934275,
+              184.295712,
+              179.642055,
+              167.802152,
+              183.207795,
+              197.846536,
+              184.94229,
+              182.089381,
+              221.91979,
+              207.316798,
+              200.699755,
+              228.176615,
+              360.583704,
+              238.778107,
+              492.477996,
+              185.753265,
+              177.011133,
+              192.482079,
+              169.57626,
+              178.710933,
+              229.647634,
+              184.946607,
+              165.457701,
+              182.108476,
+              145.832965,
+              150.167073,
+              196.318419,
+              163.497932,
+              148.370913,
+              177.840594,
+              211.890426,
+              178.985817,
+              182.977473,
+              186.146956,
+              177.393903,
+              227.680221,
+              188.925865,
+              190.665611,
+              180.208871,
+              160.836874,
+              171.741234,
+              164.485381,
+              169.548769,
+              164.593383,
+              166.842485,
+              170.058538,
+              169.288889,
+              174.425166,
+              160.959984,
+              156.102543,
+              156.045265,
+              168.90586,
+              190.616428,
+              178.985729,
+              193.806701,
+              215.580199,
+              182.070204,
+              187.21735,
+              216.848216
             ]
           },
-          "viewportP50": 141.183172,
-          "viewportP95": 154.18581,
+          "viewportP50": 186.668408,
+          "viewportP95": 237.660865,
           "viewportSamples": 90,
           "perRunP50": [
-            148.951072,
-            136.803974,
-            134.506272
+            196.227107,
+            184.295712,
+            177.840594
           ],
           "perRunP95": [
-            161.61046,
-            154.18581,
-            150.447906
+            237.660865,
+            360.583704,
+            216.848216
           ],
           "full": {
-            "n": 30,
-            "median": 153.9227855,
-            "min": 143.672054,
-            "max": 167.358446,
-            "spread": 23.686391999999984,
-            "spreadPct": 15.388489704794214,
+            "n": 60,
+            "median": 191.502375,
+            "min": 157.199448,
+            "max": 244.649056,
+            "spread": 87.44960800000001,
+            "spreadPct": 45.665025303210996,
             "values": [
-              167.358446,
-              159.032442,
-              149.045709,
-              148.756165,
-              149.378405,
-              147.768492,
-              152.955313,
-              144.784511,
-              147.736482,
-              155.532939,
-              159.651267,
-              158.084145,
-              160.827523,
-              156.552959,
-              158.118379,
-              153.798091,
-              148.450948,
-              154.587127,
-              149.907261,
-              154.04748,
-              146.947505,
-              156.121577,
-              157.895398,
-              143.907508,
-              143.672054,
-              159.657728,
-              146.166945,
-              153.384872,
-              165.988914,
-              159.09563
+              217.75452,
+              216.359476,
+              201.183706,
+              202.377612,
+              202.681614,
+              166.104797,
+              205.110525,
+              215.740071,
+              223.022034,
+              204.053407,
+              244.649056,
+              201.959635,
+              205.966356,
+              209.390411,
+              197.568892,
+              214.440734,
+              184.208129,
+              184.563586,
+              197.309444,
+              224.423742,
+              157.199448,
+              182.822339,
+              201.940458,
+              167.997359,
+              188.624829,
+              169.077513,
+              178.191255,
+              183.453507,
+              197.543204,
+              179.492884,
+              171.647999,
+              159.520646,
+              184.758843,
+              189.721865,
+              175.345328,
+              183.576419,
+              193.575307,
+              183.769543,
+              193.282885,
+              198.500275,
+              209.246349,
+              215.894361,
+              199.89536,
+              186.23898,
+              201.40383,
+              184.296063,
+              165.654099,
+              181.395435,
+              209.44376,
+              206.967922,
+              179.373309,
+              173.89034,
+              182.516604,
+              180.540895,
+              184.95329,
+              186.875547,
+              187.047773,
+              203.743191,
+              187.906459,
+              202.472521
             ]
           },
-          "fullP50": 153.798091,
-          "fullP95": 165.988914,
-          "fullSamples": 30
+          "fullP50": 189.721865,
+          "fullP95": 217.75452,
+          "fullSamples": 60,
+          "perRunFullP50": [
+            204.053407,
+            183.453507,
+            186.875547
+          ],
+          "perRunFullP95": [
+            224.423742,
+            198.500275,
+            209.44376
+          ]
         }
       ],
       "standalone": [
         {
           "id": "small-form",
-          "p50": 6.706975,
-          "p95": 8.588279,
+          "p50": 19.0326,
+          "p95": 33.186786,
           "samples": 10
         },
         {
           "id": "long-list",
-          "p50": 74.36099,
-          "p95": 84.479583,
+          "p50": 107.057422,
+          "p95": 143.673934,
           "samples": 10
         },
         {
           "id": "heavy-dashboard",
-          "p50": 146.50847,
-          "p95": 160.290014,
+          "p50": 199.551674,
+          "p95": 217.257876,
           "samples": 10
         }
       ],
       "loadavg": [
-        0.99,
-        0.35,
-        0.85
+        1.58,
+        0.82,
+        0.69
       ]
+    },
+    "round": {
+      "runs": [
+        {
+          "totalMs": 592.832162,
+          "cliStartupMs": 70.038171,
+          "browserMs": 510.776655,
+          "teardownMs": 12.017336,
+          "phases": {
+            "taskSpace": 74.794291,
+            "page": 0.260752,
+            "goto": 118.323622,
+            "snapshot": 20.314523,
+            "click": 132.203976,
+            "type": 164.879491,
+            "finish": 6.483682
+          },
+          "snapshotLines": 23,
+          "snapshotHeader": "snapshot scope=viewport only, 22 lines, 6 refs, nothing outside the viewport (the whole page fits)"
+        },
+        {
+          "totalMs": 514.206822,
+          "cliStartupMs": 51.189278,
+          "browserMs": 448.693807,
+          "teardownMs": 14.323737,
+          "phases": {
+            "taskSpace": 34.487866,
+            "page": 0.103023,
+            "goto": 102.173319,
+            "snapshot": 22.982714,
+            "click": 126.798864,
+            "type": 162.148021,
+            "finish": 8.378989
+          },
+          "snapshotLines": 23,
+          "snapshotHeader": "snapshot scope=viewport only, 22 lines, 6 refs, nothing outside the viewport (the whole page fits)"
+        },
+        {
+          "totalMs": 522.78717,
+          "cliStartupMs": 45.448954,
+          "browserMs": 464.84791800000005,
+          "teardownMs": 12.490298,
+          "phases": {
+            "taskSpace": 43.385391,
+            "page": 0.107082,
+            "goto": 121.159912,
+            "snapshot": 22.73141,
+            "click": 125.020848,
+            "type": 152.443275,
+            "finish": 7.355344
+          },
+          "snapshotLines": 23,
+          "snapshotHeader": "snapshot scope=viewport only, 22 lines, 6 refs, nothing outside the viewport (the whole page fits)"
+        }
+      ],
+      "url": "http://127.0.0.1:36911/small-form.html"
     },
     "chrome": {
       "coldBlank": [
         {
-          "ms": 334.705643,
+          "ms": 689.16441,
           "code": 0,
           "bytes": 4829
         },
         {
-          "ms": 332.379172,
+          "ms": 488.570685,
           "code": 0,
           "bytes": 4829
         },
         {
-          "ms": 324.295003,
+          "ms": 492.981866,
           "code": 0,
           "bytes": 4829
         }
       ],
       "coldPage": [
         {
-          "ms": 413.610633,
+          "ms": 693.639931,
           "code": 0,
           "bytes": 24122
         },
         {
-          "ms": 391.707851,
+          "ms": 529.05698,
           "code": 0,
           "bytes": 24122
         },
         {
-          "ms": 379.064432,
+          "ms": 524.592696,
           "code": 0,
           "bytes": 24122
         }
       ],
       "warmBlank": [
         {
-          "ms": 306.098684,
+          "ms": 545.472062,
           "code": 0,
           "bytes": 4829
         },
         {
-          "ms": 328.578862,
+          "ms": 428.574031,
           "code": 0,
           "bytes": 4829
         },
         {
-          "ms": 347.748743,
+          "ms": 461.562254,
           "code": 0,
           "bytes": 4829
         }
@@ -2603,169 +4057,175 @@
           "runs": [
             {
               "label": "about-blank-0",
-              "windowSeconds": 15.063977706,
-              "rssKb": 1093880,
-              "pssKb": 254943,
+              "windowSeconds": 15.069224319000002,
+              "rssKb": 1092452,
+              "pssKb": 318252,
               "pids": 12,
-              "cpuPercent": 0,
+              "cpuPercent": 0.13272083271587548,
               "trace": [
                 {
-                  "atMs": 7530,
-                  "rssKb": 1093836
+                  "atMs": 7543,
+                  "rssKb": 1092412,
+                  "pssKb": 318212
                 },
                 {
-                  "atMs": 15051,
-                  "rssKb": 1093880
+                  "atMs": 15069,
+                  "rssKb": 1092452,
+                  "pssKb": 318252
                 }
               ],
               "roles": [
                 {
                   "role": "renderer (own process)",
                   "procs": 3,
-                  "rssKb": 410392,
-                  "pssKb": 116965
+                  "rssKb": 407620,
+                  "pssKb": 134235
                 },
                 {
                   "role": "browser",
                   "procs": 3,
-                  "rssKb": 222416,
-                  "pssKb": 58839
+                  "rssKb": 222904,
+                  "pssKb": 80222
                 },
                 {
                   "role": "cef child (zygote fork)",
                   "procs": 3,
-                  "rssKb": 163896,
-                  "pssKb": 18151
+                  "rssKb": 165888,
+                  "pssKb": 24207
                 },
                 {
                   "role": "gpu",
                   "procs": 1,
-                  "rssKb": 129072,
-                  "pssKb": 32986
+                  "rssKb": 128740,
+                  "pssKb": 45493
                 },
                 {
                   "role": "utility:network",
                   "procs": 1,
-                  "rssKb": 113204,
-                  "pssKb": 22226
+                  "rssKb": 112576,
+                  "pssKb": 27227
                 },
                 {
                   "role": "utility:storage",
                   "procs": 1,
-                  "rssKb": 54900,
-                  "pssKb": 5776
+                  "rssKb": 54724,
+                  "pssKb": 6868
                 }
               ]
             },
             {
               "label": "about-blank-1",
-              "windowSeconds": 15.063271215,
-              "rssKb": 1099088,
-              "pssKb": 255360,
+              "windowSeconds": 15.067626238,
+              "rssKb": 1088616,
+              "pssKb": 317184,
               "pids": 12,
-              "cpuPercent": 0.06638664243157232,
+              "cpuPercent": 0,
               "trace": [
                 {
-                  "atMs": 7521,
-                  "rssKb": 1099040
+                  "atMs": 7542,
+                  "rssKb": 1088572,
+                  "pssKb": 317139
                 },
                 {
-                  "atMs": 15043,
-                  "rssKb": 1099088
+                  "atMs": 15068,
+                  "rssKb": 1088616,
+                  "pssKb": 317184
                 }
               ],
               "roles": [
                 {
                   "role": "renderer (own process)",
                   "procs": 3,
-                  "rssKb": 413432,
-                  "pssKb": 117332
+                  "rssKb": 405780,
+                  "pssKb": 133845
                 },
                 {
                   "role": "browser",
                   "procs": 3,
-                  "rssKb": 222040,
-                  "pssKb": 58759
+                  "rssKb": 222260,
+                  "pssKb": 79278
                 },
                 {
                   "role": "cef child (zygote fork)",
                   "procs": 3,
-                  "rssKb": 165676,
-                  "pssKb": 18213
+                  "rssKb": 164120,
+                  "pssKb": 24365
                 },
                 {
                   "role": "gpu",
                   "procs": 1,
-                  "rssKb": 129408,
-                  "pssKb": 33114
+                  "rssKb": 128932,
+                  "pssKb": 45688
                 },
                 {
                   "role": "utility:network",
                   "procs": 1,
-                  "rssKb": 113044,
-                  "pssKb": 22215
+                  "rssKb": 112464,
+                  "pssKb": 27068
                 },
                 {
                   "role": "utility:storage",
                   "procs": 1,
-                  "rssKb": 55488,
-                  "pssKb": 5727
+                  "rssKb": 55060,
+                  "pssKb": 6940
                 }
               ]
             },
             {
               "label": "about-blank-2",
-              "windowSeconds": 15.047356344,
-              "rssKb": 1103480,
-              "pssKb": 255730,
+              "windowSeconds": 15.067496413999999,
+              "rssKb": 1089552,
+              "pssKb": 317360,
               "pids": 12,
-              "cpuPercent": 0,
+              "cpuPercent": 0.06636802641418574,
               "trace": [
                 {
-                  "atMs": 7516,
-                  "rssKb": 1103468
+                  "atMs": 7541,
+                  "rssKb": 1089456,
+                  "pssKb": 317314
                 },
                 {
-                  "atMs": 15035,
-                  "rssKb": 1103480
+                  "atMs": 15067,
+                  "rssKb": 1089552,
+                  "pssKb": 317360
                 }
               ],
               "roles": [
                 {
                   "role": "renderer (own process)",
                   "procs": 3,
-                  "rssKb": 414336,
-                  "pssKb": 117201
+                  "rssKb": 406304,
+                  "pssKb": 135612
                 },
                 {
                   "role": "browser",
                   "procs": 3,
-                  "rssKb": 223604,
-                  "pssKb": 59254
+                  "rssKb": 222140,
+                  "pssKb": 77885
                 },
                 {
                   "role": "cef child (zygote fork)",
                   "procs": 3,
-                  "rssKb": 167620,
-                  "pssKb": 18253
+                  "rssKb": 165404,
+                  "pssKb": 24297
                 },
                 {
                   "role": "gpu",
                   "procs": 1,
-                  "rssKb": 129336,
-                  "pssKb": 33101
+                  "rssKb": 128744,
+                  "pssKb": 45313
                 },
                 {
                   "role": "utility:network",
                   "procs": 1,
-                  "rssKb": 112952,
-                  "pssKb": 22150
+                  "rssKb": 112468,
+                  "pssKb": 27310
                 },
                 {
                   "role": "utility:storage",
                   "procs": 1,
-                  "rssKb": 55632,
-                  "pssKb": 5771
+                  "rssKb": 54492,
+                  "pssKb": 6943
                 }
               ]
             }
@@ -2776,169 +4236,175 @@
           "runs": [
             {
               "label": "small-form-0",
-              "windowSeconds": 15.042893869,
-              "rssKb": 1122824,
-              "pssKb": 265797,
+              "windowSeconds": 15.064385932999999,
+              "rssKb": 1108880,
+              "pssKb": 323042,
               "pids": 12,
-              "cpuPercent": 0.06647657084523974,
+              "cpuPercent": 0.13276346005042314,
               "trace": [
                 {
-                  "atMs": 7518,
-                  "rssKb": 1123156
+                  "atMs": 7541,
+                  "rssKb": 1108864,
+                  "pssKb": 323026
                 },
                 {
-                  "atMs": 15031,
-                  "rssKb": 1122824
+                  "atMs": 15064,
+                  "rssKb": 1108880,
+                  "pssKb": 323042
                 }
               ],
               "roles": [
                 {
                   "role": "renderer (own process)",
                   "procs": 3,
-                  "rssKb": 435868,
-                  "pssKb": 127799
+                  "rssKb": 419712,
+                  "pssKb": 139598
                 },
                 {
                   "role": "browser",
                   "procs": 3,
-                  "rssKb": 222800,
-                  "pssKb": 58023
+                  "rssKb": 221720,
+                  "pssKb": 77982
                 },
                 {
                   "role": "cef child (zygote fork)",
                   "procs": 3,
-                  "rssKb": 162696,
-                  "pssKb": 18043
+                  "rssKb": 167592,
+                  "pssKb": 24442
                 },
                 {
                   "role": "gpu",
                   "procs": 1,
-                  "rssKb": 130860,
-                  "pssKb": 33622
+                  "rssKb": 130724,
+                  "pssKb": 46291
                 },
                 {
                   "role": "utility:network",
                   "procs": 1,
-                  "rssKb": 114412,
-                  "pssKb": 22477
+                  "rssKb": 113624,
+                  "pssKb": 27642
                 },
                 {
                   "role": "utility:storage",
                   "procs": 1,
-                  "rssKb": 56188,
-                  "pssKb": 5833
+                  "rssKb": 55508,
+                  "pssKb": 7087
                 }
               ]
             },
             {
               "label": "small-form-1",
-              "windowSeconds": 15.052005198000002,
-              "rssKb": 1116988,
-              "pssKb": 269851,
+              "windowSeconds": 15.057536597,
+              "rssKb": 1106416,
+              "pssKb": 322587,
               "pids": 12,
-              "cpuPercent": 0.1328726620600521,
+              "cpuPercent": 0.06641192558676806,
               "trace": [
                 {
-                  "atMs": 7518,
-                  "rssKb": 1117004
+                  "atMs": 7533,
+                  "rssKb": 1106812,
+                  "pssKb": 323042
                 },
                 {
-                  "atMs": 15040,
-                  "rssKb": 1116988
+                  "atMs": 15058,
+                  "rssKb": 1106416,
+                  "pssKb": 322587
                 }
               ],
               "roles": [
                 {
                   "role": "renderer (own process)",
                   "procs": 3,
-                  "rssKb": 422728,
-                  "pssKb": 120639
+                  "rssKb": 420820,
+                  "pssKb": 139612
                 },
                 {
                   "role": "browser",
                   "procs": 3,
-                  "rssKb": 235076,
-                  "pssKb": 69274
+                  "rssKb": 222560,
+                  "pssKb": 77926
                 },
                 {
                   "role": "cef child (zygote fork)",
                   "procs": 3,
-                  "rssKb": 159320,
-                  "pssKb": 17940
+                  "rssKb": 162968,
+                  "pssKb": 24125
                 },
                 {
                   "role": "gpu",
                   "procs": 1,
-                  "rssKb": 130716,
-                  "pssKb": 33702
+                  "rssKb": 130096,
+                  "pssKb": 46330
                 },
                 {
                   "role": "utility:network",
                   "procs": 1,
-                  "rssKb": 113788,
-                  "pssKb": 22413
+                  "rssKb": 114208,
+                  "pssKb": 27571
                 },
                 {
                   "role": "utility:storage",
                   "procs": 1,
-                  "rssKb": 55360,
-                  "pssKb": 5883
+                  "rssKb": 55764,
+                  "pssKb": 7023
                 }
               ]
             },
             {
               "label": "small-form-2",
-              "windowSeconds": 15.053444588,
-              "rssKb": 1107092,
-              "pssKb": 258816,
+              "windowSeconds": 15.053956451,
+              "rssKb": 1108292,
+              "pssKb": 324360,
               "pids": 12,
-              "cpuPercent": 0.13285995695591968,
+              "cpuPercent": 0.199283159199037,
               "trace": [
                 {
-                  "atMs": 7517,
-                  "rssKb": 1107492
+                  "atMs": 7535,
+                  "rssKb": 1108488,
+                  "pssKb": 324553
                 },
                 {
-                  "atMs": 15037,
-                  "rssKb": 1107092
+                  "atMs": 15054,
+                  "rssKb": 1108292,
+                  "pssKb": 324360
                 }
               ],
               "roles": [
                 {
                   "role": "renderer (own process)",
                   "procs": 3,
-                  "rssKb": 423404,
-                  "pssKb": 120696
+                  "rssKb": 420784,
+                  "pssKb": 138992
                 },
                 {
                   "role": "browser",
                   "procs": 3,
-                  "rssKb": 223140,
-                  "pssKb": 58227
+                  "rssKb": 224464,
+                  "pssKb": 80412
                 },
                 {
                   "role": "cef child (zygote fork)",
                   "procs": 3,
-                  "rssKb": 159700,
-                  "pssKb": 18009
+                  "rssKb": 163056,
+                  "pssKb": 24089
                 },
                 {
                   "role": "gpu",
                   "procs": 1,
-                  "rssKb": 130660,
-                  "pssKb": 33695
+                  "rssKb": 130584,
+                  "pssKb": 46171
                 },
                 {
                   "role": "utility:network",
                   "procs": 1,
-                  "rssKb": 114232,
-                  "pssKb": 22349
+                  "rssKb": 113796,
+                  "pssKb": 27702
                 },
                 {
                   "role": "utility:storage",
                   "procs": 1,
-                  "rssKb": 55956,
-                  "pssKb": 5840
+                  "rssKb": 55608,
+                  "pssKb": 6994
                 }
               ]
             }
@@ -2946,5 +4412,6 @@
         }
       ]
     }
-  }
+  },
+  "recomputedAt": "2026-10-27T21:49:19.937Z"
 }

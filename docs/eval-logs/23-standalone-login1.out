@@ -1,0 +1,6 @@
+Error: page label not found: p1. Managed Pages in task space 3: none. task.page(label) only refers to an existing Page; create one with await task.newPage()
+    at [describeMissingPage] (file:///tmp/opencode/rook-eval/root/usr/lib/rook/sdk/index.js:18532:16)
+    at async file:///tmp/opencode/rook-eval/root/usr/lib/rook/sdk/index.js:19401:19
+    at async #resolve (file:///tmp/opencode/rook-eval/root/usr/lib/rook/sdk/index.js:19398:23)
+    at async Page.goto (file:///tmp/opencode/rook-eval/root/usr/lib/rook/sdk/index.js:18863:22)
+    at async file://script.mjs:3:1

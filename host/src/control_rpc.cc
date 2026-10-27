@@ -38,10 +38,12 @@
 namespace rook {
 namespace {
 
-constexpr const char* kHostVersion = "0.3.0-M3";
-// 2: adds the tab/space/ownership lifecycle pushes and `activateSpace`.
-// A protocol-1 bridge keeps working: it just never sees the new pushes.
-constexpr const char* kProtocol = "2";
+constexpr const char* kHostVersion = "0.4.0-M4";
+// 3: profiles (listProfiles/createProfile, space.profileId) and a handoff that
+// reveals the space, focuses it and refuses agent mutations with a
+// machine-readable reason. Every push a protocol-2 client knew is unchanged and
+// still arrives, so an older bridge keeps working with the old model.
+constexpr const char* kProtocol = "3";
 
 // A Page.captureScreenshot reply is base64 and can be a few MB. Anything past
 // this is a client bug, not a message.
@@ -61,11 +63,15 @@ struct Reply {
   std::string result;   // `result` value when ok
   int code = 0;         // error code when !ok
   std::string error;    // error message when !ok
+  std::string reason;   // machine-readable code, goes in error.data.reason
 };
 
-Reply Ok(std::string result) { return Reply{true, std::move(result), 0, std::string()}; }
-Reply Err(int code, std::string error) {
-  return Reply{false, std::string(), code, std::move(error)};
+Reply Ok(std::string result) { return Reply{true, std::move(result), 0, std::string(), std::string()}; }
+Reply Err(int code, std::string error, std::string reason = std::string()) {
+  return Reply{false, std::string(), code, std::move(error), std::move(reason)};
+}
+Reply FromStatus(int code, const ControlStatus& status) {
+  return Err(code, status.error, status.reason);
 }
 
 bool ParamString(CefRefPtr<CefDictionaryValue> params,
@@ -125,10 +131,14 @@ class SocketControlServer : public ControlServer {
 
   void PushCdpError(const std::string& browser_id,
                     int code,
-                    const std::string& message) override {
-    PushNotification("cdp.error", browser_id,
-                     "\"code\":" + std::to_string(code) + ",\"message\":\"" +
-                         JsonEscape(message) + "\"");
+                    const std::string& message,
+                    const std::string& reason) override {
+    std::string extra =
+        "\"code\":" + std::to_string(code) + ",\"message\":\"" + JsonEscape(message) + "\"";
+    if (!reason.empty()) {
+      extra += ",\"reason\":\"" + JsonEscape(reason) + "\"";
+    }
+    PushNotification("cdp.error", browser_id, extra);
   }
 
   // Lifecycle pushes carry whatever object the shell built; no browserId is
@@ -449,7 +459,13 @@ void SocketControlServer::SendReply(Client* client,
     line += std::to_string(reply.code);
     line += ",\"message\":\"";
     line += JsonEscape(reply.error);
-    line += "\"}";
+    line += "\"";
+    if (!reply.reason.empty()) {
+      // ego's error codes, so a bridge can surface "the user has control"
+      // without parsing prose.
+      line += ",\"data\":{\"reason\":\"" + JsonEscape(reply.reason) + "\"}";
+    }
+    line += "}";
   }
   line += "}";
   Send(client, line);
@@ -572,17 +588,45 @@ Reply SocketControlServer::Invoke(const std::string& method,
     return Ok(delegate_->ListSpaces());
   }
 
+  if (method == "listProfiles") {
+    return Ok(delegate_->ListProfiles());
+  }
+
+  if (method == "createProfile") {
+    std::string name;
+    if (!ParamString(params, "name", &name) || name.empty()) {
+      return Err(kInvalidParams, "createProfile needs a non-empty string 'name'");
+    }
+    std::string profile_id;
+    const ControlStatus status = delegate_->CreateProfile(name, &profile_id);
+    if (!status.ok) {
+      return FromStatus(kHostError, status);
+    }
+    return Ok("{\"profileId\":\"" + JsonEscape(profile_id) + "\",\"name\":\"" +
+              JsonEscape(name) + "\",\"isDefault\":false}");
+  }
+
   if (method == "createSpace") {
     std::string name;
     if (!ParamString(params, "name", &name) || name.empty()) {
       return Err(kInvalidParams, "createSpace needs a non-empty string 'name'");
     }
-    const std::string space_id = delegate_->CreateSpace(name);
-    if (space_id.empty()) {
-      return Err(kHostError, "the host could not create a space named \"" + name + "\"");
+    std::string profile_id;
+    if (params && params->HasKey("profileId")) {
+      if (!ParamString(params, "profileId", &profile_id)) {
+        return Err(kInvalidParams, "createSpace 'profileId' must be a string");
+      }
+    }
+    std::string space_id;
+    std::string resolved_profile_id;
+    const ControlStatus status =
+        delegate_->CreateSpace(name, profile_id, &space_id, &resolved_profile_id);
+    if (!status.ok) {
+      return FromStatus(kHostError, status);
     }
     return Ok("{\"spaceId\":\"" + JsonEscape(space_id) + "\",\"name\":\"" +
-              JsonEscape(name) + "\"}");
+              JsonEscape(name) + "\",\"profileId\":\"" +
+              JsonEscape(resolved_profile_id) + "\"}");
   }
 
   if (method == "closeSpace") {
@@ -592,7 +636,7 @@ Reply SocketControlServer::Invoke(const std::string& method,
     }
     const ControlStatus status = delegate_->CloseSpace(space_id);
     if (!status.ok) {
-      return Err(kHostError, status.error);
+      return FromStatus(kHostError, status);
     }
     return Ok("{\"spaceId\":\"" + JsonEscape(space_id) + "\",\"closed\":true}");
   }
@@ -618,12 +662,10 @@ Reply SocketControlServer::Invoke(const std::string& method,
     if (!ParamString(params, "url", &url) || url.empty()) {
       url = "about:blank";
     }
-    const std::string tab_id = delegate_->CreateTab(space_id, url);
-    if (tab_id.empty()) {
-      return Err(kHostError,
-                 "the host could not create a tab in " + space_id +
-                     " (unknown or closing space, the user's space, or a space "
-                     "handed off to the user)");
+    std::string tab_id;
+    const ControlStatus status = delegate_->CreateTab(space_id, url, &tab_id);
+    if (!status.ok) {
+      return FromStatus(kHostError, status);
     }
     return Ok("{\"spaceId\":\"" + JsonEscape(space_id) + "\",\"tabId\":\"" +
               JsonEscape(tab_id) + "\",\"browserId\":\"" + JsonEscape(tab_id) +
@@ -637,7 +679,7 @@ Reply SocketControlServer::Invoke(const std::string& method,
     }
     const ControlStatus status = delegate_->ActivateSpace(space_id);
     if (!status.ok) {
-      return Err(kHostError, status.error);
+      return FromStatus(kHostError, status);
     }
     return Ok("{\"spaceId\":\"" + JsonEscape(space_id) + "\",\"active\":true}");
   }
@@ -655,7 +697,7 @@ Reply SocketControlServer::Invoke(const std::string& method,
                                      ? delegate_->ActivateTab(space_id, tab_id)
                                      : delegate_->CloseTab(space_id, tab_id);
     if (!status.ok) {
-      return Err(kHostError, status.error);
+      return FromStatus(kHostError, status);
     }
     return Ok("{\"spaceId\":\"" + JsonEscape(space_id) + "\",\"tabId\":\"" +
               JsonEscape(tab_id) + "\",\"" +
@@ -673,7 +715,7 @@ Reply SocketControlServer::Invoke(const std::string& method,
     }
     const ControlStatus status = delegate_->Navigate(tab_id, url);
     if (!status.ok) {
-      return Err(kHostError, status.error);
+      return FromStatus(kHostError, status);
     }
     return Ok("{\"tabId\":\"" + JsonEscape(tab_id) + "\",\"url\":\"" +
               JsonEscape(url) + "\"}");
@@ -687,7 +729,7 @@ Reply SocketControlServer::Invoke(const std::string& method,
     const ControlStatus status = method == "handOff" ? delegate_->HandOff(space_id)
                                                      : delegate_->TakeOver(space_id);
     if (!status.ok) {
-      return Err(kHostError, status.error);
+      return FromStatus(kHostError, status);
     }
     return Ok("{\"spaceId\":\"" + JsonEscape(space_id) + "\",\"ownership\":\"" +
               (method == "handOff" ? "user" : "agent") + "\"}");
@@ -704,7 +746,7 @@ Reply SocketControlServer::Invoke(const std::string& method,
     }
     const ControlStatus status = delegate_->SetAgentTaskState(space_id, state);
     if (!status.ok) {
-      return Err(kHostError, status.error);
+      return FromStatus(kHostError, status);
     }
     return Ok("{\"spaceId\":\"" + JsonEscape(space_id) + "\",\"agentState\":\"" +
               JsonEscape(state) + "\"}");
@@ -722,7 +764,7 @@ Reply SocketControlServer::Invoke(const std::string& method,
     }
     const ControlStatus status = delegate_->HighlightMouseTo(space_id, x, y);
     if (!status.ok) {
-      return Err(kHostError, status.error);
+      return FromStatus(kHostError, status);
     }
     return Ok("{\"spaceId\":\"" + JsonEscape(space_id) + "\",\"x\":" +
               std::to_string(x) + ",\"y\":" + std::to_string(y) + "}");
@@ -740,9 +782,10 @@ Reply SocketControlServer::Invoke(const std::string& method,
     const ControlStatus status = delegate_->SendCdp(browser_id, message);
     if (!status.ok) {
       // Both: the notification the bridge's onSendCDPMessageError needs, and a
-      // synchronous error for clients that only read replies.
-      PushCdpError(browser_id, kCdpError, status.error);
-      return Err(kCdpError, status.error);
+      // synchronous error for clients that only read replies. Both carry
+      // EGO_TASK_SPACE_USER_IN_CONTROL when the user owns the space.
+      PushCdpError(browser_id, kCdpError, status.error, status.reason);
+      return FromStatus(kCdpError, status);
     }
     return Ok("{\"browserId\":\"" + JsonEscape(browser_id) + "\",\"accepted\":true}");
   }

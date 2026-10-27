@@ -1,0 +1,10 @@
+phase1 1 ALPHA
+phase1_exit=0
+after phase1 [(1, 'alpha', 'sp2', '2522808@5970597', ['data:text/html,<title>ALPHA</title><h1>ALPHA page</h1>'])]
+phase2 beta 2 BETA
+phase2_exit=0
+after phase2 [(1, 'alpha', 'sp2', '2522808@5970597'), (2, 'beta', 'sp2', '2522971@5970726')]
+resume alpha:
+resumed alpha 1 [{"label":"p2","title":"ALPHA","url":"data:text/html,<title>ALPHA</title><h1>ALPHA page</h1>"}]
+alpha actually sees ALPHA
+alpha_resume_exit=0

@@ -1,0 +1,123 @@
+[rook] sandbox: enabled (user namespaces)
+
+(rook:2523306): dbind-WARNING **: 19:02:10.137: Couldn't connect to accessibility bus: Failed to connect to socket /tmp/opencode/rook-host-e2e/run/at-spi/bus_122: No such file or directory
+[rook] extra switch: --password-store=basic
+
+(rook:2523314): dbind-WARNING **: 19:02:10.157: Couldn't connect to accessibility bus: Failed to connect to socket /tmp/opencod
+(rook:1): dbind-WARNING **: 19:02:10.157: Couldn't connect to accessibility bus: Failed to connect to socket /tmp/opencode/rooke/rook-host-e2e/run/at-spi/bus_122: No such file or directory
+-host-e2e/run/at-spi/bus_122: No such file or directory
+
+(rook:2523306): Gtk-WARNING **: 19:02:10.165: gtk_disable_setlocale() must be called before gtk_init()
+[2523306:2523325:1027/190210.180092:ERROR:dbus/bus.cc:405] Failed to connect to the bus: Could not parse server address: Unknown address type (examples of valid types are "tcp" and on UNIX "unix")
+[2523306:2523325:1027/190210.181531:ERROR:dbus/bus.cc:405] Failed to connect to the bus: Could not parse server address: Unknown address type (examples of valid types are "tcp" and on UNIX "unix")
+[2523306:2523325:1027/190210.181557:ERROR:dbus/bus.cc:405] Failed to connect to the bus: Could not parse server address: Unknown address type (examples of valid types are "tcp" and on UNIX "unix")
+[2523306:2523325:1027/190210.197392:ERROR:dbus/bus.cc:405] Failed to connect to the bus: Could not parse server address: Unknown address type (examples of valid types are "tcp" and on UNIX "unix")
+[rook] rook 0.4.0-M4 (CEF 156.0.14+g4fa4ab5+chromium-156.0.8078.48), profiles in /tmp/opencode/rook-review2/data/rook/profiles
+[rook] profiles: 1 (default default, 1 registered name(s))
+[rook] chrome shortcut grabs on 0x800003: installed
+[rook] window xid 0x800003
+[rook] profile default context created (/tmp/opencode/rook-review2/data/rook/profiles/default)
+[rook] active tab tb1 (New tab)
+[rook] active tab tb1 (New tab)
+[rook] tab tb1 -> file:///tmp/opencode/rook-review2/data/rook/shell/new-tab.html
+[rook] active tab tb1 (New tab)
+[rook] active tab tb1 (New tab)
+[rook] shell up: 1 space(s), 1 profile(s), default profile default, data /tmp/opencode/rook-review2/data
+[control] listening on /tmp/opencode/rook-review2/run/rook-1000.sock (mode 0600, JSON-RPC 2.0)
+[2523306:2523306:1027/190210.242618:ERROR:dbus/object_proxy.cc:572] Failed to call method: org.freedesktop.DBus.NameHasOwner: object_path= /org/freedesktop/DBus: unknown error type: 
+[2523306:2523325:1027/190210.242678:ERROR:dbus/bus.cc:405] Failed to connect to the bus: Could not parse server address: Unknown address type (examples of valid types are "tcp" and on UNIX "unix")
+[2523306:2523306:1027/190210.242753:ERROR:dbus/object_proxy.cc:572] Failed to call method: org.freedesktop.DBus.NameHasOwner: object_path= /org/freedesktop/DBus: unknown error type: 
+[2523306:2523325:1027/190210.242784:ERROR:dbus/bus.cc:405] Failed to connect to the bus: Could not parse server address: Unknown address type (examples of valid types are "tcp" and on UNIX "unix")
+[2523306:2523306:1027/190210.244501:ERROR:dbus/object_proxy.cc:572] Failed to call method: org.freedesktop.DBus.NameHasOwner: object_path= /org/freedesktop/DBus: unknown error type: 
+[2523306:2523325:1027/190210.244539:ERROR:dbus/bus.cc:405] Failed to connect to the bus: Could not parse server address: Unknown address type (examples of valid types are "tcp" and on UNIX "unix")
+[2523306:2523306:1027/190210.247828:ERROR:dbus/object_proxy.cc:572] Failed to call method: org.freedesktop.DBus.NameHasOwner: object_path= /org/freedesktop/DBus: unknown error type: 
+[2523306:2523306:1027/190210.247937:ERROR:dbus/object_proxy.cc:572] Failed to call method: org.freedesktop.DBus.NameHasOwner: object_path= /org/freedesktop/DBus: unknown error type: 
+[2523306:2523306:1027/190210.248252:ERROR:dbus/object_proxy.cc:572] Failed to call method: org.freedesktop.DBus.NameHasOwner: object_path= /org/freedesktop/DBus: unknown error type: 
+[2523306:2523325:1027/190210.248402:ERROR:dbus/bus.cc:405] Failed to connect to the bus: Could not parse server address: Unknown address type (examples of valid types are "tcp" and on UNIX "unix")
+[2523306:2523306:1027/190210.251609:ERROR:dbus/object_proxy.cc:572] Failed to call method: org.freedesktop.DBus.NameHasOwner: object_path= /org/freedesktop/DBus: unknown error type: 
+[2523306:2523325:1027/190210.251650:ERROR:dbus/bus.cc:405] Failed to connect to the bus: Could not parse server address: Unknown address type (examples of valid types are "tcp" and on UNIX "unix")
+[2523306:2523306:1027/190210.257662:ERROR:dbus/object_proxy.cc:572] Failed to call method: org.freedesktop.DBus.NameHasOwner: object_path= /org/freedesktop/DBus: unknown error type: 
+[2523306:2523325:1027/190210.257751:ERROR:dbus/bus.cc:405] Failed to connect to the bus: Could not parse server address: Unknown address type (examples of valid types are "tcp" and on UNIX "unix")
+[rook] tab tb1 browser ready (xid 0xe00003)
+[2523306:2523306:1027/190210.268326:ERROR:dbus/object_proxy.cc:572] Failed to call method: org.freedesktop.DBus.NameHasOwner: object_path= /org/freedesktop/DBus: unknown error type: 
+[rook] tab tb1 loaded (http 200) file:///tmp/opencode/rook-review2/data/rook/shell/new-tab.html
+[event] space.created {"spaceId":"sp2","name":"persist-A","profileId":"default"}
+[event] tab.created {"spaceId":"sp2","tabId":"tb2","url":"about:blank"}
+[rook] active tab tb2 (about:blank)
+[event] tab.activated {"spaceId":"sp2","tabId":"tb2"}
+[rook] tab tb1 parked
+[rook] active tab tb2 (about:blank)
+[rook] tab tb2 -> about:blank
+[rook] active tab tb1 (New tab)
+[rook] tab tb2 browser ready (xid 0xe0000d)
+[rook] tab tb1 awake
+[rook] tab tb2 parked
+[rook] active tab tb1 (New tab)
+[rook] tab tb2 loaded (http 0) about:blank
+[rook] tab tb2 awake
+[rook] active tab tb2 (about:blank) [background]
+[event] tab.updated {"spaceId":"sp2","tabId":"tb2","url":"http://127.0.0.1:8781/login.html"}
+[event] tab.updated {"spaceId":"sp2","tabId":"tb2","title":"Sign in"}
+[rook] tab tb2 loaded (http 200) http://127.0.0.1:8781/login.html
+[rook] active tab tb2 (Sign in) [background]
+[rook] active tab tb2 (Sign in) [background]
+[rook] active tab tb2 (Sign in) [background]
+[rook] space sp2 state "Clicking element"
+[event] tab.updated {"spaceId":"sp2","tabId":"tb2","url":"http://127.0.0.1:8781/private.html"}
+[event] tab.updated {"spaceId":"sp2","tabId":"tb2","title":"Private area"}
+[rook] tab tb2 loaded (http 200) http://127.0.0.1:8781/private.html
+[rook] active tab tb2 (Private area) [background]
+[rook] active tab tb2 (Private area) [background]
+[event] space.created {"spaceId":"sp3","name":"persist-B","profileId":"default"}
+[event] tab.created {"spaceId":"sp3","tabId":"tb3","url":"about:blank"}
+[rook] active tab tb3 (about:blank)
+[event] tab.activated {"spaceId":"sp3","tabId":"tb3"}
+[rook] tab tb1 parked
+[rook] active tab tb3 (about:blank)
+[rook] tab tb3 -> about:blank
+[rook] active tab tb1 (New tab)
+[rook] tab tb3 browser ready (xid 0xe0001b)
+[rook] tab tb1 awake
+[rook] tab tb3 parked
+[rook] active tab tb1 (New tab)
+[rook] tab tb3 loaded (http 0) about:blank
+[rook] tab tb3 awake
+[rook] active tab tb3 (about:blank) [background]
+[event] tab.updated {"spaceId":"sp3","tabId":"tb3","url":"http://127.0.0.1:8781/private.html"}
+[event] tab.updated {"spaceId":"sp3","tabId":"tb3","title":"Private area"}
+[rook] tab tb3 loaded (http 200) http://127.0.0.1:8781/private.html
+[rook] active tab tb3 (Private area) [background]
+[rook] active tab tb3 (Private area) [background]
+[rook] profile work "Work" created at /tmp/opencode/rook-review2/data/rook/profiles/work
+[event] profile.created {"profileId":"work","name":"Work"}
+[rook] profile work context created (/tmp/opencode/rook-review2/data/rook/profiles/work)
+[event] space.created {"spaceId":"sp4","name":"persist-C","profileId":"work"}
+[event] tab.created {"spaceId":"sp4","tabId":"tb4","url":"about:blank"}
+[rook] active tab tb4 (about:blank)
+[event] tab.activated {"spaceId":"sp4","tabId":"tb4"}
+[rook] tab tb1 parked
+[rook] active tab tb4 (about:blank)
+[rook] tab tb4 -> about:blank
+[rook] active tab tb1 (New tab)
+[rook] tab tb4 browser ready (xid 0xe0001f)
+[rook] tab tb1 awake
+[rook] tab tb4 parked
+[rook] active tab tb1 (New tab)
+[rook] tab tb4 awake
+[rook] tab tb4 loaded (http 0) about:blank
+[rook] active tab tb4 (about:blank) [background]
+[event] tab.updated {"spaceId":"sp4","tabId":"tb4","url":"http://127.0.0.1:8781/private.html"}
+[event] tab.updated {"spaceId":"sp4","tabId":"tb4","title":"Denied"}
+[rook] tab tb4 loaded (http 401) http://127.0.0.1:8781/private.html
+[rook] active tab tb4 (Denied) [background]
+[rook] active tab tb4 (Denied) [background]
+[rook] tab tb2 parked
+[rook] tab tb3 parked
+[rook] tab tb4 parked
+[event] tab.closed {"spaceId":"sp1","tabId":"tb1"}
+[event] tab.closed {"spaceId":"sp2","tabId":"tb2"}
+[event] tab.closed {"spaceId":"sp3","tabId":"tb3"}
+[event] tab.closed {"spaceId":"sp4","tabId":"tb4"}
+[rook] message loop returned (exit 0), tearing down
+[control] socket /tmp/opencode/rook-review2/run/rook-1000.sock removed
+[rook] CefShutdown finished

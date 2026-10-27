@@ -1,3 +1,4 @@
+import { readFileSync } from "node:fs";
 import { connect } from "node:net";
 
 /**
@@ -18,11 +19,16 @@ import { connect } from "node:net";
  *  - `Target.createTarget` is never forwarded (it makes an unowned browser);
  *    tabs are created with `createTab`, closed with `closeTab`, activated with
  *    `activateTab`;
- *  - `Target.getTargets` is process-wide and leaks every other space, so its
- *    results are narrowed here to the space's request context before they reach
- *    the SDK, exactly as the standalone backend narrows them to its own context;
+ *  - `Target.getTargets` is process-wide. Its results are narrowed here to the
+ *    space's request context, which in the app is the *profile's* context: two
+ *    spaces of one profile share cookies, storage and a context id, so this
+ *    filter separates profiles, not spaces. A space's own tabs come from
+ *    `listTabs`;
  *  - `cdp.send` replying `accepted:true` only means CEF took the frame, so this
- *    file keeps its own request table and its own timeouts.
+ *    file keeps its own request table and its own timeouts;
+ *  - a refusal caused by who owns the space carries an ego code in
+ *    `error.data.reason` (replies) or `reason` (`cdp.error` pushes). It is turned
+ *    into `error_code` here, the one shape the SDK branches on.
  */
 
 const DEFAULT_RPC_TIMEOUT_MS = 15000;
@@ -31,8 +37,66 @@ const INTERNAL_ID_BASE = 2_000_000_000;
 const CDP_REQUEST_TIMEOUT_MS = 30000;
 const TARGET_RESOLVE_TIMEOUT_MS = 10000;
 
-/** The protocol-2 pushes that describe a tab's life (host/README.md). */
+/**
+ * How long a closed tab's ids stay remembered.
+ *
+ * A command addressed to a page that is gone has to fail *now*, and it must not
+ * be re-routed to whatever tab is left in the space. Forgetting the ids
+ * immediately is what made a wait on a closed tab keep polling a different page
+ * until its own timeout, so closed tab, session and target ids are kept for a
+ * while after they die. The maps are capped as well, because a page that opens
+ * and closes tabs forever must not grow them without bound.
+ */
+const CLOSED_ID_TTL_MS = 5 * 60 * 1000;
+const CLOSED_ID_LIMIT = 1024;
+
+/**
+ * How long a harness frame is remembered while its reply is outstanding.
+ *
+ * The SDK gives a command 15 s (`RESPONSE_TIMEOUT_MS`), so anything older than
+ * this has been abandoned and must not be answered later under a reused id.
+ */
+const HARNESS_FRAME_TTL_MS = 60 * 1000;
+
+/**
+ * The app is gone. Same closed-page shape as a dead tab, because from the page's
+ * point of view that is what happened, with the reason spelled out.
+ */
+const APP_GONE_MESSAGE = "Target closed: the Rook app is no longer running (control connection lost)";
+
+/**
+ * What a command addressed to a closed page gets.
+ *
+ * The leading `Target closed` is not decoration: `browser-runtime.ts:13-14`
+ * classifies exactly `Session (with given id )?not found|Target closed|No
+ * session` as a lost page session, and `page-waits.ts:218-222` stops polling
+ * when that error carries the page's own session id — a lost iframe session is
+ * retried, a lost page session is terminal. Anything else would be swallowed as
+ * "maybe the next poll works" until the wait's deadline.
+ */
+function tabClosedMessage(tabId) {
+  return `Target closed: tab ${tabId} was closed`;
+}
+
+/** The task space this tab lived in was closed; the tab is gone with it. */
+const SPACE_CLOSED_MESSAGE = "Target closed: its task space was closed";
+
+/** `Inspector.detached` reason -> the sentence an agent reads. */
+function inspectorDetachMessage(reason) {
+  const text = typeof reason === "string" ? reason.trim() : "";
+  const detail = text === "" ? "" : ` (Inspector detached: ${text})`;
+  if (/crash|gone|killed|renderer/i.test(text)) {
+    return `Target closed: the page's renderer went away${detail}`;
+  }
+  if (/closed|clos|destroy|target/i.test(text)) {
+    return `Target closed: the page was closed${detail}`;
+  }
+  return `Target closed: the page's DevTools session was detached${detail}`;
+}
+
+/** The protocol-3 pushes that describe a tab's life (host/README.md). */
 const LIFECYCLE_PUSHES = new Set([
+  "profile.created",
   "space.created",
   "space.closed",
   "tab.created",
@@ -72,13 +136,21 @@ export function hostSocketPaths({ env = process.env } = {}) {
 }
 
 export class HostControlError extends Error {
-  constructor(message, { code, method, socketPath, cause } = {}) {
+  constructor(message, { code, method, socketPath, cause, reason } = {}) {
     super(message);
     this.name = "HostControlError";
     if (code !== undefined) this.rpcCode = code;
     if (method) this.method = method;
     if (socketPath) this.socketPath = socketPath;
     if (cause) this.cause = cause;
+    // The app's machine-readable why, when it gave one: `error.data.reason` on
+    // a reply, `reason` on a `cdp.error` push (host/README.md "Errors a bridge
+    // keys on"). An ego code becomes `error_code`, which is the one property
+    // the vendored runtime branches on (ego-errors.ts:118-133, buildEgoError).
+    if (typeof reason === "string" && reason !== "") {
+      this.reason = reason;
+      if (reason.startsWith("EGO_")) this.error_code = reason;
+    }
   }
 }
 
@@ -238,6 +310,7 @@ export class HostControlClient {
                 code: message.error.code,
                 method: entry.method,
                 socketPath: this.#socketPath,
+                reason: message.error.data?.reason,
               },
             ),
           );
@@ -323,12 +396,30 @@ export class HostBackend {
    * targets it cannot reconcile.
    */
   #discover = new Map();
-  /** internal CDP id -> {resolve, reject, timer, method, tabId} */
+  /** internal CDP id -> {resolve, reject, timer, method, tabId, sessionId} */
   #cdpPending = new Map();
+  /**
+   * Ids of pages that are gone, so a late command gets the closed-page error
+   * instead of being re-routed to a sibling tab (see CLOSED_ID_TTL_MS).
+   * tabId -> {message, at}
+   */
+  #closedTabs = new Map();
+  /** sessionId -> {tabId, message, at} */
+  #closedSessions = new Map();
+  /** targetId -> {tabId, message, at} */
+  #closedTargets = new Map();
+  /**
+   * tabId -> Map<id, {id, sessionId, method, space, at}>: harness frames this
+   * process forwarded and has not answered yet. Harness promises live in the
+   * SDK, so answering them here is the only way a dead page can settle one.
+   */
+  #harnessPending = new Map();
   /** spaceId -> when this process last re-read that space's tabs */
   #refreshedAt = new Map();
   #nextCdpId = INTERNAL_ID_BASE;
   #info = null;
+  /** Identity of the app process behind the socket (`getInfo.pid` + start time). */
+  #instanceKey = null;
   #disposed = false;
 
   constructor({ socketPath }) {
@@ -359,9 +450,22 @@ export class HostBackend {
     await this.#client.connect();
     if (!this.#info) {
       this.#info = await this.#client.request("getInfo", {}, { timeoutMs: 5000 });
+      this.#instanceKey = instanceKeyFor(this.#info);
       this.#applyInfoState(this.#info?.state);
     }
     return this;
+  }
+
+  /**
+   * The identity of the app process this backend is talking to. Every persisted
+   * `hostSpaceId` belongs to one app run: the app numbers spaces from `sp1` on
+   * each launch, so an id on its own can name a different space after a
+   * restart. `pid` alone is not enough (pids are reused), so the process start
+   * time is part of the key when `/proc` can be read.
+   */
+  async instanceKey() {
+    await this.open();
+    return this.#instanceKey;
   }
 
   /**
@@ -386,6 +490,7 @@ export class HostBackend {
       entry.reject(new Error("the host backend was closed"));
     }
     this.#cdpPending.clear();
+    this.#harnessPending.clear();
     this.#client.close();
   }
 
@@ -395,14 +500,28 @@ export class HostBackend {
 
   // --- spaces ------------------------------------------------------------
 
+  /**
+   * `space` is the bridge's record, which carries the profile the space belongs
+   * to. In the app a profile is the isolation boundary (one `CefRequestContext`
+   * per profile, shared by every space in it), so the profile is part of the
+   * create call: a space in another profile gets its own storage.
+   */
   async createSpace(name, space) {
     await this.open();
-    const created = await this.call("createSpace", { name });
+    const params = { name };
+    if (typeof space?.profileId === "string" && space.profileId !== "") {
+      params.profileId = space.profileId;
+    }
+    const created = await this.call("createSpace", params);
     const spaceId = created?.spaceId;
     if (typeof spaceId !== "string" || spaceId === "") {
       throw new Error("createSpace returned no spaceId");
     }
     space.hostSpaceId = spaceId;
+    space.hostInstance = this.#instanceKey;
+    if (typeof created.profileId === "string" && created.profileId !== "") {
+      space.profileId = created.profileId;
+    }
     this.#spaceByHostId.set(spaceId, space);
     // Standalone creates the context *and* its canonical blank tab in one go;
     // the app has no such op, so the tab is asked for here to keep the surface
@@ -420,7 +539,7 @@ export class HostBackend {
       this.#spaceByTab.set(tab.tabId, space);
       this.#activeTabBySpace.set(spaceId, tab.tabId);
     }
-    return { spaceId, contextId: null };
+    return { spaceId, contextId: null, hostInstance: this.#instanceKey };
   }
 
   async closeSpace(space) {
@@ -435,6 +554,47 @@ export class HostBackend {
     await this.open();
     const result = await this.call("listSpaces");
     return (result?.spaces ?? []).map((entry) => entry.spaceId);
+  }
+
+  // --- profiles ----------------------------------------------------------
+
+  /**
+   * The app's profiles, in the shape the SDK insists on
+   * (`vendor/ego-browser/src/helpers.ts:100-113`: non-empty string id, string
+   * name, boolean isDefault). The app also reports a storage `path`; it is not
+   * part of that contract, so it is not passed on.
+   */
+  async listProfiles() {
+    await this.open();
+    const result = await this.call("listProfiles");
+    const rows = Array.isArray(result?.profiles) ? result.profiles : [];
+    const profiles = rows
+      .filter(
+        (row) =>
+          row &&
+          typeof row.id === "string" &&
+          row.id !== "" &&
+          typeof row.name === "string",
+      )
+      .map((row) => ({ id: row.id, name: row.name, isDefault: row.isDefault === true }));
+    if (profiles.length === 0) {
+      throw new Error("the Rook app reported no profiles");
+    }
+    return profiles;
+  }
+
+  async createProfile(name) {
+    await this.open();
+    const created = await this.call("createProfile", { name });
+    const id = created?.profileId;
+    if (typeof id !== "string" || id === "") {
+      throw new Error("createProfile returned no profileId");
+    }
+    return {
+      id,
+      name: typeof created.name === "string" && created.name !== "" ? created.name : name,
+      isDefault: false,
+    };
   }
 
   async handOff(space) {
@@ -467,6 +627,9 @@ export class HostBackend {
     this.#rememberSpace(space);
     const result = await this.call("listTabs", { spaceId: this.#requireHostSpace(space) });
     const activeTabId = result?.activeTabId ?? null;
+    if (typeof result?.profileId === "string" && result.profileId !== "" && !space.profileId) {
+      space.profileId = result.profileId;
+    }
     if (activeTabId) this.#activeTabBySpace.set(space.hostSpaceId, activeTabId);
     const subscription = this.#subscriptionFor(space);
     const tabs = [];
@@ -552,6 +715,22 @@ export class HostBackend {
    */
   async sendRaw(space, text) {
     const frame = parseFrame(text);
+    // A command addressed to a page that is gone must not be re-routed to
+    // whichever tab is left in the space: that used to turn a wait on a closed
+    // tab into a poll of a different page until its own deadline. Answer with
+    // the one error shape the SDK reads as "this page is closed" and drop it.
+    const closed = this.#closedPageReason(frame);
+    if (closed) {
+      debug(`closed page: ${frame?.method} -> ${closed.message}`);
+      if (frame && frame.id !== undefined) {
+        this.#emitSynthetic(space, closed.tabId, {
+          id: frame.id,
+          ...(typeof frame.sessionId === "string" ? { sessionId: frame.sessionId } : {}),
+          error: { code: -32000, message: closed.message },
+        });
+      }
+      return;
+    }
     if (typeof frame?.params?.targetId === "string") {
       // A target the app knows but this process has not seen yet (a previous
       // bridge run persisted it): re-read the space's tabs before refusing.
@@ -565,9 +744,16 @@ export class HostBackend {
       tabId = this.#route(space, frame);
     }
     if (!tabId) {
+      // Nothing routes. Say *why* when the reason is the app itself (it died or
+      // restarted) instead of blaming the space for having no tab: the SDK
+      // reads "Target closed" as a page that is gone and stops waiting.
+      const gone = await this.#appGoneMessage();
       this.#emitSynthetic(space, null, {
         id: frame?.id,
-        error: { code: -32000, message: "no tab to send this command to in the task space" },
+        error: {
+          code: -32000,
+          message: gone ?? "no tab to send this command to in the task space",
+        },
       });
       return;
     }
@@ -575,6 +761,8 @@ export class HostBackend {
   }
 
   async attach(space, targetId, tabId = null) {
+    const closed = this.#closedPageReason({ params: { targetId } });
+    if (closed) throw new Error(closed.message);
     const browserTab = tabId ?? (await this.#ensureTargetKnown(space, targetId));
     if (!browserTab) {
       throw new Error(`cannot attach: ${targetId} is not a tab of this task space`);
@@ -587,7 +775,7 @@ export class HostBackend {
     if (typeof sessionId !== "string" || sessionId === "") {
       throw new Error("Target.attachToTarget returned no sessionId");
     }
-    this.#tabBySession.set(sessionId, browserTab);
+    this.#rememberSession(sessionId, browserTab);
     return sessionId;
   }
 
@@ -633,6 +821,22 @@ export class HostBackend {
       throw new Error("this task space is not backed by the running app");
     }
     return spaceId;
+  }
+
+  /**
+   * Why a frame cannot be routed because the app itself is gone, or null when
+   * the app is reachable and the space simply has no tab left. A dead app is
+   * reported in the closed-page shape, so a wait that is polling stops instead
+   * of retrying against a socket that is not there.
+   */
+  async #appGoneMessage() {
+    if (this.#client.isOpen) return null;
+    try {
+      await this.#client.connect();
+      return null;
+    } catch (error) {
+      return `Target closed: ${error?.message || error}`;
+    }
   }
 
   /** Remember which host space a bridge space record belongs to. */
@@ -698,6 +902,9 @@ export class HostBackend {
     this.#targetByTab.set(tabId, info.targetId);
     this.#infoByTab.set(tabId, info);
     this.#tabByTarget.set(info.targetId, tabId);
+    // A target that answers again is alive: a reopened popup target or a
+    // renderer CEF revived must not keep hitting the closed-page error.
+    this.#closedTargets.delete(info.targetId);
     if (space && !this.#spaceByTab.has(tabId)) this.#spaceByTab.set(tabId, space);
     if (
       space &&
@@ -719,7 +926,24 @@ export class HostBackend {
     return false;
   }
 
-  #forgetTab(tabId) {
+  /**
+   * Record that a session belongs to a tab. A successful attach (or any frame
+   * the page sends on it) proves the session is alive, so a remembered detach
+   * for the same id is dropped: CEF is free to hand the same id back.
+   */
+  #rememberSession(sessionId, tabId) {
+    if (typeof sessionId !== "string" || sessionId === "") return;
+    if (typeof tabId !== "string" || tabId === "") return;
+    this.#tabBySession.set(sessionId, tabId);
+    this.#closedSessions.delete(sessionId);
+  }
+
+  #forgetTab(tabId, message = tabClosedMessage(tabId)) {
+    // Remember the ids before dropping them: a command the SDK still sends for
+    // this page has to get a closed-page error, not another tab's page. Pending
+    // calls for the tab are failed here rather than at their 30 s timeout.
+    debug(`forget tab ${tabId}: ${message}`);
+    this.#markClosed(tabId, message);
     this.#spaceByTab.delete(tabId);
     this.#targetByTab.delete(tabId);
     this.#infoByTab.delete(tabId);
@@ -735,15 +959,162 @@ export class HostBackend {
     }
   }
 
-  #forgetSpace(space) {
+  #forgetSpace(space, message = SPACE_CLOSED_MESSAGE) {
     const hostSpaceId = space?.hostSpaceId;
     this.#activeTabBySpace.delete(hostSpaceId);
     this.#hostActiveTab.delete(hostSpaceId);
     this.#discover.delete(hostSpaceId);
     this.#spaceByHostId.delete(hostSpaceId);
     for (const [tabId, owner] of this.#spaceByTab) {
-      if (owner === space || owner?.hostSpaceId === hostSpaceId) this.#forgetTab(tabId);
+      if (owner === space || owner?.hostSpaceId === hostSpaceId) this.#forgetTab(tabId, message);
     }
+  }
+
+  /**
+   * A page's DevTools session died under a request that was already accepted by
+   * CEF: a renderer crash, a destroyed target, a session CEF terminated. There
+   * is no reply coming for anything addressed to those ids, so every pending
+   * call for the tab fails now with a sentence that says what happened, and the
+   * ids are remembered so later polls of the same page fail the same way.
+   *
+   * `keepTab` is for a crash: the tab itself may be revived by a navigation, so
+   * the tab id keeps routing while its dead sessions and target do not.
+   */
+  #detachTab(tabId, reason, { keepTab = true, message = inspectorDetachMessage(reason) } = {}) {
+    if (typeof tabId !== "string" || tabId === "") return;
+    this.#markClosed(tabId, message, { keepTab });
+    if (!keepTab) return;
+    for (const [sessionId, owner] of [...this.#tabBySession]) {
+      if (owner === tabId) this.#tabBySession.delete(sessionId);
+    }
+  }
+
+  /** Remember a tab, its page target and its sessions as gone; fail its calls. */
+  #markClosed(tabId, message, { keepTab = false } = {}) {
+    if (typeof tabId !== "string" || tabId === "") return;
+    const at = Date.now();
+    const targetIds = new Set();
+    const knownTarget = this.#targetByTab.get(tabId);
+    if (typeof knownTarget === "string" && knownTarget !== "") targetIds.add(knownTarget);
+    for (const [targetId, owner] of this.#tabByTarget) {
+      if (owner === tabId) targetIds.add(targetId);
+    }
+    const sessionIds = new Set();
+    for (const [sessionId, owner] of this.#tabBySession) {
+      if (owner === tabId) sessionIds.add(sessionId);
+    }
+    for (const entry of this.#cdpPending.values()) {
+      if (entry.tabId === tabId && typeof entry.sessionId === "string") {
+        sessionIds.add(entry.sessionId);
+      }
+    }
+    if (!keepTab) this.#closedTabs.set(tabId, { message, at });
+    for (const targetId of targetIds) this.#closedTargets.set(targetId, { tabId, message, at });
+    for (const sessionId of sessionIds) this.#closedSessions.set(sessionId, { tabId, message, at });
+    this.#trimClosed();
+    this.#failPendingForTab(tabId, message);
+    this.#failHarnessPending(tabId, message);
+  }
+
+  /**
+   * Reject every call still waiting on this tab, with `message`. This is the
+   * difference between a dead page failing in milliseconds and it burning the
+   * request timeout it was given.
+   */
+  #failPendingForTab(tabId, message) {
+    if (typeof tabId !== "string" || tabId === "") return 0;
+    let failed = 0;
+    for (const [id, entry] of [...this.#cdpPending]) {
+      if (entry.tabId !== tabId) continue;
+      this.#cdpPending.delete(id);
+      clearTimeout(entry.timer);
+      const error = new Error(message);
+      if (typeof entry.sessionId === "string") error.sessionId = entry.sessionId;
+      debug(`fail pending ${entry.method} #${id} on ${tabId}: ${message}`);
+      entry.reject(error);
+      failed += 1;
+    }
+    return failed;
+  }
+
+  /**
+   * Remember a harness frame until its reply comes back, so a page that dies
+   * mid-command can still be answered. `sendCDPMessage` is fire-and-forget here:
+   * without this the SDK would wait out its own 15 s response timeout on a tab
+   * that is already gone.
+   */
+  #trackHarnessFrame(space, tabId, frame) {
+    if (!frame || frame.id === undefined) return;
+    if (typeof tabId !== "string" || tabId === "") return;
+    let byId = this.#harnessPending.get(tabId);
+    if (!byId) {
+      byId = new Map();
+      this.#harnessPending.set(tabId, byId);
+    }
+    const now = Date.now();
+    for (const [id, entry] of byId) {
+      if (now - entry.at > HARNESS_FRAME_TTL_MS) byId.delete(id);
+    }
+    byId.set(frame.id, {
+      id: frame.id,
+      sessionId: typeof frame.sessionId === "string" ? frame.sessionId : undefined,
+      method: typeof frame.method === "string" ? frame.method : "",
+      space,
+      at: now,
+    });
+  }
+
+  #forgetHarnessFrame(tabId, id) {
+    const byId = this.#harnessPending.get(tabId);
+    if (!byId) return;
+    byId.delete(id);
+    if (byId.size === 0) this.#harnessPending.delete(tabId);
+  }
+
+  /** Answer every harness frame this tab still owes, with `message`. */
+  #failHarnessPending(tabId, message) {
+    const byId = this.#harnessPending.get(tabId);
+    if (!byId) return 0;
+    this.#harnessPending.delete(tabId);
+    const now = Date.now();
+    let failed = 0;
+    for (const entry of byId.values()) {
+      if (now - entry.at > HARNESS_FRAME_TTL_MS) continue;
+      debug(`fail harness ${entry.method || "frame"} #${entry.id} on ${tabId}: ${message}`);
+      this.#emitSynthetic(entry.space, tabId, {
+        id: entry.id,
+        ...(entry.sessionId ? { sessionId: entry.sessionId } : {}),
+        error: { code: -32000, message },
+      });
+      failed += 1;
+    }
+    return failed;
+  }
+
+  /** Drop closed ids that are old or over the cap. */
+  #trimClosed() {
+    const cutoff = Date.now() - CLOSED_ID_TTL_MS;
+    for (const map of [this.#closedTabs, this.#closedSessions, this.#closedTargets]) {
+      for (const [key, entry] of map) {
+        if (entry.at < cutoff) map.delete(key);
+      }
+      while (map.size > CLOSED_ID_LIMIT) map.delete(map.keys().next().value);
+    }
+  }
+
+  /** The closed-page error for a frame naming a dead session or target. */
+  #closedPageReason(frame) {
+    if (!frame || typeof frame !== "object") return null;
+    if (typeof frame.sessionId === "string" && frame.sessionId !== "") {
+      const closed = this.#closedSessions.get(frame.sessionId);
+      if (closed) return { tabId: closed.tabId, message: closed.message };
+    }
+    const targetId = frame.params?.targetId;
+    if (typeof targetId === "string" && targetId !== "") {
+      const closed = this.#closedTargets.get(targetId);
+      if (closed) return { tabId: closed.tabId, message: closed.message };
+    }
+    return null;
   }
 
   /**
@@ -753,6 +1124,11 @@ export class HostBackend {
    * rediscoveres tabs from the app itself.
    */
   #onGone() {
+    // The next connection may be a different app process, so the identity read
+    // from the old one is dropped too: it is what decides whether a persisted
+    // `hostSpaceId` can still be trusted.
+    this.#info = null;
+    this.#instanceKey = null;
     for (const entry of this.#cdpPending.values()) {
       clearTimeout(entry.timer);
       entry.reject(
@@ -771,6 +1147,16 @@ export class HostBackend {
     this.#hostActiveTab.clear();
     this.#discover.clear();
     this.#refreshedAt.clear();
+    // The next connection is a different app run: its tab and session ids are
+    // new, so a remembered "closed" id from this one must not shadow them.
+    this.#closedTabs.clear();
+    this.#closedSessions.clear();
+    this.#closedTargets.clear();
+    // Nothing forwarded to the old app can be answered any more.
+    for (const tabId of [...this.#harnessPending.keys()]) {
+      this.#failHarnessPending(tabId, APP_GONE_MESSAGE);
+    }
+    this.#harnessPending.clear();
   }
 
   async #targetInfoFor(tabId, timeoutMs = 5000) {
@@ -805,6 +1191,10 @@ export class HostBackend {
   }
 
   #cdpRequest(tabId, method, params = {}, sessionId = undefined, timeoutMs = CDP_REQUEST_TIMEOUT_MS) {
+    const closed = this.#closedTabs.get(tabId) ?? (sessionId ? this.#closedSessions.get(sessionId) : null);
+    // An internal call for a page this process already saw die: no reply is
+    // coming, so it fails with the same sentence a harness command gets.
+    if (closed) return Promise.reject(new Error(closed.message));
     const id = this.#nextCdpId++;
     const frame = { id, method, params };
     if (sessionId) frame.sessionId = sessionId;
@@ -815,7 +1205,15 @@ export class HostBackend {
         debug(`cdp ${method} on ${tabId} timed out after ${timeoutMs}ms`);
         reject(new Error(`${method} got no reply from the page within ${timeoutMs}ms`));
       }, timeoutMs);
-      this.#cdpPending.set(id, { resolve, reject, timer, method, tabId, startedAt });
+      this.#cdpPending.set(id, {
+        resolve,
+        reject,
+        timer,
+        method,
+        tabId,
+        sessionId,
+        startedAt,
+      });
       debug(`cdp -> ${tabId} ${method} #${id}`);
       this.#client
         .request("cdp.send", { browserId: tabId, message: JSON.stringify(frame) })
@@ -910,10 +1308,20 @@ export class HostBackend {
       const target = frame.params?.targetId;
       const owner = this.#tabForTarget(target);
       if (owner && owner === tabId) {
-        await this.call("activateTab", {
-          spaceId: this.#requireHostSpace(space),
-          tabId: owner,
-        }).catch(() => {});
+        try {
+          await this.call("activateTab", {
+            spaceId: this.#requireHostSpace(space),
+            tabId: owner,
+          });
+        } catch (error) {
+          // The app refused (handed off, closing): say so instead of answering
+          // a move that never happened.
+          this.#emitSynthetic(space, tabId, {
+            id: frame.id,
+            error: { code: -32002, message: error?.message || String(error) },
+          });
+          return;
+        }
         this.#activeTabBySpace.set(space.hostSpaceId, owner);
         this.#emitSynthetic(space, tabId, { id: frame.id, result: {} });
         return;
@@ -991,14 +1399,29 @@ export class HostBackend {
   }
 
   async #sendToBrowser(space, tabId, text) {
+    const parsed = parseFrame(text);
+    this.#trackHarnessFrame(space, tabId, parsed);
     try {
       await this.#client.request("cdp.send", { browserId: tabId, message: text });
     } catch (error) {
+      if (parsed && parsed.id !== undefined) this.#forgetHarnessFrame(tabId, parsed.id);
+      // The user took control of the space: the SDK stops on this code when it
+      // arrives through onSendCDPMessageError, so it is re-thrown rather than
+      // turned into a per-request CDP error it would just report and retry. A
+      // request the app never took has no reply to correlate anyway.
+      if (error?.error_code === "EGO_TASK_SPACE_USER_IN_CONTROL") throw error;
+      // Everything else stays a correlated CDP error for that one request (a
+      // closing tab, a vanished browser): a whole-task stop is the wrong answer.
+      // "no browser tb4" is the app saying the page is gone, which is reported
+      // in the closed-page shape so a waiting page stops instead of retrying.
       const frame = parseFrame(text);
       if (frame && frame.id !== undefined) {
         this.#emitSynthetic(space, tabId, {
           id: frame.id,
-          error: { code: -32002, message: error?.message || String(error) },
+          error: {
+            code: -32002,
+            message: refusalMessage(error?.message, error?.error_code),
+          },
         });
       }
     }
@@ -1033,6 +1456,14 @@ export class HostBackend {
     const space = tabId ? this.#spaceByTab.get(tabId) ?? null : null;
 
     if (method === "cdp.error") {
+      // The app refused a frame for this browser: an unknown browser is gone,
+      // and for any other refusal nothing addressed to this tab is being
+      // processed either. Either way no reply is coming for calls already in
+      // flight, so fail them now instead of at their 30 s timeout.
+      this.#failPendingForTab(
+        tabId,
+        refusalMessage(params.message, params.reason),
+      );
       for (const listener of this.#frames) {
         try {
           listener({
@@ -1041,6 +1472,10 @@ export class HostBackend {
             tabId,
             code: params.code,
             message: params.message,
+            // `reason` is present when the app refused for a model reason
+            // (handoff, closing space). The correlated reply has already been
+            // rejected with the same code, so this is a second copy of it.
+            reason: typeof params.reason === "string" ? params.reason : null,
           });
         } catch {
           // ignore
@@ -1054,14 +1489,17 @@ export class HostBackend {
     const data = parseFrame(raw);
     if (!data) return;
 
+    // A reply settles the harness frame it answers, whatever happens next.
+    if (data.id !== undefined && tabId) this.#forgetHarnessFrame(tabId, data.id);
+
     // A session always belongs to the browser it was attached to. Record it from
     // any frame that names one — an `Target.attachToTarget` reply carries the new
     // id in `result.sessionId`, and every later reply echoes it — so harness
     // frames that only carry a `sessionId` can still be routed to the right tab.
     if (tabId) {
-      if (typeof data.sessionId === "string") this.#tabBySession.set(data.sessionId, tabId);
+      if (typeof data.sessionId === "string") this.#rememberSession(data.sessionId, tabId);
       if (typeof data.result?.sessionId === "string") {
-        this.#tabBySession.set(data.result.sessionId, tabId);
+        this.#rememberSession(data.result.sessionId, tabId);
       }
     }
 
@@ -1091,15 +1529,46 @@ export class HostBackend {
     if (data.method === "Target.attachedToTarget") {
       const sessionId = data.params?.sessionId;
       const targetId = data.params?.targetInfo?.targetId;
-      if (typeof sessionId === "string" && tabId) this.#tabBySession.set(sessionId, tabId);
-      if (typeof targetId === "string" && tabId) this.#tabByTarget.set(targetId, tabId);
+      if (typeof sessionId === "string" && tabId) this.#rememberSession(sessionId, tabId);
+      if (typeof targetId === "string" && tabId) {
+        this.#tabByTarget.set(targetId, tabId);
+        this.#closedTargets.delete(targetId);
+      }
     } else if (data.method === "Target.detachedFromTarget") {
       const sessionId = data.params?.sessionId;
-      if (typeof sessionId === "string") this.#tabBySession.delete(sessionId);
+      if (typeof sessionId === "string") {
+        // A detached session will not answer anything sent to it again. A
+        // detach of the tab's own page target means the page is going away;
+        // an iframe detaching is routine and only that session is dead.
+        const pageTargetId = this.#targetByTab.get(tabId);
+        const detachedTargetId = data.params?.targetId;
+        this.#tabBySession.delete(sessionId);
+        if (tabId && pageTargetId && detachedTargetId === pageTargetId) {
+          this.#detachTab(tabId, "Target.detachedFromTarget");
+        } else {
+          this.#closedSessions.set(sessionId, {
+            tabId,
+            message: "Target closed: the page's DevTools session was detached",
+            at: Date.now(),
+          });
+          this.#trimClosed();
+        }
+      }
+    } else if (data.method === "Inspector.detached") {
+      // A renderer crash (or any session CEF terminated) arrives here, not as a
+      // request failure: the calls already accepted by CEF would otherwise sit
+      // until their timeout. host/README.md: "a renderer crash kills its DevTools
+      // session (Inspector.detached is forwarded)".
+      this.#detachTab(tabId, data.params?.reason);
     } else if (data.method === "Target.targetDestroyed") {
       const targetId = data.params?.targetId;
       if (typeof targetId === "string") {
         this.#tabByTarget.delete(targetId);
+        if (tabId && this.#targetByTab.get(tabId) === targetId) {
+          // The tab's own page target is gone: nothing addressed to it can be
+          // answered any more, so in-flight calls fail now.
+          this.#markClosed(tabId, tabClosedMessage(tabId), { keepTab: true });
+        }
         // Already replaced by the event synthesised from `tab.closed`: a client
         // that was told once must not be told twice.
         if (this.#consumedCefEvent(space, "Target.targetDestroyed", targetId)) return;
@@ -1155,7 +1624,7 @@ export class HostBackend {
       }
       case "space.closed": {
         const space = this.#spaceByHostId.get(hostSpaceId);
-        if (space) this.#forgetSpace(space);
+        if (space) this.#forgetSpace(space, SPACE_CLOSED_MESSAGE);
         else this.#discover.delete(hostSpaceId);
         return;
       }
@@ -1344,6 +1813,55 @@ function parseFrame(text) {
   try {
     const parsed = JSON.parse(text);
     return parsed && typeof parsed === "object" ? parsed : null;
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * The sentence for a `cdp.error` push the app sent about one browser.
+ *
+ * The app uses that push for every `SendDevToolsMessage` failure, so the useful
+ * distinction is whether the browser itself is gone: that is the case where a
+ * waiting page must hear the SDK's closed-page shape rather than a bare refusal
+ * it would treat as "try again".
+ */
+function refusalMessage(message, reason) {
+  const text =
+    typeof message === "string" && message.trim() !== ""
+      ? message.trim()
+      : "the app refused the command";
+  if (typeof reason === "string" && reason.startsWith("EGO_") && /NOT_FOUND|INACTIVE/i.test(reason)) {
+    return `Target closed: ${text}`;
+  }
+  if (/no browser|no such browser|unknown browser|was closed|is closing|closed by/i.test(text)) {
+    return `Target closed: ${text}`;
+  }
+  return text;
+}/**
+ * `pid` plus the process start time, when `/proc` can be read.
+ *
+ * Field 22 of `/proc/<pid>/stat` is the start time in clock ticks since boot;
+ * it changes when a pid is reused, which is the one case `pid` alone gets wrong.
+ * A key built without it is still correct within one boot, so an unreadable
+ * `/proc` degrades to the pid instead of failing.
+ */
+function instanceKeyFor(info) {
+  const pid = Number(info?.pid);
+  if (!Number.isInteger(pid) || pid <= 0) return null;
+  const started = processStartTime(pid);
+  return started ? `${pid}@${started}` : `${pid}`;
+}
+
+function processStartTime(pid) {
+  try {
+    const stat = readFileSync(`/proc/${pid}/stat`, "utf8");
+    // The command name is parenthesised and may itself contain spaces or ")".
+    const close = stat.lastIndexOf(")");
+    if (close < 0) return null;
+    const fields = stat.slice(close + 2).split(" ");
+    const starttime = fields[19];
+    return typeof starttime === "string" && /^\d+$/.test(starttime) ? starttime : null;
   } catch {
     return null;
   }

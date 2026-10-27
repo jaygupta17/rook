@@ -13,7 +13,7 @@
  * What it proves, in order:
  *   1. getInfo           — version, pid, socket path (mode 0600), space list
  *   2. framing           — split lines, string ids, garbage, notifications
- *   3. createSpace       — a real space with its own request context
+ *   3. createSpace       — a real space in the default profile
  *   4. createTab         — a tab in a space the window is *not* showing
  *   5. CDP on a parked tab — Target.getTargets/attachToTarget, Page.enable,
  *                            Runtime.evaluate, Accessibility.getFullAXTree
@@ -21,7 +21,8 @@
  *   7. multi-client      — a second client sees the host and its pushes
  *   8. cdp.error         — an unknown browser id is refused, not swallowed
  *   9. captureScreenshot — written to artifacts/m2-cdp.png
- *  10. handOff / takeOver — the mutation gate refuses agent traffic, then lifts
+ *  10. handOff / takeOver — the space is revealed, agent traffic is refused
+ *                          with EGO_TASK_SPACE_USER_IN_CONTROL, then lifted
  *  11. highlightMouseTo  — the native pointer ring is placed in the user space
  *  12. tab lifecycle     — space.created/tab.created/space.closed reach the
  *                          client; activateSpace moves the window
@@ -75,7 +76,7 @@ const args = parseArgs(process.argv.slice(2));
 const bin = resolve(args.bin ?? join(hostRoot, "build", "bin", "rook"));
 const fixtures = resolve(args.fixtures ?? join(hostRoot, "fixtures"));
 const artifacts = resolve(args.artifacts ?? join(hostRoot, "artifacts"));
-const display = args.display ?? process.env.DISPLAY ?? ":99";
+const display = args.display ?? process.env.DISPLAY ?? ":131";
 const stepTimeout = Number(args.timeout ?? 45000);
 const keepTemp = booleans().keep;
 const verbose = booleans().verbose;
@@ -235,10 +236,12 @@ async function ensureDisplay() {
 // ---------------------------------------------------------------------------
 
 class RpcError extends Error {
-  constructor(code, message) {
+  constructor(code, message, data) {
     super(`${message} (code ${code})`);
     this.code = code;
     this.rpcMessage = message;
+    this.data = data ?? null;
+    this.reason = data?.reason ?? null;
   }
 }
 
@@ -299,7 +302,7 @@ class Rpc {
         this.#pending.delete(message.id);
         clearTimeout(entry.timer);
         if (message.error) {
-          entry.reject(new RpcError(message.error.code, message.error.message));
+          entry.reject(new RpcError(message.error.code, message.error.message, message.error.data));
         } else {
           entry.resolve(message.result ?? {});
         }
@@ -376,7 +379,7 @@ function cdpChannel(client, browserId) {
       clearTimeout(entry.timer);
       if (message.error) {
         entry.reject(
-          new RpcError(message.error.code, `${entry.method}: ${message.error.message}`),
+          new RpcError(message.error.code, `${entry.method}: ${message.error.message}`, message.error.data),
         );
       } else {
         entry.resolve(message.result ?? {});
@@ -602,8 +605,8 @@ async function main() {
 
   await step("getInfo", async () => {
     info = await rpc.request("getInfo");
-    assertEqual(info.version, "0.3.0-M3", "host version");
-    assertEqual(info.protocol, "2", "protocol version");
+    assertEqual(info.version, "0.4.0-M4", "host version");
+    assertEqual(info.protocol, "3", "protocol version");
     assertEqual(info.pid, host.pid, "host pid");
     assertEqual(info.socket, socketPath, "socket path");
     assert(/^\d+\.\d+\.\d+/.test(info.cef ?? ""), `CEF version missing: ${info.cef}`);
@@ -673,6 +676,11 @@ async function main() {
     const created = await rpc.request("createSpace", { name: "probe" });
     spaceId = created.spaceId;
     assert(typeof spaceId === "string" && spaceId.length > 0, "no spaceId");
+    assertEqual(
+      created.profileId,
+      info.state.spaces.find((s) => s.user === true).profileId,
+      "createSpace defaults to the run's default profile",
+    );
     const list = await rpc.request("listSpaces");
     const space = list.spaces.find((s) => s.spaceId === spaceId);
     assert(space, "the new space is not in listSpaces");
@@ -680,6 +688,10 @@ async function main() {
     assertEqual(space.user, false, "agent space flag");
     assertEqual(space.ownership, "agent", "space ownership");
     assertEqual(space.tabCount, 0, "a new space starts with no tabs");
+    assert(
+      typeof space.profileId === "string" && space.profileId.length > 0,
+      "space has no profileId",
+    );
     // The window must still be showing the user's space: an agent creating a
     // space may not steal the view.
     const after = await rpc.request("listSpaces");
@@ -690,7 +702,8 @@ async function main() {
     );
     assert(pushed, "no space.created push for the new space");
     assertEqual(pushed.params.name, "probe", "space.created name");
-    return `${spaceId} "probe" (hidden, ${space.cache}), space.created pushed`;
+    assertEqual(pushed.params.profileId, space.profileId, "space.created profileId");
+    return `${spaceId} "probe" in ${space.profileId} (hidden, ${space.cache}), space.created pushed`;
   });
 
   await step("createTab", async () => {
@@ -858,6 +871,8 @@ async function main() {
       "user",
       "ownership after handOff",
     );
+    // A real handoff reveals the space: the user should not have to find it.
+    assertEqual(list.activeSpaceId, spaceId, "handOff did not reveal the space");
     // The gate: the agent may not drive a space the user owns.
     let blocked = null;
     try {
@@ -870,6 +885,8 @@ async function main() {
     }
     assert(blocked, "cdp.send still worked after handOff");
     assertEqual(blocked.code, -32002, "handOff gate error code");
+    // Machine-readable: the bridge keys on this, not on the message text.
+    assertEqual(blocked.reason, "EGO_TASK_SPACE_USER_IN_CONTROL", "handOff gate reason");
     assert(/handed off/i.test(blocked.rpcMessage), `gate message: ${blocked.rpcMessage}`);
     // The ownership change is pushed too: this is what a bridge repaints on.
     await waitFor(
@@ -883,7 +900,7 @@ async function main() {
         ),
       5000,
     );
-    return `ownership=user + control.changed, cdp.send blocked ("${blocked.rpcMessage}")`;
+    return `ownership=user, window -> ${spaceId}, cdp.send blocked with the reason`;
   });
 
   await step("takeOver", async () => {
@@ -901,6 +918,9 @@ async function main() {
     );
     const title = await evaluate(cdp, "document.title", sessionId);
     assertEqual(title, "control probe", "page after takeOver");
+    // Back to the user's space: the rest of the probe (and the screenshot) work
+    // in the window the user would be looking at.
+    await rpc.request("activateSpace", { spaceId: setActiveSpace });
     return "agent can drive the space again (control.changed agent)";
   });
 

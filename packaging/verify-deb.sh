@@ -64,6 +64,19 @@ done
 printf '  %-16s %s\n' "Depends:" "$(dpkg-deb -f "$deb" Depends | tr -s ' \n' ' ')"
 printf '  %-16s %s\n' "Description:" "$(dpkg-deb -f "$deb" Description | head -1)"
 
+# A package can be current in name only: the 0.3.0~m3 build that this release
+# replaces was built before the space-id and focus fixes, so "Version:" alone
+# proves nothing. Check that the name, the field and the string the app prints
+# are one release, with no milestone suffix to sort a milestone below a final.
+deb_version=$(dpkg-deb -f "$deb" Version)
+case "$deb_version" in
+  *"~"*|*-M[0-9]*) fail "Version $deb_version carries a milestone suffix; a release is named after the release" ;;
+esac
+case "$(basename "$deb")" in
+  "rook_${deb_version}_"*.deb) ok "name" "matches Version $deb_version (no ~m suffix)" ;;
+  *) fail "file name $(basename "$deb") does not match Version $deb_version" ;;
+esac
+
 files=$(dpkg-deb -c "$deb")
 n_entries=$(printf '%s\n' "$files" | wc -l | tr -d ' ')
 n_links=$(printf '%s\n' "$files" | awk '$1 ~ /^l/' | wc -l | tr -d ' ')
@@ -119,6 +132,16 @@ ok "libcef.so" "$(mb "$(stat -c %s "$libdir/cef/libcef.so")") (stripped), $(file
 [ "$(readelf -d "$libdir/rook" | grep -o '\$ORIGIN/cef')" = '$ORIGIN/cef' ] ||
   fail "host binary rpath is not \$ORIGIN/cef"
 ok "rpath" "\$ORIGIN/cef ($(readelf -d "$libdir/rook" | grep -oE '(RPATH|RUNPATH)' | head -1))"
+
+# What the app will actually print at start-up, read out of the packaged binary
+# rather than the control file, so a stale payload in a renamed archive fails
+# here instead of at a reviewer's desk.
+packaged_banner=$(strings -n 3 "$libdir/rook" 2>/dev/null \
+  | grep -aE '^[0-9]+\.[0-9]+\.[0-9]+(-[A-Za-z0-9.]+)?$' | head -1)
+[ -n "$packaged_banner" ] || fail "no version string in the packaged host binary"
+[ "${packaged_banner%%-*}" = "$deb_version" ] ||
+  fail "the packaged app reports $packaged_banner, the archive says $deb_version"
+ok "in-app" "banner reports rook $packaged_banner (release $deb_version)"
 
 # --- display -----------------------------------------------------------------
 # :99 is shared with whatever else runs QA on this box, and `import -window`
@@ -237,13 +260,55 @@ sbx=$(grep -cE '^\[rook\] (sandbox: enabled|WARNING: Chromium sandbox disabled)'
 step "sandbox" "$(grep -m1 -oE '\[rook\] (sandbox: enabled \([^)]*\)|WARNING: Chromium sandbox disabled)' "$work/render.log" || true)"
 ok "render" "window painted from the packaged binaries, $loaded page(s) loaded over HTTP"
 
-you_line=$(grep -m1 'space="You" localStorage=' "$work/render.log" || true)
-agent_line=$(grep -m1 'space="Agent 1" localStorage=' "$work/render.log" || true)
-[ -n "$you_line" ] && [ -n "$agent_line" ] || fail "no per-space storage report"
+you_line=$(grep -m1 '^\[isolation\] space="You" ' "$work/render.log" || true)
+agent_line=$(grep -m1 '^\[isolation\] space="Agent 1" ' "$work/render.log" || true)
+[ -n "$you_line" ] && [ -n "$agent_line" ] || fail "no per-space storage report (log: $work/render.log)"
 step "You" "${you_line#*] }"
 step "Agent 1" "${agent_line#*] }"
-[ "$you_line" = "$agent_line" ] && fail "both spaces report identical storage"
-ok "isolation" "two CefRequestContexts from the packaged payload"
+field() { printf '%s' "$1" | sed -n "s/.*$2=\"\([^\"]*\)\".*/\1/p"; }
+[ -n "$(field "$you_line" localStorage)" ] || fail "space You reported no localStorage value (storage blocked?)"
+[ -n "$(field "$agent_line" localStorage)" ] || fail "space Agent 1 reported no localStorage value (storage blocked?)"
+
+# The model this release ships: a profile is the isolation boundary, one
+# CefRequestContext per profile, shared by every space in it. Two spaces of one
+# profile therefore see the same store. Proving that from one run is a race: both
+# tabs load at the same instant and the fixture writes a label only when the
+# store is empty, so concurrent first loads can each write their own. Each run
+# below is sequential instead, which is how a user and an agent actually meet
+# this: run A writes a label into the default profile, run B (same profile, same
+# XDG_DATA_HOME) must read A's label back, and run C (another profile) must not.
+say "profile storage (sequential runs, one data dir)"
+iso="$work/profile-check"
+rm -rf "$iso"; mkdir -p "$iso/data" "$iso/run"
+iso_run() { # $1 = tag, $2 = label, $3 = profile id; prints the isolation line
+  local tag="$1" label="$2" profile="$3" line
+  DISPLAY="$display" XDG_DATA_HOME="$iso/data" XDG_RUNTIME_DIR="$iso/run" \
+    timeout 120 "$root/usr/bin/rook" \
+      --screenshot "$iso/$tag.png" \
+      --profile "$profile" \
+      --space "S=$base/isolation.html?label=$label" \
+      --verify-isolation >"$iso/$tag.log" 2>&1 ||
+    { echo "run $tag (profile $profile) exited non-zero" >&2; return 1; }
+  [ -s "$iso/$tag.png" ] || { echo "run $tag wrote no screenshot" >&2; return 1; }
+  line=$(grep -m1 '^\[isolation\] space="S" ' "$iso/$tag.log" || true)
+  [ -n "$line" ] || { echo "run $tag printed no isolation line" >&2; return 1; }
+  # stderr, so the caller's $(...) gets the isolation line and nothing else.
+  printf '  %-20s %s\n' "$tag" "profile $profile, label=$label -> ${line#*] }" >&2
+  printf '%s' "$line"
+}
+first=$(iso_run a Alpha default) || fail "profile storage run a failed (log: $iso/a.log)"
+first_store=$(field "$first" localStorage)
+second=$(iso_run b Beta default) || fail "profile storage run b failed (log: $iso/b.log)"
+second_store=$(field "$second" localStorage)
+third=$(iso_run c Gamma pkg-second) || fail "profile storage run c failed (log: $iso/c.log)"
+third_store=$(field "$third" localStorage)
+[ "$first_store" = "Alpha" ] || fail "run a wrote \"$first_store\", expected the label Alpha"
+[ "$second_store" = "$first_store" ] ||
+  fail "profile default read \"$second_store\" on the second run; it shared no storage with the first (\"$first_store\")"
+ok "shared" "profile default kept \"$second_store\" across two runs (spaces share the profile's context)"
+[ "$third_store" != "$first_store" ] ||
+  fail "profile pkg-second read \"$third_store\", which is profile default's storage: the contexts are not separate"
+ok "separate" "profile pkg-second read \"$third_store\"; profile default read \"$first_store\""
 
 
 # --- 6. the CLI, when the package carries an SDK bundle ----------------------

@@ -6,6 +6,7 @@
 #include "include/cef_client.h"
 #include "include/cef_devtools_message_observer.h"
 #include "include/cef_display_handler.h"
+#include "include/cef_focus_handler.h"
 #include "include/cef_life_span_handler.h"
 #include "include/cef_load_handler.h"
 
@@ -17,6 +18,7 @@ class BrowserClient : public CefClient,
                       public CefLifeSpanHandler,
                       public CefLoadHandler,
                       public CefDisplayHandler,
+                      public CefFocusHandler,
                       public CefDevToolsMessageObserver {
  public:
   BrowserClient(Shell* shell, std::string tab_id)
@@ -25,6 +27,7 @@ class BrowserClient : public CefClient,
   CefRefPtr<CefLifeSpanHandler> GetLifeSpanHandler() override { return this; }
   CefRefPtr<CefLoadHandler> GetLoadHandler() override { return this; }
   CefRefPtr<CefDisplayHandler> GetDisplayHandler() override { return this; }
+  CefRefPtr<CefFocusHandler> GetFocusHandler() override { return this; }
 
   // CefLifeSpanHandler
   void OnAfterCreated(CefRefPtr<CefBrowser> browser) override;
@@ -70,13 +73,16 @@ class BrowserClient : public CefClient,
                         const CefString& source,
                         int line) override;
 
+  // CefFocusHandler: a click into the page focuses Chromium's widget, and this is
+  // the only notification the shell gets that the user is now working in it.
+  bool OnSetFocus(CefRefPtr<CefBrowser> browser, FocusSource source) override;
+
   // CefDevToolsMessageObserver. Returning true keeps CEF from re-splitting the
   // message into OnDevToolsMethodResult/OnDevToolsEvent: the bridge gets the
   // original bytes, `id` and `sessionId` included.
   bool OnDevToolsMessage(CefRefPtr<CefBrowser> browser,
                          const void* message,
                          size_t message_size) override;
-
  private:
   Shell* shell_;
   const std::string tab_id_;

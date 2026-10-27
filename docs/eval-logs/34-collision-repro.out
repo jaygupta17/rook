@@ -1,0 +1,10 @@
+phase1 1 ALPHA
+phase1_exit=0
+host ids after phase1 [(1, 'alpha', 'sp2')]
+phase2 beta 2 BETA
+phase2_exit=0
+host ids after phase2 [(1, 'alpha', 'sp2'), (2, 'beta', 'sp3')]
+resume alpha after restart:
+resumed alpha 1 [{"label":"p1","title":"ALPHA","url":"data:text/html,<title>ALPHA</title><h1>ALPHA page</h1>"}]
+alpha actually sees ALPHA
+alpha_resume_exit=0

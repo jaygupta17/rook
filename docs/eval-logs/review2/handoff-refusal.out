@@ -1,0 +1,6 @@
+Control of this task space is with the user, either through task.handOff() or a takeover in the browser, so browser commands are paused.
+This is a hard stop, not an obstacle to route around — do not retry and do not take control back on your own.
+Wait until the user explicitly asks you to continue, then take control back and resume:
+  const task = await takeOverTaskSpace(spaceId)
+
+Offer the user choices like "Continue" or "Finish task" if your harness supports it; otherwise tell them: "You now control this task space. Reply 'continue' when ready and I will resume."

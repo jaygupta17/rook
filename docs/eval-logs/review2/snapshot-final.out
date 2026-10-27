@@ -1,0 +1,6 @@
+wiki_goto_ms 430
+wiki_default_ms 4506 chars 11896 header2 "snapshot scope=viewport only, 275 lines, 1696 refs, 7892 nodes outside the viewport not shown - pass {scope:\"full_page\"} for the whole page"
+wiki_full_ms 3200 chars 329702 header2 "snapshot scope=full page, 8087 lines, 1696 refs"
+big_default_ms 767 chars 1130 header2 "snapshot scope=viewport only, 40 lines, 1200 refs, 3566 nodes outside the viewport not shown - pass {scope:\"full_page\"} for the whole page"
+big_full_ms 527 chars 97669 header2 "snapshot scope=full page, 3606 lines, 1200 refs"
+duplicate_url_meta 0 generic_empty 1201

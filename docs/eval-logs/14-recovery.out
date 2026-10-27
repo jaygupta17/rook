@@ -1,0 +1,36 @@
+=== round 1: dialogs handled ===
+alert_receipt {"dialog":{"url":"http://127.0.0.1:8781/dialogs.html","frameId":"644C473DCC61EF2F6EFB5FF529D0DFE7","message":"ALERT-OK","type":"alert","hasBrowserHandler":true,"defaultPrompt":""}}
+info_dialog {"url":"http://127.0.0.1:8781/dialogs.html","frameId":"644C473DCC61EF2F6EFB5FF529D0DFE7","message":"ALERT-OK","type":"alert","hasBrowserHandler":true,"defaultPrompt":""}
+after_alert idle
+confirm_type confirm
+after_confirm CONFIRM-TRUE
+prompt_type prompt
+after_prompt PROMPT:typed-answer
+dialogs_exit=0
+=== round 2: broken selector ===
+pages [{"label":"p1","spaceId":18,"mouse":{},"keyboard":{}}]
+error_after_ms 3092
+error page.click timed out after 3000ms: Selector #does-not-exist matched 0 elements
+broken_exit=0
+=== round 3: page navigates away, then stale selector ===
+url_now http://127.0.0.1:8781/form.html
+error_after_ms 3086
+error page.click timed out after 3000ms: Selector #before matched 0 elements
+navigated_exit=0
+=== round 4: stale ref after navigation ===
+ref 1
+error_after_ms 105
+error Stale ref: @1; take a new snapshot
+stale_ref_exit=0
+=== round 5: close the page while a wait is pending ===
+close_result WAIT-ERROR: page.waitForSelector timed out after 20000ms: #never-appears after_ms 20402
+pages_now []
+close_midwait_exit=0
+=== round 6: unhandled alert (shell timeout 15s) ===
+Error: page label not found: p1. Managed Pages in task space 18: none. task.page(label) only refers to an existing Page; create one with await task.newPage()
+    at [describeMissingPage] (file:///tmp/opencode/rook-eval/root/usr/lib/rook/sdk/index.js:18532:16)
+    at async file:///tmp/opencode/rook-eval/root/usr/lib/rook/sdk/index.js:19401:19
+    at async #resolve (file:///tmp/opencode/rook-eval/root/usr/lib/rook/sdk/index.js:19398:23)
+    at async Page.goto (file:///tmp/opencode/rook-eval/root/usr/lib/rook/sdk/index.js:18863:22)
+    at async file://script.mjs:3:1
+unhandled_alert_exit=1

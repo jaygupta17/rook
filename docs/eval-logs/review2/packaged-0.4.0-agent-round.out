@@ -1,0 +1,19 @@
+agent round through the packaged CLI — rook 0.4.0
+payload   /home/user/projects/ego-lite-linux/packaging/work/r3-deb (dpkg-deb -x of rook_0.4.0_amd64.deb, sha256 8af96375...)
+cli       /home/user/projects/ego-lite-linux/packaging/work/r3-deb/usr/bin/ego-browser (bundled node + bridge + sdk/index.js)
+display   :217 (fresh Xvfb), profile /tmp/opencode/r3-round/data (fresh), state /tmp/opencode/r3-round/state (fresh)
+fixture   http://127.0.0.1:44503/form.html
+
+banner    [rook] rook 0.4.0-M4 (CEF 156.0.14+g4fa4ab5+chromium-156.0.8078.48), profiles in /tmp/opencode/r3-round/data/rook/profiles
+  title     Focus form
+  snapshot  "[p1 \"Focus form\" | space \"round-check\"(1): 1 managed, 0 untracked — p1* \"Focus form\"]"
+  focus      activeElement = name
+  typed     "Rook 0.4.0"
+  after     submitted 1
+  round     ok: navigate, snapshot, click, text entry and submit all work through the packaged app
+ego exit=0
+
+note      the page's own keydown listener stays empty: the SDK types through
+          character events, so form.html's 'keys:' line reads "no keys yet"
+          even though the field holds the typed text. Inside the vendored
+          SDK, not packaging; the X-level keyboard probe is host/scripts/focus-probe.mjs.

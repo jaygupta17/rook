@@ -16,8 +16,12 @@
 //   request   {"jsonrpc":"2.0","id":N,"method":"createTab","params":{...}}
 //   reply     {"jsonrpc":"2.0","id":N,"result":{...}}
 //             {"jsonrpc":"2.0","id":N,"error":{"code":-32602,"message":"..."}}
+//             {"jsonrpc":"2.0","id":N,"error":{"code":-32002,"message":"...",
+//                                   "data":{"reason":"EGO_TASK_SPACE_USER_IN_CONTROL"}}}
 //   push      {"jsonrpc":"2.0","method":"cdp.event","params":{"browserId","message"}}
-//             {"jsonrpc":"2.0","method":"cdp.error","params":{"browserId","code","message"}}
+//             {"jsonrpc":"2.0","method":"cdp.error","params":{"browserId","code",
+//                                   "message","reason?"}}
+//             {"jsonrpc":"2.0","method":"profile.created","params":{"profileId","name"}}
 //             {"jsonrpc":"2.0","method":"tab.created","params":{"spaceId","tabId",...}}
 //             ... space.created/closed, tab.closed/activated/updated, control.changed
 //
@@ -34,14 +38,26 @@
 
 namespace rook {
 
-// Result of an operation that has no natural return value. `error` is empty on
-// success and is the message the RPC error carries when it is not.
+// Machine-readable failure reasons carried in the RPC error's `data.reason`
+// (README "Errors"). The names are ego's error codes, so a bridge can pass them
+// through to its own error surface unchanged.
+constexpr const char* kEgoSpaceUserInControl = "EGO_TASK_SPACE_USER_IN_CONTROL";
+constexpr const char* kEgoSpaceInactive = "EGO_TASK_SPACE_INACTIVE";
+constexpr const char* kEgoSpaceNotFound = "EGO_TASK_SPACE_NOT_FOUND";
+constexpr const char* kEgoInvalidArgument = "EGO_INVALID_ARGUMENT";
+
+// Result of an operation. `error` is the human-readable message the RPC error
+// carries; `reason` is the optional machine-readable code above (empty when the
+// failure has no ego equivalent, e.g. a bad JSON-RPC parameter).
 struct ControlStatus {
   bool ok = true;
   std::string error;
+  std::string reason;
 
   static ControlStatus Ok() { return ControlStatus{}; }
-  static ControlStatus Fail(std::string why) { return ControlStatus{false, std::move(why)}; }
+  static ControlStatus Fail(std::string why, std::string reason = std::string()) {
+    return ControlStatus{false, std::move(why), std::move(reason)};
+  }
 };
 
 // Operations the bridge needs from the host — the host half of the binding
@@ -52,17 +68,34 @@ class ControlDelegate {
  public:
   virtual ~ControlDelegate() = default;
 
-  // ---- spaces --------------------------------------------------------------
-  // createSpace(name) -> space id. New CefRequestContext, no tab yet: the
-  // bridge asks for the tabs it wants. "" on failure.
-  virtual std::string CreateSpace(const std::string& name) = 0;
+  // ---- profiles ------------------------------------------------------------
+  // A profile is the isolation boundary: one CefRequestContext, one storage
+  // directory, shared by every space created in it.
+  //
+  // {"defaultProfileId":"default","profiles":[{id,name,isDefault,path}]}
+  virtual std::string ListProfiles() const = 0;
 
-  // Closes every browser in the space, releases its request context and drops
-  // it from the sidebar. The on-disk profile (cookies/storage) stays.
+  // createProfile(name) -> profile id. The directory and its storage are
+  // created on disk; no request context exists until a space uses it.
+  virtual ControlStatus CreateProfile(const std::string& name, std::string* profile_id) = 0;
+
+  // ---- spaces --------------------------------------------------------------
+  // createSpace(name, profileId) -> space id. The space joins the profile's
+  // request context (no tab yet: the bridge asks for the tabs it wants).
+  // `profile_id` empty means the default profile; `resolved_profile_id`
+  // receives the profile the space actually landed in.
+  virtual ControlStatus CreateSpace(const std::string& name,
+                                    const std::string& profile_id,
+                                    std::string* space_id,
+                                    std::string* resolved_profile_id) = 0;
+
+  // Closes every browser in the space and drops it from the sidebar. The
+  // profile's on-disk storage (cookies/storage/cache) stays, because the other
+  // spaces of that profile are still using it.
   virtual ControlStatus CloseSpace(const std::string& space_id) = 0;
 
   // {"activeSpaceId":"sp1","spaces":[{spaceId,name,user,active,ownership,
-  //   agentState,cache,tabCount,activeTabId}]}
+  //   agentState,profileId,profileName,cache,tabCount,activeTabId}]}
   virtual std::string ListSpaces() const = 0;
 
   // ---- tabs ----------------------------------------------------------------
@@ -73,9 +106,11 @@ class ControlDelegate {
   // window name ("" when none). "" when the space does not exist.
   virtual std::string ListTabs(const std::string& space_id) const = 0;
 
-  // createTab(spaceId, url) -> tab id (== browser id). "" on failure.
+  // createTab(spaceId, url) -> tab id (== browser id) in `tab_id`.
   // A tab in a hidden space is created and loaded but does not steal the view.
-  virtual std::string CreateTab(const std::string& space_id, const std::string& url) = 0;
+  virtual ControlStatus CreateTab(const std::string& space_id,
+                                  const std::string& url,
+                                  std::string* tab_id) = 0;
 
   // Shows `space_id` in the window: sidebar selection plus its tab strip, the
   // same path as clicking the row. A view operation, so it is allowed on the
@@ -89,6 +124,8 @@ class ControlDelegate {
   virtual ControlStatus Navigate(const std::string& tab_id, const std::string& url) = 0;
 
   // ---- agent bookkeeping (native banner + mutation gate) -------------------
+  // handOff reveals the space, gives its page the keyboard and blocks agent
+  // mutations (EGO_TASK_SPACE_USER_IN_CONTROL) until takeOver.
   virtual ControlStatus HandOff(const std::string& space_id) = 0;
   virtual ControlStatus TakeOver(const std::string& space_id) = 0;
   virtual ControlStatus SetAgentTaskState(const std::string& space_id,
@@ -98,7 +135,7 @@ class ControlDelegate {
   // ---- CDP broker ----------------------------------------------------------
   // Raw DevTools protocol JSON, untouched. False = the host could not take it
   // (unknown browser, space handed off, tab closing); the reason is the
-  // ControlStatus error.
+  // ControlStatus error/reason.
   virtual ControlStatus SendCdp(const std::string& browser_id,
                                 const std::string& message) = 0;
 
@@ -124,11 +161,13 @@ class ControlServer {
 
   // CDP broker push. Both are notifications (no id) broadcast to every client;
   // `browser_id` is the tab id, `message` is the DevTools JSON verbatim.
+  // `reason` is the machine-readable code from ControlStatus ("" when none).
   virtual void PushCdpEvent(const std::string& browser_id,
                             const std::string& message) = 0;
   virtual void PushCdpError(const std::string& browser_id,
                             int code,
-                            const std::string& message) = 0;
+                            const std::string& message,
+                            const std::string& reason) = 0;
 
   // Lifecycle push: a notification (no id) broadcast to every client, with the
   // `params` object the shell built (already-serialised JSON object text).

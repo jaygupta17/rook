@@ -12,7 +12,7 @@ struct SpaceSpec {
 };
 
 struct Options {
-  std::string profile = "default";
+  std::string profile = "default";  // id of the default profile for this run
   std::string data_root;      // empty => $XDG_DATA_HOME / ~/.local/share
   std::string screenshot;     // non-empty => demo run + capture + exit
   std::string initial_url;    // user tab when no "You" space is given
@@ -25,7 +25,9 @@ struct Options {
   bool help = false;
 
   // Derived in ParseCommandLine().
-  std::string profile_dir;  // <data_root>/rook/profiles/<profile>
+  std::string profile_id;   // --profile, slugified (the default profile's id)
+  std::string profiles_root;  // <data_root>/rook/profiles
+  std::string profile_dir;  // <profiles_root>/<profile_id>
   std::string log_file;     // <profile_dir>/cef.log
   std::string socket_path;  // $XDG_RUNTIME_DIR/rook-<uid>.sock
 };

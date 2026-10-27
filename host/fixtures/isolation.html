@@ -31,40 +31,54 @@
   <div class="eyebrow">Rook &middot; storage probe</div>
   <h1 id="headline">Loading…</h1>
   <p class="lead">This page writes <code>localStorage</code> and a cookie on first load,
-     then reads them back. Two spaces opening the same URL must disagree.</p>
+     then reads them back. Spaces of one profile share this storage, so the second
+     space to open it sees the first one's values; a space in another profile does not.</p>
   <div class="cards">
     <div class="card"><div class="k">localStorage: rook-space</div><div class="v" id="ls">—</div></div>
     <div class="card"><div class="k">document.cookie</div><div class="v" id="ck">—</div></div>
   </div>
   <div class="badge" id="badge">origin</div>
-  <footer>Isolation is provided by one <code>CefRequestContext</code> per space, each with its own
-     cache path under <code>~/.local/share/rook/profiles/&lt;profile&gt;/</code>.</footer>
+  <footer>One <code>CefRequestContext</code> per profile: every space in it reads the same
+     directory under <code>~/.local/share/rook/profiles/&lt;profile&gt;</code>.</footer>
 </div>
 <script>
   const label = new URLSearchParams(location.search).get('label') || 'unlabelled';
-  let ls = '(blocked)';
+  // Write first, read later. Two spaces of one profile open this page at the
+  // same time, so a read taken right after this page's own write can catch the
+  // other space's write in localStorage and this one's cookie -- a torn report
+  // that says nothing about isolation. Both writers are done within the first
+  // few milliseconds, so the report waits for the storage to settle.
   try {
     if (!localStorage.getItem('rook-space')) localStorage.setItem('rook-space', label);
     if (!/(^|;\s*)rook-space=/.test(document.cookie)) {
       document.cookie = 'rook-space=' + encodeURIComponent(label) + '; path=/; max-age=86400';
     }
-    ls = localStorage.getItem('rook-space');
   } catch (e) {
-    ls = '(storage blocked)';
+    // Reported below as '(storage blocked)'.
   }
-  document.getElementById('ls').textContent = ls;
-  document.getElementById('ck').textContent = document.cookie || '(none)';
-  document.getElementById('headline').textContent = 'Space “' + ls + '”';
-  document.getElementById('badge').textContent = 'origin ' + location.origin;
-  document.title = 'Storage · ' + ls;
 
-  // The host reads this line from OnConsoleMessage; scripts/qa.sh asserts that
-  // every space reports its own value.
-  console.log('EGO_STORAGE ' + JSON.stringify({
-    ls: ls,
-    ck: document.cookie || '',
-    href: location.href
-  }));
+  function report() {
+    let ls = '(blocked)';
+    try {
+      ls = localStorage.getItem('rook-space') ?? '(none)';
+    } catch (e) {
+      ls = '(storage blocked)';
+    }
+    document.getElementById('ls').textContent = ls;
+    document.getElementById('ck').textContent = document.cookie || '(none)';
+    document.getElementById('headline').textContent = 'Space \u201c' + ls + '\u201d';
+    document.getElementById('badge').textContent = 'origin ' + location.origin;
+    document.title = 'Storage \u00b7 ' + ls;
+
+    // The host reads this line from OnConsoleMessage; scripts/qa.sh uses it to
+    // prove that two spaces of one profile report the same storage.
+    console.log('EGO_STORAGE ' + JSON.stringify({
+      ls: ls,
+      ck: document.cookie || '',
+      href: location.href
+    }));
+  }
+  setTimeout(report, 400);
 </script>
 </body>
 </html>

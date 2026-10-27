@@ -1,0 +1,8 @@
+=== standalone parallel ===
+exit A=0 B=0
+--- A ---
+A 4 PRIVATE-OK sid=ok-123
+A later A sid=ok-123
+--- B ---
+B 5 PRIVATE-DENIED ""
+B later B ""

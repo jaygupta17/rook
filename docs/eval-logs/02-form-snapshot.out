@@ -1,0 +1,29 @@
+space 2 title Profile form
+[p1 "Profile form" | space "form"(2): 1 managed, 0 untracked — p1* "Profile form"]
+root
+  heading "Profile form"
+    text "Profile form"
+  form
+    labeltext
+      text "Name"
+    textbox "Name" [ref=1, loc=css:#name]
+      generic
+    labeltext
+      text "Email"
+    textbox "Email" [ref=2, loc=css:#email]
+      generic
+    labeltext
+      text "About"
+    textbox "About" [ref=3, loc=css:#about]
+      generic
+    labeltext
+      text "Month"
+    combobox "Month" [ref=4, loc=css:#month]
+      menulistpopup
+        option "-- choose --" [ref=5]
+        option "January" [ref=6]
+        option "October" [ref=7]
+        option "December" [ref=8]
+    checkbox "I agree" [ref=9, loc=css:#agree]
+    button "Submit form" [ref=10, loc=css:#submit]
+      text "Submit form"

@@ -163,8 +163,9 @@ bool ParseCommandLine(int argc,
   }
 
   const std::string data = TrimTrailingSlashes(DataRoot(options->data_root));
-  options->profile_dir =
-      JoinPath(data, "rook/profiles/" + Slugify(options->profile));
+  options->profile_id = Slugify(options->profile);
+  options->profiles_root = JoinPath(data, "rook/profiles");
+  options->profile_dir = JoinPath(options->profiles_root, options->profile_id);
   options->log_file = JoinPath(options->profile_dir, "cef.log");
 
   if (options->socket_path.empty()) {
@@ -186,21 +187,23 @@ bool ParseCommandLine(int argc,
 
 void PrintUsage(const char* argv0) {
   std::printf(
-      "Rook (Linux) — native shell, M3\n"
+      "Rook (Linux) — native shell, M4\n"
       "\n"
       "usage: %s [rook options] [--cef-switch ...]\n"
       "\n"
-      "  --space NAME=URL[,URL...]  add a space (tab per URL). A space named\n"
-      "                             \"You\" is the user space and uses the default\n"
-      "                             profile context; all others get an isolated\n"
-      "                             CefRequestContext under the profile dir.\n"
+      "  --space NAME=URL[,URL...]  add a space (tab per URL) to the default\n"
+      "                             profile. A space named \"You\" becomes the\n"
+      "                             user space; every other space of a profile\n"
+      "                             shares that profile's cookies and storage.\n"
       "  --url URL                  page for the default user tab\n"
-      "  --profile NAME             profile directory (default: default)\n"
+      "  --profile NAME             id of the default profile (default: default);\n"
+      "                             profiles live in <data>/rook/profiles/<id>\n"
       "  --data-root DIR            overrides $XDG_DATA_HOME (used by QA)\n"
       "  --screenshot PATH          load the given spaces, capture the window to\n"
       "                             PATH as PNG, then exit 0\n"
       "  --verify-isolation         after loading, print localStorage/cookie per\n"
-      "                             space (proves context isolation)\n"
+      "                             space and profile (proves which storage a\n"
+      "                             space really reads)\n"
       "  --window-size WxH          default 1280x820\n"
       "  --socket-path PATH         control socket (default\n"
       "                             $XDG_RUNTIME_DIR/rook-<uid>.sock, fallback\n"
@@ -217,10 +220,17 @@ void PrintUsage(const char* argv0) {
       "                             unsandboxed\n"
       "  ROOK_SANDBOX_PROBE=1   print the decision and exit 0 (no display needed)\n"
       "\n"
+      "The accessibility bridge is turned off when no AT-SPI bus can answer\n"
+      "(it would stall the first page on a session with no accessibility\n"
+      "service):\n"
+      "  ROOK_A11Y_BRIDGE=on|off  force the bridge on or off (default: probe)\n"
+      "  NO_AT_BRIDGE=1           the same switch, read by GTK itself\n"
+      "\n"
       "The control socket speaks newline-delimited JSON-RPC 2.0 and is opened\n"
       "mode 0600. Data layout:\n"
-      "  $XDG_DATA_HOME/rook/profiles/<profile>/<space>/\n"
-      "The shell needs an X display; the QA path uses Xvfb :99.\n",
+      "  $XDG_DATA_HOME/rook/profiles/<profile>/   one profile = one context\n"
+      "  $XDG_DATA_HOME/rook/profiles.json         profile display names\n"
+      "The shell needs an X display; QA runs it on a private Xvfb display.\n",
       argv0);
 }
 

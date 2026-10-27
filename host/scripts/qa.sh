@@ -1,18 +1,34 @@
 #!/usr/bin/env bash
-# rook acceptance run: M1 shell + M3 control channel.
+# rook acceptance run: M1 shell + M3 control channel + M4 profiles/handoff.
 #
 # Phase 1 builds host/ from scratch, serves fixtures over local HTTP, launches
-# the shell on a headless X display, captures the window to a PNG, and asserts
-# that the spaces really have separate storage.
+# the shell on a private X display, captures the window to a PNG, and asserts
+# that two spaces of one profile really share one storage tree.
+#
+# Before phase 1 there is a cold-start gate: the same binary, a display and a
+# profile that have never been used, with a 3 s budget to a non-blank frame
+# (ROOK_COLD_START_MS overrides it). A first launch that never commits its page
+# costs 15 s and a flat frame, and that is what the gate is for.
 #
 # Phase 2 starts a second host with its own runtime/data dirs and drives the
 # agent control channel over its unix socket (scripts/control-probe.mjs): real
 # CDP through the broker, the tab/space lifecycle pushes and popup attribution,
 # then artifacts/m2-cdp.png.
 #
-#   scripts/qa.sh                     # fresh build, artifacts/m1-shell.png + m2-cdp.png
+# Phase 3 drives real X input (scripts/focus-probe.mjs) to prove the page gets
+# the keyboard when the user clicks into it.
+#
+# Phase 4 (scripts/profile-probe.mjs) proves the product model: one
+# CefRequestContext per profile shared by every space in it, a second profile
+# isolated on disk, and a handoff that reveals the space, focuses its page and
+# refuses agent mutations with EGO_TASK_SPACE_USER_IN_CONTROL until takeOver.
+# It writes artifacts/m4-handoff.png (banner + a space with the user's session).
+#
+#   scripts/qa.sh                      # fresh build, phases 1-4
 #   ROOK_KEEP_BUILD=1 scripts/qa.sh    # reuse host/build
-#   ROOK_DISPLAY=:98 scripts/qa.sh
+#   ROOK_DISPLAY=:131 scripts/qa.sh    # a display of your own (never :99; QA
+#                                      # starts a private Xvfb when the given
+#                                      # one is not up)
 #   ROOK_NODE=/path/to/node scripts/qa.sh
 #
 # Phase 0 checks the Chromium sandbox decision (scripts/sandbox-probe.sh): both
@@ -22,7 +38,7 @@
 # fallback, warning included.
 #
 # Requires: cmake, ninja, g++, gtk3 dev, ImageMagick (import/identify), python3,
-#           Node 22+ (for the control probe).
+#           xdotool, xclip, Node 20+ (for the probes).
 set -uo pipefail
 
 here="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
@@ -30,7 +46,7 @@ root="$(cd "$here/.." && pwd)"                       # host/
 build="${ROOK_BUILD_DIR:-$root/build}"
 artifacts="${ROOK_ARTIFACTS:-$root/artifacts}"
 out="${ROOK_SCREENSHOT:-$artifacts/m1-shell.png}"
-display="${ROOK_DISPLAY:-:99}"
+display="${ROOK_DISPLAY:-:131}"
 jobs="${JOBS:-4}"
 log="$artifacts/qa-run.log"
 data_dir="$artifacts/qa-profile"
@@ -50,7 +66,7 @@ cleanup() {
 }
 trap cleanup EXIT
 
-for tool in cmake ninja g++ pkg-config import identify python3 xdpyinfo; do
+for tool in cmake ninja g++ pkg-config import identify convert python3 xdpyinfo; do
   command -v "$tool" >/dev/null 2>&1 || fail "missing tool: $tool"
 done
 [ -n "${CEF_ROOT:-}" ] && export CEF_ROOT
@@ -58,20 +74,41 @@ done
 mkdir -p "$artifacts"
 : > "$log"
 
-say "display"
-if ! xdpyinfo -display "$display" >/dev/null 2>&1; then
+# start_xvfb DISPLAY: launch a private Xvfb and wait until it answers. Prints
+# nothing; leaves the pid in xvfb_started_pid and returns non-zero on failure.
+# Prefer a system install; on the QA box Xvfb lives in an extracted .deb, which
+# ROOK_XVFB_ROOT (or XVFB_BIN/XVFB_LIB) points at.
+xvfb_started_pid=""
+start_xvfb() {
+  local want="$1" xvfb_bin xvfb_lib
   xvfb_bin="${XVFB_BIN:-$(command -v Xvfb || true)}"
-  [ -n "$xvfb_bin" ] || fail "no display on $display and no Xvfb to start one"
-  LD_LIBRARY_PATH="${XVFB_LIB:+$XVFB_LIB:}${LD_LIBRARY_PATH:-}" \
-    "$xvfb_bin" "$display" -screen 0 1440x900x24 -nolisten tcp -ac \
+  xvfb_lib="${XVFB_LIB:-}"
+  if [ -z "$xvfb_bin" ] && [ -n "${ROOK_XVFB_ROOT:-}" ] &&
+     [ -x "$ROOK_XVFB_ROOT/usr/bin/Xvfb" ]; then
+    xvfb_bin="$ROOK_XVFB_ROOT/usr/bin/Xvfb"
+    xvfb_lib="$ROOK_XVFB_ROOT/usr/lib/x86_64-linux-gnu"
+  fi
+  if [ -z "$xvfb_bin" ] && [ -x /tmp/opencode/xvfb-root/usr/bin/Xvfb ]; then
+    xvfb_bin=/tmp/opencode/xvfb-root/usr/bin/Xvfb
+    xvfb_lib=/tmp/opencode/xvfb-root/usr/lib/x86_64-linux-gnu
+  fi
+  [ -n "$xvfb_bin" ] || return 1
+  LD_LIBRARY_PATH="${xvfb_lib:+$xvfb_lib:}${LD_LIBRARY_PATH:-}" \
+    "$xvfb_bin" "$want" -screen 0 1440x900x24 -nolisten tcp -ac \
     >>"$log" 2>&1 &
-  xvfb_pid=$!
+  xvfb_started_pid=$!
   for _ in $(seq 1 40); do
-    xdpyinfo -display "$display" >/dev/null 2>&1 && break
+    xdpyinfo -display "$want" >/dev/null 2>&1 && return 0
     sleep 0.25
   done
-  xdpyinfo -display "$display" >/dev/null 2>&1 ||
-    fail "could not start Xvfb on $display"
+  return 1
+}
+
+say "display"
+if ! xdpyinfo -display "$display" >/dev/null 2>&1; then
+  start_xvfb "$display" ||
+    fail "no display on $display and no Xvfb to start one (pass ROOK_DISPLAY, XVFB_BIN or ROOK_XVFB_ROOT)"
+  xvfb_pid="$xvfb_started_pid"
   step "xvfb" "started $display (pid $xvfb_pid)"
 else
   step "display" "$display (already running)"
@@ -136,6 +173,60 @@ done
 [ "$served" = "1" ] || fail "fixture server did not answer on $base"
 step "http" "$base (pid $server_pid)"
 
+# ---------------------------------------------------------------------------
+# Cold start: first launch on a display and a profile that have never been used.
+#
+# This is the packaging failure this check exists for: the first page of a first
+# launch never committed, and the run sat in the shell's 15 s screenshot
+# watchdog before capturing a flat window (measured 15.7 s / 731 colours,
+# against 1.3 s / thousands of colours when it works). The screen therefore has
+# to be new -- a display another run has already driven is not the same test --
+# and the profile has to be new with it.
+#
+# 3 s is the budget: every passing run measured on this box (fresh display,
+# fresh profile, cold or warm page cache) lands in 1.3-1.8 s, and the failure
+# this catches is not 3 s but 15 s of nothing. The frame is checked as well,
+# because a fast blank frame would pass a stopwatch.
+say "cold start"
+cold_display=""
+for n in $(seq 132 180); do
+  if ! xdpyinfo -display ":$n" >/dev/null 2>&1; then
+    cold_display=":$n"
+    break
+  fi
+done
+[ -n "$cold_display" ] || fail "no free display number for the cold-start check"
+start_xvfb "$cold_display" ||
+  fail "could not start a fresh Xvfb on $cold_display for the cold-start check"
+cold_xvfb_pid="$xvfb_started_pid"
+cold_data="$artifacts/coldstart-profile"
+cold_shot="$artifacts/coldstart.png"
+rm -rf "$cold_data"
+mkdir -p "$cold_data"
+rm -f "$cold_shot"
+cold_started=$(date +%s%N)
+DISPLAY="$cold_display" XDG_DATA_HOME="$cold_data" timeout 60 "$bin" \
+  --screenshot "$cold_shot" \
+  --space "You=$base/notes.html" >"$artifacts/coldstart.log" 2>&1
+cold_rc=$?
+cold_ms=$(( ( $(date +%s%N) - cold_started ) / 1000000 ))
+kill "$cold_xvfb_pid" 2>/dev/null
+wait "$cold_xvfb_pid" 2>/dev/null
+cold_budget_ms="${ROOK_COLD_START_MS:-3000}"
+[ "$cold_rc" -eq 0 ] || fail "cold start exited $cold_rc (log: $artifacts/coldstart.log)"
+[ -s "$cold_shot" ] || fail "cold start captured nothing at $cold_shot"
+read -r cold_colours cold_sd < <(
+  identify -format '%k %[fx:standard_deviation]\n' "$cold_shot" | head -1
+)
+step "fresh display+profile" "${cold_ms} ms on $cold_display (budget ${cold_budget_ms} ms)"
+step "frame" "${cold_colours} colours, sd ${cold_sd}"
+[ "$cold_ms" -le "$cold_budget_ms" ] ||
+  fail "cold start took ${cold_ms} ms, over the ${cold_budget_ms} ms budget: a fresh display+profile must reach a real frame in seconds (log: $log)"
+[ "$cold_colours" -ge 500 ] ||
+  fail "cold start frame looks blank: only $cold_colours colours (log: $log)"
+awk -v sd="$cold_sd" 'BEGIN { exit (sd > 0.02) ? 0 : 1 }' ||
+  fail "cold start frame looks flat: sd $cold_sd (log: $log)"
+
 say "run"
 rm -rf "$data_dir"
 mkdir -p "$data_dir"
@@ -165,34 +256,47 @@ step "pixels" "${colours} colours, mean ${mean}, sd ${sd}"
 awk -v sd="$sd" 'BEGIN { exit (sd > 0.02) ? 0 : 1 }' ||
   fail "frame looks flat: sd $sd"
 
-say "space isolation"
-you_line="$(grep -m1 'space="You" localStorage=' "$log")"
-agent_line="$(grep -m1 'space="Agent 1" localStorage=' "$log")"
+say "profile storage"
+you_line="$(grep -m1 'space="You" profile=' "$log")"
+agent_line="$(grep -m1 'space="Agent 1" profile=' "$log")"
 [ -n "$you_line" ] || fail 'no storage report for space "You"'
 [ -n "$agent_line" ] || fail 'no storage report for space "Agent 1"'
 step "You" "${you_line#*] }"
 step "Agent 1" "${agent_line#*] }"
-case "$you_line" in
-  *'localStorage="You"'*'cookie="rook-space=You"'*) ;;
-  *) fail "user space storage is wrong: $you_line" ;;
+# Both spaces live in the default profile, so they read the same storage: the
+# first page to load writes the value and the second one finds it. Which label
+# wins depends on load order, so the check is "one value, seen twice" — that is
+# the M4 model (a profile shares its logins with every space in it) and it is the
+# opposite of what pre-M4 builds asserted.
+you_ls="$(printf '%s' "$you_line" | sed -n 's/.*localStorage="\([^"]*\)".*/\1/p')"
+you_ck="$(printf '%s' "$you_line" | sed -n 's/.*cookie="rook-space=\([^"]*\)".*/\1/p')"
+case "$you_ls" in
+  You|Agent1) ;;
+  *) fail "user space reported an unexpected localStorage value: $you_line" ;;
+esac
+[ "$you_ls" = "$you_ck" ] ||
+  fail "localStorage and cookie disagree in one space: $you_line"
+case "$agent_line" in
+  *"localStorage=\"$you_ls\""*"cookie=\"rook-space=$you_ls\""*) ;;
+  *) fail "a second space of the same profile did not see the first one's storage: $agent_line" ;;
 esac
 case "$agent_line" in
-  *'localStorage="Agent1"'*'cookie="rook-space=Agent1"'*) ;;
-  *) fail "agent space storage is wrong: $agent_line" ;;
+  *'profile="default"'*) ;;
+  *) fail "the second space is not in the default profile: $agent_line" ;;
 esac
-[ "$you_line" != "$agent_line" ] || fail "both spaces report identical storage"
+step "shared" "both spaces read localStorage and cookie \"$you_ls\""
 
-say "per-space cache dirs"
+say "profile dirs"
+# One storage tree for the profile, and no per-space directories any more.
 profile="$data_dir/rook/profiles/default"
-[ -d "$profile" ] || fail "user profile missing: $profile"
-[ -d "$profile/agent-1" ] || fail "agent space dir missing: $profile/agent-1"
-for dir in "$profile" "$profile/agent-1"; do
-  files=$(find "$dir" -type f 2>/dev/null | wc -l | tr -d ' ')
-  [ "$files" -gt 0 ] || fail "no files written under $dir"
-  step "$(basename "$dir")" "$files files"
-done
-storage=$(find "$profile" "$profile/agent-1" -type d -name leveldb 2>/dev/null | wc -l | tr -d ' ')
-step "leveldb stores" "$storage"
+[ -d "$profile" ] || fail "default profile missing: $profile"
+[ -d "$profile/agent-1" ] && fail "a per-space storage dir came back: $profile/agent-1"
+files=$(find "$profile" -maxdepth 2 -type f 2>/dev/null | wc -l | tr -d ' ')
+[ "$files" -gt 0 ] || fail "no files written under $profile"
+step "default" "$files files, shared by both spaces"
+storage=$(find "$profile" -type d -name leveldb 2>/dev/null | wc -l | tr -d ' ')
+[ "$storage" -gt 0 ] || fail "no leveldb store under $profile"
+step "leveldb stores" "$storage in one profile dir"
 
 say "log check"
 if grep -q "screenshot FAILED" "$log"; then
@@ -317,9 +421,9 @@ if [ -z "$node_bin" ] || [ ! -x "$node_bin" ]; then
     fi
   done
 fi
-[ -n "$node_bin" ] || fail "the control probe needs Node 22+ (pass ROOK_NODE=/path/to/node)"
+[ -n "$node_bin" ] || fail "the probes need Node 20+ (pass ROOK_NODE=/path/to/node)"
 node_major="$("$node_bin" -p 'process.versions.node.split(".")[0]')"
-[ "$node_major" -ge 22 ] || fail "the control probe needs Node 22+ ($("$node_bin" -v))"
+[ "$node_major" -ge 20 ] || fail "the probes need Node 20+ ($("$node_bin" -v))"
 probe_log="$artifacts/control-probe.log"
 probe_png="$artifacts/m2-cdp.png"
 rm -f "$probe_png" "$probe_log"
@@ -338,12 +442,75 @@ step "cdp.png" "${pw}x${ph}, $pk colours, sd $psd"
 step "probe log" "$probe_log"
 
 # ---------------------------------------------------------------------------
+# Phase 3: keyboard focus (the blocker the product review hit).
+#
+# The page is a native CEF child window, so a click on it never reaches GTK and
+# X decides which side gets the keystrokes. This phase drives real input with
+# xdotool and reads the result back over CDP: type into a field through the
+# page, and prove the address bar stayed out of it; then type into the address
+# bar, Escape, click the page and type again.
+# ---------------------------------------------------------------------------
+say "keyboard focus"
+for tool in xdotool xclip; do
+  command -v "$tool" >/dev/null 2>&1 || fail "the focus probe needs $tool (real X input)"
+done
+focus_log="$artifacts/focus-probe.log"
+focus_png="$artifacts/m3-focus-form.png"
+rm -f "$focus_png" "$focus_log"
+"$node_bin" "$root/scripts/focus-probe.mjs" \
+  --bin "$bin" --display "$display" --artifacts "$artifacts" 2>&1 | tee "$focus_log"
+focus_rc="${PIPESTATUS[0]}"
+[ "$focus_rc" -eq 0 ] || fail "focus probe failed (rc $focus_rc, log: $focus_log)"
+[ -s "$focus_png" ] || fail "no focus screenshot at $focus_png"
+read -r fw fh fc fsd < <(
+  identify -format '%w %h %k %[fx:standard_deviation]\n' "$focus_png" | head -1
+)
+[ "$fw" -ge 800 ] || fail "focus screenshot is only ${fw}px wide"
+[ "$fc" -ge 100 ] || fail "focus screenshot looks blank: $fc colours"
+step "typed form" "${fw}x${fh}, $fc colours, sd $fsd"
+step "probe log" "$focus_log"
+
+# ---------------------------------------------------------------------------
+# Phase 4: profiles and handoff (the M4 product model).
+#
+# The probe runs its own host on its own data root and proves, in one pass:
+#   * two spaces of the default profile share one storage tree ("sign in once"),
+#   * a space in a created profile does not (separate dir, separate leveldb),
+#   * handOff reveals the space, focuses its page and refuses every agent
+#     mutation with data.reason EGO_TASK_SPACE_USER_IN_CONTROL until takeOver,
+#     in both orders, while reads keep working,
+#   * the banner appears (pixel band) and the typed text lands in the page,
+#   * tabs + session survive switching to the other profile's space and back,
+#   * a pre-M4 per-space storage dir is removed at startup,
+#   * the login survives a restart.
+# It writes artifacts/m4-handoff.png: the banner and a space with the user's
+# session in one frame.
+# ---------------------------------------------------------------------------
+say "profiles + handoff (M4)"
+profile_log="$artifacts/profile-probe.log"
+profile_png="$artifacts/m4-handoff.png"
+rm -f "$profile_png" "$profile_log"
+"$node_bin" "$root/scripts/profile-probe.mjs" \
+  --bin "$bin" --display "$display" --artifacts "$artifacts" 2>&1 | tee "$profile_log"
+profile_rc="${PIPESTATUS[0]}"
+[ "$profile_rc" -eq 0 ] || fail "profile probe failed (rc $profile_rc, log: $profile_log)"
+[ -s "$profile_png" ] || fail "no handoff screenshot at $profile_png"
+read -r hw hh hk hsd < <(
+  identify -format '%w %h %k %[fx:standard_deviation]\n' "$profile_png" | head -1
+)
+[ "$hw" -ge 1200 ] || fail "handoff screenshot is only ${hw}px wide"
+[ "$hh" -ge 700 ] || fail "handoff screenshot is only ${hh}px tall"
+[ "$hk" -ge 500 ] || fail "handoff screenshot looks blank: $hk colours"
+step "handoff.png" "${hw}x${hh}, $hk colours, sd $hsd"
+step "probe log" "$profile_log"
+
+# ---------------------------------------------------------------------------
 # Stack guard sweep: no run in this script may report a smashed stack. CEF's
 # zygote-forked children used to do it on every exit (see "interactive run"
 # above); a genuine overflow in the host would land here as well.
 # ---------------------------------------------------------------------------
 say "stack guard"
-guard_logs=("$log" "$sandbox_log" "$probe_log" "$interactive_log")
+guard_logs=("$log" "$sandbox_log" "$probe_log" "$interactive_log" "$focus_log" "$profile_log")
 for runlog in "${guard_logs[@]}"; do
   [ -f "$runlog" ] || fail "expected a run log at $runlog"
   if grep -q "stack smashing" "$runlog"; then
@@ -355,4 +522,5 @@ step "stack smashing" "0 occurrences in ${#guard_logs[@]} run logs"
 
 printf '\n\033[1m[qa] OK\033[0m  %s\n' "$out"
 printf '        %s\n' "$probe_png"
+printf '        %s\n' "$profile_png"
 printf '        build %ss, run log %s\n' "$build_seconds" "$log"

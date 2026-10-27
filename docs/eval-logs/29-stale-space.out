@@ -1,0 +1,8 @@
+Error: taskSpace: A task space named "cold-docs" already exists and belongs to the user (id 1).
+Do not take it over on your own. Ask the user whether to work in it; only if they agree, call claimTaskSpace(1).
+Otherwise use a different task space name.
+    at buildEgoError (file:///tmp/opencode/rook-eval/root/usr/lib/rook/sdk/index.js:449:19)
+    at resolveTaskSpace (file:///tmp/opencode/rook-eval/root/usr/lib/rook/sdk/index.js:20602:19)
+    at process.processTicksAndRejections (node:internal/process/task_queues:103:5)
+    at async taskSpace (file:///tmp/opencode/rook-eval/root/usr/lib/rook/sdk/index.js:20635:44)
+    at async file://script.mjs:1:11

@@ -15,10 +15,13 @@
     "node": ">=22"
   },
   "scripts": {
-    "test": "node test/cli.mjs && node test/host-backend.mjs && node test/smoke.mjs",
+    "test": "node test/cli.mjs && node test/host-backend.mjs && node test/tab-close.mjs && node test/space-resume.mjs && node test/smoke.mjs",
     "test:cli": "node test/cli.mjs",
     "test:host": "node test/host-backend.mjs",
+    "test:tab-close": "node test/tab-close.mjs",
+    "test:resume": "node test/space-resume.mjs",
     "test:smoke": "node test/smoke.mjs",
+    "test:profiles": "node test/profile-e2e.mjs",
     "demo:host": "node scripts/demo-host.mjs",
     "build:sdk": "scripts/build-sdk.sh"
   }

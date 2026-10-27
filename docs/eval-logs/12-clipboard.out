@@ -1,0 +1,8 @@
+clipboard_before=ORIGINAL-CLIP
+textarea_value "pasted text 42"
+ce_text "editable plain text"
+ce_html "editable plain text"
+ce_rich_text "bold html"
+ce_rich_html "<b>bold html</b>"
+exit=0
+clipboard_after=ORIGINAL-CLIP

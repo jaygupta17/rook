@@ -138,6 +138,13 @@ async function ensureSdk() {
 
 function checkSnapshotGrammar(snapshot, problems) {
   const lines = String(snapshot.content || "").split("\n");
+  // The first line says what slice of the page this is; the tree follows it.
+  const header = lines[0]?.startsWith("snapshot scope=") ? lines.shift() : null;
+  if (header === null) {
+    problems.push(`content must start with the scope header, got ${JSON.stringify(lines[0])}`);
+  } else if (!/scope=(?:viewport only|full page|subtree)\b/.test(header)) {
+    problems.push(`scope header names no scope: ${JSON.stringify(header)}`);
+  }
   if (lines[0] !== "root") problems.push(`content must start with "root", got ${JSON.stringify(lines[0])}`);
   for (const line of lines) {
     if (line.trim() === "") continue;
@@ -181,7 +188,9 @@ await page.goto(${JSON.stringify(`${baseUrl}/`)});
 
 const raw = await snapshotRaw({ scope: "full_page" });
 console.log(JSON.stringify({ step: "snapshot", content: raw.content, refs: raw.refs }));
-if (!String(raw.content).startsWith("root")) throw new Error("snapshot does not start with root");
+const snapshotLines = String(raw.content).split("\\n");
+if (!/^snapshot scope=/.test(snapshotLines[0] || "")) throw new Error("snapshot does not state its scope: " + snapshotLines[0]);
+if (snapshotLines[1] !== "root") throw new Error("snapshot tree does not start with root");
 if (!String(raw.content).includes("Smoke fixture")) throw new Error("snapshot is missing the heading");
 
 const text = await page.snapshot({ scope: "full_page" });

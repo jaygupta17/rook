@@ -40,6 +40,7 @@ pkg_check_modules(GTK3 REQUIRED IMPORTED_TARGET gtk+-3.0)
 add_subdirectory(${CEF_LIBCEF_DLL_WRAPPER_PATH} libcef_dll_wrapper)
 
 add_library(rook_core STATIC
+  src/a11y.cc
   src/app.cc
   src/browser_client.cc
   src/capture.cc

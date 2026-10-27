@@ -1,0 +1,52 @@
+Rook 0.4.0 — the artefacts of this release (rebuilt 2026-10-27T21:12Z)
+        same version as the previous cut; this build carries the cold-start fix
+        in host/src and the runtime fail-fast work. Ubuntu 24.04, amd64, 4 cores.
+
+host    host/build/bin/rook, rebuilt from source at 21:06:10
+        sha256 e09a1400885bd91cc08c18bfcaed9be2636bb87aaf18eff048d9543903bc4fbc
+        the objects and the binary were deleted first, then `CEF_ROOT=/tmp/opencode/cef
+        ninja -C host/build rook` rebuilt all 10 TUs and relinked, because the
+        previous binary had been linked in the same second its last source
+        (a11y.cc) was written. Newest host/src is 21:04:26, binary 21:06:10;
+        `ninja -n` has no compile steps left. The binary carries the a11y
+        decision strings (AT_SPI_BUS_ADDRESS / NO_AT_BRIDGE).
+        Banner inside it: "rook 0.4.0-M4 (CEF 156.0.14+g4fa4ab5+chromium-156.0.8078.48)";
+        the package drops -M4 and ships as 0.4.0.
+
+runtime used directly from runtime/ (last write 20:20:00, idle for 45 min, so no
+        freeze was needed). Tree hash, unchanged across both builds:
+          aa0d5ab462de7e258ba1d2df3dba126216a66fb93781a4cc4739f098dd85714d
+        13 files; all 13 in the package match that hash.
+
+deb      rook_0.4.0_amd64.deb
+  bytes  137646988        (du 132M)
+  sha256 8af96375291c46220e00635908aaab5028b01a1ccf5d42111315cc29bcc85f8d
+  control: rook 0.4.0 amd64, Installed-Size 434172 KiB, 28 dependencies
+
+appimage rook-0.4.0-x86_64.AppImage
+  bytes  172931576        (du 165M)
+  sha256 ceb0b626ae0e9d3644bcfef96812c49e5300172faf47096461736cbf136de389
+
+installed  434172 KiB = 444.6 MB (apt's 10^6) = 424.0 MiB (du)
+           budget 450 MB -> 5.4 MB spare (26 MiB if read as du)
+
+payload parity  both artefacts unpack to the same 67 files, byte for byte
+                (dpkg-deb -x vs --appimage-extract, sha256 of every file compared)
+
+cold start      every run got a brand-new Xvfb display and a fresh profile dir:
+                  .deb (unpacked)  1.34 s / 1.31 s / 1.31 s, 6689 colours, 2 pages
+                  AppImage         2.36 s / 1.52 s,          6673 colours, 2 pages
+                the previous build took 15.7 s and captured a blank 21,405 B frame.
+                Cause: atk-bridge starting its own at-spi bus inside gtk_init when
+                AT_SPI_BUS_ADDRESS is unset (host/src/a11y.cc now sets NO_AT_BRIDGE).
+                See packaged-0.4.0-coldstart.out / -appimage-smoke.out.
+
+agent round     packaged CLI drove the packaged app: navigate, snapshot, click,
+                type into #name, submit -> "submitted 1". See -agent-round.out.
+
+version in the app    banner "[rook] rook 0.4.0-M4 (CEF ...)" in both artefacts
+version in --help     "Rook (Linux) - native shell, M4" (milestone only; the help
+                      text carries no numeric version -- host/src/options.cc,
+                      which packaging does not own)
+
+superseded  0.3.0~m3 lives in packaging/out/stale/ so out/ only holds this release.

@@ -1,0 +1,8 @@
+form_title Profile form
+form_result FORM-OK
+screenshot_ms 43 path /tmp/opencode/rook-eval/shots/50-standalone-form.png bytes 21169
+big_snapshot_chars 1186 lines 51
+big_snapshot_ms 486
+big_snapshot_ms 504
+big_snapshot_ms 499
+big_click_ms 773 result BIG-CLICKED-600

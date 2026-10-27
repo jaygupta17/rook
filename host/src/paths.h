@@ -23,6 +23,14 @@ std::string Slugify(const std::string& name);
 bool MakeDirs(const std::string& path);
 bool FileExists(const std::string& path);
 long long FileSize(const std::string& path);
+// Removes a file or a directory and everything under it. Missing paths count as
+// removed; false only when something refused to go away.
+bool RemoveTree(const std::string& path);
+// Direct child directories of `path`, names only, sorted. Empty when `path`
+// does not exist or cannot be read.
+std::vector<std::string> ChildDirs(const std::string& path);
+// Every direct child of `path`, files and directories, names only, sorted.
+std::vector<std::string> ChildNames(const std::string& path);
 
 std::string Trim(const std::string& s);
 bool StartsWith(const std::string& s, const std::string& prefix);

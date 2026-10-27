@@ -1,0 +1,11 @@
+=== round 1 login ===
+result PRIVATE-OK cookie sid=ok-123
+login_exit=0
+browser_pid=2184532 alive=no
+=== shutdown ===
+ego-browser: stopped browser for Default
+browser_alive_after=no
+=== round 2 same space after shutdown ===
+space 1 pages [{"label":"p1","spaceId":1,"mouse":{},"keyboard":{}}] tabs [{"targetId":"4C63069A7E9C25707E72910ACF83BB8F","label":"p1","page":{"label":"p1","spaceId":1,"mouse":{},"keyboard":{}},"title":"Private area","url":"http://127.0.0.1:8781/private.html","active":true,"openedBy":"agent"}]
+result PRIVATE-OK cookie "sid=ok-123"
+round2_exit=0

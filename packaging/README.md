@@ -6,11 +6,12 @@ install, no edits to `host/`, `runtime/`, `bin/`, `test/`, `patches/` or `vendor
 
 | Artefact | Script | Size |
 | --- | --- | --- |
-| `out/rook_<version>_amd64.deb` | `build-deb.sh` | 138 MB, 444 MB installed |
-| `out/rook-<version>-x86_64.AppImage` | `build-appimage.sh` | 173 MB (zstd squashfs, same payload) |
+| `out/rook_0.4.0_amd64.deb` | `build-deb.sh` | 137.6 MB, 444.6 MB installed |
+| `out/rook-0.4.0-x86_64.AppImage` | `build-appimage.sh` | 172.9 MB (zstd squashfs, same payload) |
 
-Both were built here (Ubuntu 24.04, amd64); the `.deb` was verified end to end
-with `verify-deb.sh` and the AppImage was smoke-run under Xvfb.
+Both were built here (Ubuntu 24.04, amd64) from one runtime snapshot; they
+unpack to the same 67 files, byte for byte. Older builds are moved to
+`out/stale/` so `out/` only ever holds the current release.
 
 ```
 packaging/
@@ -18,7 +19,7 @@ packaging/
 ├── build-deb.sh         .deb
 ├── build-appimage.sh    AppImage
 ├── verify-deb.sh        unpack + render + CLI round + dependency audit
-├── VERSION              package version (ROOK_VERSION overrides)
+├── VERSION              fallback version when there is no binary to read
 ├── assets/
 │   ├── rook.svg     icon source, drawn for this package
 │   ├── rook-256.png a 256 px render of it, for previews
@@ -48,8 +49,8 @@ Needs, on top of what `host/` already needs to build:
 | Node 22 | the bundled interpreter | `ROOK_NODE` |
 
 ```sh
-packaging/build-deb.sh          # -> packaging/out/rook_0.3.0~m3_amd64.deb   (~50 s)
-packaging/build-appimage.sh     # -> packaging/out/rook-0.3.0~m3-amd64.AppImage
+packaging/build-deb.sh          # -> packaging/out/rook_0.4.0_amd64.deb   (~50 s)
+packaging/build-appimage.sh     # -> packaging/out/rook-0.4.0-x86_64.AppImage
 packaging/verify-deb.sh         # unpack the newest .deb and prove it renders
 ```
 
@@ -61,7 +62,7 @@ Inputs, all overridable:
 
 | Variable | Default |
 | --- | --- |
-| `ROOK_VERSION` | `VERSION` file (`0.3.0~m3`, the version the host prints) |
+| `ROOK_VERSION`, `EGO_VERSION` | the host binary's own banner (`0.4.0-M4` → `0.4.0`) |
 | `ROOK_NODE` | first of `/usr/local/bin/node22`, `/opt/node22/bin/node`, `node` on `PATH` |
 | `ROOK_HOST_BIN` | `host/build/bin/rook` |
 | `ROOK_CEF_SOURCE` | `host/cef-runtime` |
@@ -73,8 +74,14 @@ Inputs, all overridable:
 | `ROOK_DEB_COMPRESS` | `xz` (`zstd` makes iteration much faster; needs dpkg ≥ 1.21.18) |
 | `ROOK_WORK_DIR` | `packaging/work` |
 
-The version is `0.3.0~m3`, from the host's own banner (`0.3.0-M3`); `~m3` sorts
-before a final `0.3.0`, so a real release upgrades over this package. The root
+The version is `0.4.0`, read out of the host binary itself: the string the app
+prints in its start-up banner (`[rook] rook 0.4.0-M4 (CEF …)`) and returns from
+the control socket's `getInfo`, with the `-M4` milestone marker dropped. The
+build fails rather than ship a package whose name and payload disagree:
+`check_version` refuses a `~m`/`-M` suffix and a version that is not the release
+the binary reports. `EGO_VERSION`/`ROOK_VERSION` override it for a throwaway
+build loop, and `packaging/VERSION` is the fallback when there is no binary yet
+(it must agree with the banner; the build warns if it does not). The root
 `package.json` version (`0.1.0`) is the JS runtime's and is not used here.
 
 ## Installed layout
@@ -110,22 +117,22 @@ also overrides `ROOK_NODE`, so a user's own Node can be substituted.
 
 ## Sizes
 
-Measured on this box, `0.3.0~m3`, amd64:
+Measured on this box, `0.4.0`, amd64:
 
 | Block | Source | Packaged | How |
 | --- | --- | --- | --- |
 | `libcef.so` | 1476 MB | 277 MB | `strip --strip-unneeded` |
 | `locales/` | 220 files, 51 MB | 3 files, 2.7 MB | pruned to `ROOK_LOCALES` |
 | `node` | 125 MB | 107 MB | `strip --strip-unneeded` |
-| host `rook` | 1.4 MB | 1.0 MB | rpath rewritten, stripped |
-| `runtime/` | 188 KB | 188 KB | copied as-is |
+| host `rook` | 1.6 MB | 1.1 MB | rpath rewritten, stripped |
+| `runtime/` | 228 KB | 228 KB | copied as-is |
 | `sdk/` | 1.1 MB | 1.1 MB | copied as-is |
 | licence texts | — | 0.8 MB | 4 upstream files; `CREDITS.html` gzipped |
-| **installed** | — | **444 MB** (434,040 KiB = 424 MiB) | `du -sk usr`, the `Installed-Size` field |
-| **.deb** | — | **138 MB** | xz -6 |
-| **AppImage** | — | **173 MB** | zstd squashfs |
+| **installed** | — | **444.6 MB** (434,172 KiB = 424 MiB) | `du -sk usr`, the `Installed-Size` field |
+| **.deb** | — | **137.6 MB** | xz -6 |
+| **AppImage** | — | **172.9 MB** | zstd squashfs |
 
-Budget is 450 MB installed (`bench/report.md`): **5.5 MB
+Budget is 450 MB installed (`bench/report.md`): **5.4 MB
 spare** if MB means 10^6 bytes (which is what `apt` prints: "After this
 operation, 444 MB of additional disk space will be used"), or **26 MiB spare**
 if the line is read in `du`'s MiB. Both readings fit, but only just. The headroom is thin, and the three removable blocks, largest first, are
@@ -140,10 +147,10 @@ packaging trick.
 
 ```sh
 packaging/build-appimage.sh
-# -> packaging/out/rook-0.3.0~m3-x86_64.AppImage (173 MB)
+# -> packaging/out/rook-0.4.0-x86_64.AppImage (172.9 MB)
 
-chmod +x packaging/out/rook-0.3.0~m3-x86_64.AppImage
-packaging/out/rook-0.3.0~m3-x86_64.AppImage
+chmod +x packaging/out/rook-0.4.0-x86_64.AppImage
+packaging/out/rook-0.4.0-x86_64.AppImage
 ```
 
 `appimagetool` is not installed on this box, so the script fetches the official
@@ -162,13 +169,30 @@ The AppDir is the same staged payload plus `AppRun`, `rook.desktop` and
   user-namespace sandbox instead, or warns and runs unsandboxed when that is
   blocked too;
 - smoke test used here, the same way the `.deb` is verified:
-  `APPIMAGE_EXTRACT_AND_RUN=1 ./rook-0.3.0~m3-x86_64.AppImage --screenshot /tmp/x.png`
-  on a private Xvfb → 1280x820 PNG, exit 0.
+  `APPIMAGE_EXTRACT_AND_RUN=1 ./rook-0.4.0-x86_64.AppImage --screenshot /tmp/x.png`
+  on a private Xvfb → 1280x820 PNG, exit 0, 2 pages loaded, 6,682 colours.
+
+**Cold start.** The earlier 0.4.0 build took ~15.7 s to paint its first frame on
+a display it had never seen, and captured a blank one. The cause was the
+accessibility bridge: with no `AT_SPI_BUS_ADDRESS` in the environment, atk-bridge
+starts its own at-spi bus inside `gtk_init` and that call blocks. The host now
+sets `NO_AT_BRIDGE=1` unless the session published a bus (`host/src/a11y.cc`,
+`ROOK_A11Y_BRIDGE=on|off` overrides). Measured from the packaged payload, every
+run on a brand-new Xvfb with a fresh profile:
+
+| payload | run 1 | run 2 | run 3 | colours | pages |
+| --- | --- | --- | --- | --- | --- |
+| unpacked `.deb` | 1.58 s | 1.34 s | 1.34 s | 6,675 | 2 |
+| AppImage | 2.14 s | 1.54 s | — | 6,682 | 2 |
+
+`docs/eval-logs/review2/coldstart.sh <tree-or-AppImage> <label> [runs]` repeats
+it, one fresh display and profile per run; the logs are
+`docs/eval-logs/review2/packaged-0.4.0-{coldstart,appimage-smoke}.out`.
 
 ## Install and first run
 
 ```sh
-sudo apt install ./rook_0.3.0~m3_amd64.deb
+sudo apt install ./rook_0.4.0_amd64.deb
 rook
 ```
 
@@ -232,8 +256,11 @@ What it does, in order:
    extracted `libcef.so` is stripped, and the binary's rpath is `$ORIGIN/cef`.
 3. Runs the **unpacked** launcher with `--screenshot` and `--verify-isolation`
    against a local fixture server: 1280x820 PNG, ≥500 colours, non-flat, ≥1 page
-   loaded over HTTP, and the two spaces reporting different `localStorage` and
-   cookies. Then greps `/proc/<pid>/maps` to prove the loaded `libcef.so` is the
+   loaded over HTTP. The storage model this release ships is per profile, so the
+   check runs both ways: two spaces of one profile must report the *same*
+   `localStorage` (one context per profile, shared the way tabs share one), and
+   a second run under `--profile pkg-second` must report a *different* value.
+   It then greps `/proc/<pid>/maps` to prove the loaded `libcef.so` is the
    packaged one — the host binary still carries a compiled-in build-tree default,
    so a run without the launcher would silently load `host/cef-runtime` instead.
    It also requires one sandbox decision line in the run log

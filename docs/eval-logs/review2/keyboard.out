@@ -1,0 +1,10 @@
+Rook 0.4.0-M4 build tree, private Xvfb :122 + Openbox.
+
+1. Ctrl+L, typed http://127.0.0.1:8781/form.html, Return.
+   window title -> "Profile form - Rook".
+2. Clicked name field (xdotool --window <rook> 431 229), typed "Jay Gupta".
+   field shows "Jay Gupta"; screenshots/05-typed-name.png.
+3. Ctrl+L, Escape, typed "X".
+   field becomes "Jay GuptaX"; screenshots/06-after-escape.png.
+
+The first-review blocker (click page, type, nothing reaches the page) is gone.

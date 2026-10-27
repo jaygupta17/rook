@@ -1,0 +1,10 @@
+phase1 1 ALPHA
+phase1_exit=0
+host ids after phase1 [(1, 'alpha', 'sp2')]
+app1_alive_after_stop=no
+phase2 beta 2 BETA
+phase2_exit=0
+host ids after phase2 [(1, 'alpha', 'sp2'), (2, 'beta', 'sp2')]
+resumed alpha 1 [{"label":"p2","title":"BETA"}]
+alpha actually sees BETA
+alpha_resume_exit=0

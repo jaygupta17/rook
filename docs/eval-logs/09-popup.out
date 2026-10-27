@@ -1,0 +1,35 @@
+== before ==
+[p1 "Popup opener" | space "popup"(11): 1 managed, 0 untracked — p1* "Popup opener"]
+root
+  heading "Popup opener"
+    text "Popup opener"
+  paragraph
+    text "not opened"
+  button "Open popup" [ref=1, loc=css:#open]
+    text "Open popup"
+receipt {"popups":[{"label":"p2","targetId":"6BE059070DF297BF6D60F9E108DF1624"}]}
+popup {"label":"p2","url":"http://127.0.0.1:8781/popup-child.html","openedBy":"agent","targetId":"6BE059070DF297BF6D60F9E108DF1624"}
+child_window_opener null
+opener_window_open_return window.open returned: null
+tabs [{"targetId":"5F2FB236228A011799B433EBBCDCF21C","label":"p1","page":{"label":"p1","spaceId":11,"mouse":{},"keyboard":{}},"title":"Popup opener","url":"http://127.0.0.1:8781/popup.html","active":true,"openedBy":"agent"},{"targetId":"6BE059070DF297BF6D60F9E108DF1624","label":"p2","page":{"label":"p2","spaceId":11,"mouse":{},"keyboard":{}},"title":"Popup child","url":"http://127.0.0.1:8781/popup-child.html","active":false,"openedBy":"agent"}]
+== child snapshot ==
+[p2 "Popup child" | space "popup"(11): 2 managed, 0 untracked — p1 "Popup opener", p2* "Popup child"]
+root
+  heading "Popup child"
+    text "Popup child"
+  paragraph
+    text "opener-null: "
+    generic
+      text "null"
+  paragraph
+    text "window-name:"
+    generic
+  textbox "child input" [ref=1, loc=css:#child-input]
+    generic
+  button "Child button" [ref=2, loc=css:#child-btn]
+    text "Child button"
+  paragraph
+    text "not clicked"
+child_result CHILD-CLICKED
+child_input driven from the opener's agent
+exit=0
