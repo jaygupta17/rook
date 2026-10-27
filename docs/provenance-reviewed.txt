@@ -1,0 +1,17 @@
+# Overlaps between this tree and the closed-source app that have been examined
+# by hand, one per line: the identifier, a tab, and why it is not copying.
+#
+# Read by docs/provenance-audit.sh. Anything the audit turns up that is not
+# listed here fails the run, so this file is the only place where an overlap can
+# be waved through. Every entry is a claim a reader can check, so keep the file
+# short and the reasons specific, and keep one entry on one line — a wrapped
+# line would be read as another entry.
+#
+# There is no entry to add today: app -> tree matches nothing, and everything
+# that appeared in both directions on the way here turned out to be text from
+# the public upstream project. docs/provenance.md records each of those with the
+# file and line that settles it. Add a line only if a future run turns up an
+# overlap that the shared-origin filter cannot explain.
+#
+# Shape of an entry (commented out, not an entry):
+# identifier	the reason, in one line, naming where it comes from

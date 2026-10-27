@@ -44,7 +44,7 @@ chmod +x rook-0.3.0~m3-x86_64.AppImage
 ./rook-0.3.0~m3-x86_64.AppImage
 ```
 
-The `.deb` is ~137 MB and the AppImage ~172 MB; both install to ~444 MB, most
+The `.deb` is ~138 MB and the AppImage ~173 MB; both install to ~444 MB, most
 of it the CEF runtime. The `.deb` installs the setuid sandbox helper and uses
 Chromium's sandbox; an AppImage mount is `nosuid`, so it uses unprivileged user
 namespaces instead, and warns once if the machine has neither.
@@ -207,14 +207,28 @@ Layout:
 
 ## Credits and licence
 
-Rook's own code is MIT — see [LICENSE](LICENSE). Copyright 2026 Jay Gupta.
+Rook's own code is MIT — see [LICENSE](LICENSE). Copyright 2026 Jay Gupta. The
+icon and the desktop entry were drawn for this project.
 
-It embeds the Chromium Embedded Framework (BSD-3-Clause) and Chromium
-(BSD-3-Clause) unmodified, and it drives browsers through the MIT-licensed
-`ego-browser` skill from CitroLabs (commit `aecc583`). An SDK build of that skill
-is patched by `patches/` and lands in `vendor/` when you run
-`scripts/build-sdk.sh`; it is not part of this repository. Those licences and
-copyrights are their authors'; [NOTICE](NOTICE) says what is whose.
+## Third-party licences
+
+The binaries bundle three third-party components, and each one's licence text
+is installed with them rather than only referenced:
+
+| Component | Licence | Text in the package |
+|---|---|---|
+| `ego-browser` SDK v2.1.0-6-gaecc583 | MIT, CitroLabs | `/usr/share/doc/rook/sdk-LICENSE` |
+| CEF 156.0.14 / Chromium 156.0.8078.48 | BSD-3-Clause | `cef-LICENSE.txt`, and the engine's full credit list in `cef-CREDITS.html.gz` |
+| Node.js 22.23.4 | MIT, plus the projects bundled into it | `node-LICENSE` |
+
+[NOTICE](NOTICE) records the exact upstream commit or version of each, what was
+changed and what was not, and which files come from upstream at all. A package
+installs the texts under `/usr/share/doc/rook/`, and the same files are in
+[`packaging/assets/`](packaging/assets) so they are in the source tree too.
 
 Rook is an independent project. It is not affiliated with, sponsored by or
-endorsed by CitroLabs, and it contains none of their application code.
+endorsed by CitroLabs, the Chromium Embedded Framework or Chromium projects,
+the OpenJS Foundation, or the Linux Foundation/CNCF, and it contains none of
+their application code. [docs/provenance.md](docs/provenance.md) is the audit
+behind that claim: 8,513 identifiers taken from a build of the closed-source app
+the protocol comes from, none of which occurs anywhere in this tree.

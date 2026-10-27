@@ -1,8 +1,66 @@
 Format: https://www.debian.org/doc/packaging-manuals/copyright-format/1.0/
-Upstream: Rook (Linux build)
+Upstream: https://github.com/jaygupta17/rook
+Packaged-By: Rook packaging <packaging@localhost>
+Source: https://github.com/jaygupta17/rook
 
 Files: *
 Copyright: 2026 Jay Gupta
+License: MIT
+
+Files: usr/lib/rook/sdk/*
+Copyright: 2026 CitroLabs
+License: MIT
+Comment: the ego-browser agent SDK, built from upstream commit aecc583 with the
+ two patches in patches/ applied. The MIT text above is the upstream text and
+ ships verbatim as usr/share/doc/rook/sdk-LICENSE.
+
+Files: usr/lib/rook/cef/*
+Copyright: 2008-2020 Marshall A. Greenblatt
+ 2006-2009 Google Inc.
+ 2015 The Chromium Authors
+License: BSD-3-Clause
+Comment: an unmodified CEF 156 binary distribution and the Chromium 156 build
+ inside it, with symbol tables stripped. Every file in this directory is
+ upstream; none was written for Rook. The BSD-3 text above ships verbatim as
+ usr/share/doc/rook/cef-LICENSE.txt, and the complete list of copyright
+ holders and third-party licences inside the engine ships as
+ usr/share/doc/rook/cef-CREDITS.html.gz (gzip of the distribution's
+ CREDITS.html, the authoritative list), readable with zcat.
+
+Files: usr/lib/rook/node
+Copyright: Node.js contributors
+ 2015 The Chromium Authors
+License: MIT
+Comment: an unmodified Node.js 22 binary with the symbol table stripped. Its
+ own licence text, which also carries the notices of the projects bundled into
+ Node (V8, OpenSSL, npm and others), ships as usr/share/doc/rook/node-LICENSE.
+
+Files: usr/share/icons/hicolor/*/apps/rook.png usr/share/applications/rook.desktop
+Copyright: 2026 Jay Gupta
+License: MIT
+Comment: original artwork drawn for this package.
+
+Comment:
+ Nothing in this package is a copy of, or derived from, any closed-source
+ application. Rook is an independent program that implements a published
+ protocol; the upstream SDK it bundles is MIT licensed and public.
+ .
+ Attribution, per bundled component and with the exact upstream versions, is
+ in usr/share/doc/rook/NOTICE. The licence texts themselves are installed next
+ to it, because MIT and BSD-3 both require the notice to accompany a binary
+ distribution:
+ .
+   usr/share/doc/rook/LICENSE             Rook's own MIT licence
+   usr/share/doc/rook/sdk-LICENSE         ego-browser SDK, MIT (CitroLabs)
+   usr/share/doc/rook/cef-LICENSE.txt     CEF and Chromium, BSD-3-Clause
+   usr/share/doc/rook/cef-CREDITS.html.gz the engine's full credit list
+   usr/share/doc/rook/node-LICENSE        Node.js, MIT plus bundled projects
+ .
+ Their licences are their authors'; nothing here re-licenses them. Rook is not
+ affiliated with, sponsored by or endorsed by CitroLabs, the Chromium Embedded
+ Framework project, the Chromium project, the OpenJS Foundation or the Linux
+ Foundation.
+
 License: MIT
  Permission is hereby granted, free of charge, to any person obtaining a copy
  of this software and associated documentation files (the "Software"), to deal
@@ -22,25 +80,30 @@ License: MIT
  OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  SOFTWARE.
 
-Files: usr/lib/rook/sdk/*
-Copyright: 2026 CitroLabs
-License: MIT
- The ego-browser agent skill, built from an upstream checkout with the patches
- in patches/ applied. MIT licensed; its own LICENSE and NOTICE text travels
- with the upstream source, not with this package. This package includes none of
- the ego-lite application.
-
-Comment:
- This package bundles two unmodified third-party binaries, taken from their
- upstream releases and only stripped of symbol tables:
+License: BSD-3-Clause
+ Redistribution and use in source and binary forms, with or without
+ modification, are permitted provided that the following conditions are
+ met:
  .
-   usr/lib/rook/cef/   Chromium Embedded Framework 156 / Chromium 156,
-                           BSD-3-Clause. See https://github.com/chromiumembedded/cef
-                           and https://www.chromium.org/ .
-   usr/lib/rook/node   Node.js 22, MIT plus its bundled dependencies.
-                           See https://nodejs.org/ .
+    * Redistributions of source code must retain the above copyright
+ notice, this list of conditions and the following disclaimer.
+    * Redistributions in binary form must reproduce the above
+ copyright notice, this list of conditions and the following disclaimer
+ in the documentation and/or other materials provided with the
+ distribution.
+    * Neither the name of Google Inc. nor the name Chromium Embedded
+ Framework nor the names of its contributors may be used to endorse
+ or promote products derived from this software without specific prior
+ written permission.
  .
- Their licences and copyright notices are those of their respective authors;
- nothing here re-licenses them. The Rook icon (assets/rook.svg) is original
- artwork drawn for this package. The full attribution is in
- /usr/share/doc/rook/NOTICE.
+ THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
+ "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
+ LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR
+ A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT
+ OWNER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
+ SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT
+ LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE,
+ DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY
+ THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
+ (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
+ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.

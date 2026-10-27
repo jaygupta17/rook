@@ -1,73 +1,145 @@
 Rook — third-party notices
+==========================
 
-Rook's own source code is licensed under the MIT licence (see LICENSE).
-This file records what Rook bundles or is built against, and whose those
-licences are. Nothing here re-licenses third-party work.
+Rook's own source code is MIT licensed: LICENSE, copyright 2026 Jay Gupta.
+This file records what Rook bundles, at which upstream version, whose work it
+is, and where the licence text sits. Nothing here re-licenses third-party work.
 
-1. Chromium Embedded Framework (CEF) and Chromium
-=================================================
 
-The packaged app bundles an unmodified CEF 156 binary distribution, which
-contains Chromium. Both are BSD 3-Clause. The binary distribution's own
-LICENSE.txt carries this notice:
+Where the licence texts are
+---------------------------
 
-  Copyright (c) 2008-2020 Marshall A. Greenblatt. Portions Copyright (c)
-  2006-2009 Google Inc. All rights reserved.
+A package installs all of them at /usr/share/doc/rook/; inside an AppImage the
+same files are at usr/share/doc/rook/. The sources are in packaging/assets/, so
+the texts are in the repository as well as in the binary.
 
-  Redistribution and use in source and binary forms, with or without
-  modification, are permitted provided that the following conditions are
-  met:
+  LICENSE               Rook's own MIT licence
+  sdk-LICENSE           the ego-browser SDK's MIT licence, verbatim upstream
+  cef-LICENSE.txt       CEF's BSD-3-Clause licence, verbatim upstream
+  cef-CREDITS.html.gz   the engine's complete copyright and third-party list,
+                        5.3 MB of HTML gzipped to 600 KB
+  node-LICENSE          Node.js's MIT licence plus every project bundled into it
+  NOTICE                this file
+  copyright             the Debian copyright file for the package
 
-     * Redistributions of source code must retain the above copyright
-  notice, this list of conditions and the following disclaimer.
-     * Redistributions in binary form must reproduce the above
-  copyright notice, this list of conditions and the following disclaimer
-  in the documentation and/or other materials provided with the
-  distribution.
-     * Neither the name of Google Inc. nor the name Chromium Embedded
-  Framework nor the names of its contributors may be used to endorse
-  or promote products derived from this software without specific prior
-  written permission.
 
-  THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
-  "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
-  LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR
-  A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT
-  OWNER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
-  SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT
-  LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE,
-  DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY
-  THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
-  (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
-  OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+What is in the package, and whose it is
+---------------------------------------
 
-Chromium's own copyright holders and the full set of third-party licences
-that ship inside the runtime are listed in the binary distribution's
-CREDITS.html, which is the authoritative list.
+  usr/lib/rook/rook            Rook. Built from host/ in this repository.
+  usr/lib/rook/runtime/        Rook. The bridge and the ego-browser CLI, from
+                               runtime/ in this repository. None of it is
+                               upstream code: it implements the protocol the
+                               upstream SDK speaks, over Rook's control socket.
+  usr/bin/rook, usr/bin/ego-browser
+                               Rook. Launchers from packaging/launcher/.
+  usr/share/icons, rook.desktop
+                               Rook. App icon and desktop entry drawn here.
+  usr/lib/rook/sdk/            Upstream SDK, modified by two patches. Section 3.
+  usr/lib/rook/cef/            Upstream binaries, code unmodified; symbol tables
+                               stripped. Section 1.
+  usr/lib/rook/node            Upstream binary, code unmodified; symbol table
+                               stripped. Section 2.
 
-The packaged app also bundles Node.js 22 (MIT, plus its bundled
-dependencies). Its licence and notices are Node's own; see
-https://nodejs.org/en/about/previous-releases.
 
-2. The ego-browser skill
-========================
+1. Chromium Embedded Framework 156 and Chromium
+===============================================
 
-Rook implements the protocol of the open-source `ego-browser` agent skill by
-CitroLabs, which is MIT licensed:
+Bundled: the CEF 156 minimal binary distribution for Linux and the Chromium 156
+build inside it, from the distribution dated 2026-10-24, with symbol tables
+stripped as described below:
 
-  MIT License
+  CEF version        156.0.14+g4fa4ab5+chromium-156.0.8078.48
+  CEF commit         4fa4ab516dacf6c49fc7e6e70d2b7ebce29fa35f
+                     https://github.com/chromiumembedded/cef
+  Chromium version   156.0.8078.48
+  Chromium commit    d0c02bfad08ec92a6ffcf989e53cd995e6381a4c
+                     https://chromium.googlesource.com/chromium/src
 
-  Copyright (c) 2026 CitroLabs
+Licence: BSD 3-Clause. The text, with the copyright holders' names, is
+cef-LICENSE.txt. Chromium's own copyright holders and the third-party licences
+inside the runtime are listed in cef-CREDITS.html.gz, which is the authoritative
+list for the engine, shipped gzip-compressed the way /usr/share/doc prose
+usually is (zcat it).
 
-The skill itself is not part of this repository. `scripts/build-sdk.sh` takes a
-checkout of it, applies the patches in `patches/` (a Linux clipboard
-implementation and a build-root fix), builds it, and writes the result to
-`vendor/`, which is not committed. Upstream commit: `aecc583`.
+What was changed: the files are the distribution's bytes. libcef.so has its
+symbol table stripped with `strip --strip-unneeded` (1.48 GB to 277 MB) so the
+install fits its size budget; no code is changed, added or removed, and every
+other file in the directory is copied as it is. Checked file by file against
+the distribution: the nine data and helper files and the three locale archives
+are byte-identical, and libcef.so differs only by that symbol table.
 
-3. Independence
+Only part of the distribution is shipped: the runtime library, the data files
+it reads at startup (resources.pak, chrome_100_percent.pak,
+chrome_200_percent.pak, icudtl.dat, v8_context_snapshot.bin,
+libvk_swiftshader.so, libvulkan.so.1, vk_swiftshader_icd.json, chrome-sandbox)
+and the locales for en-US, en-GB and hi. The headers, the CMake files and the
+other 217 locales are not shipped.
+
+2. Node.js 22
+=============
+
+Bundled: usr/lib/rook/node, a Node.js official Linux binary, v22.23.4. Its
+symbol table is stripped and nothing else about it is changed; the code is
+upstream's. Checked by stripping the release binary again, which reproduces the
+shipped file byte for byte. The version is what the bundled interpreter reports
+for `--version`.
+
+Licence: MIT, plus the licences of the projects statically bundled into the
+binary (V8, OpenSSL, npm, libuv, zlib and others). node-LICENSE is Node's own
+LICENSE file from that release, which carries all of them in one text.
+Upstream: https://nodejs.org/ , https://github.com/nodejs/node
+
+3. The ego-browser SDK
+======================
+
+Bundled: usr/lib/rook/sdk/, a build of the ego-browser agent skill and SDK by
+CitroLabs, from the upstream commit Rook is developed against:
+
+  version     v2.1.0-6-gaecc583  (git describe)
+  commit      aecc5831fc5a9ea01a078b632185992a3a7ac448
+  package     package/ego-browser in that commit
+
+Licence: MIT, copyright (c) 2026 CitroLabs. sdk-LICENSE is the upstream LICENSE
+file at that commit, byte for byte; its SHA-256 is
+325b6f26ca9452fcfb81cc6f52e3889573a7c141e9d07ab35f678b7d95d48e52.
+
+This copy is modified, and the modifications are Rook's. scripts/build-sdk.sh
+takes an upstream checkout, applies the two patches in patches/, and builds the
+result. Each patch is small and readable:
+
+  patches/0001-linux-clipboard.patch
+      adds a Linux clipboard backend (src/linux-clipboard.ts) and wires
+      src/clipboard.ts to it, so page.keyboard.paste works on Linux, which
+      upstream did not support; plus its tests.
+  patches/0002-vendor-build-root.patch
+      lets scripts/build.mjs find the skills directory when the package is
+      built outside a git checkout, via EGO_BROWSER_BUILD_ROOT.
+
+The built bundle is not committed to this repository (vendor/ is ignored);
+`scripts/build-sdk.sh` regenerates it, and vendor/UPSTREAM records which commit
+it came from.
+
+4. What Rook does not contain
+=============================
+
+Rook contains no code, strings, assets or UI copy from any closed-source
+application. It is an independent program that implements a published protocol,
+documented by the upstream project above, and it was checked against a build of
+the app it is compatible with: docs/provenance.md records the audit, its probe
+count and its result.
+
+5. Independence
 ===============
 
-Rook is an independent project. It is not affiliated with, sponsored by or
-endorsed by CitroLabs, and it contains none of their application code. The
-name "ego-browser" appears here only to name the skill and the command Rook is
-compatible with.
+Rook is an independent project. It is not affiliated with, sponsored by,
+authorised by or endorsed by CitroLabs, the ego / ego lite product, the
+Chromium Embedded Framework project, the Chromium project, the OpenJS
+Foundation, the Linux Foundation or the Cloud Native Computing Foundation.
+
+The names "ego", "ego-browser" and "ego lite" are used here only to name the
+upstream skill Rook is compatible with, the command Rook ships, and the app the
+compatibility was tested against. "Chromium", "Chromium Embedded Framework" and
+"Node.js" are used only to describe what is bundled. No logo, icon or other
+brand asset of any of those projects is included except as it arrives inside
+the unmodified binaries described above.

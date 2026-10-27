@@ -6,8 +6,8 @@ install, no edits to `host/`, `runtime/`, `bin/`, `test/`, `patches/` or `vendor
 
 | Artefact | Script | Size |
 | --- | --- | --- |
-| `out/rook_<version>_amd64.deb` | `build-deb.sh` | 137 MB, 444 MB installed |
-| `out/rook-<version>-x86_64.AppImage` | `build-appimage.sh` | 172 MB (zstd squashfs, same payload) |
+| `out/rook_<version>_amd64.deb` | `build-deb.sh` | 138 MB, 444 MB installed |
+| `out/rook-<version>-x86_64.AppImage` | `build-appimage.sh` | 173 MB (zstd squashfs, same payload) |
 
 Both were built here (Ubuntu 24.04, amd64); the `.deb` was verified end to end
 with `verify-deb.sh` and the AppImage was smoke-run under Xvfb.
@@ -23,7 +23,11 @@ packaging/
 │   ├── rook.svg     icon source, drawn for this package
 │   ├── rook-256.png a 256 px render of it, for previews
 │   ├── rook.desktop
-│   └── copyright
+│   ├── copyright        the package's Debian copyright file
+│   ├── sdk-LICENSE      ego-browser SDK, MIT, verbatim upstream
+│   ├── cef-LICENSE.txt  CEF, BSD-3, verbatim upstream
+│   ├── cef-CREDITS.html the engine's credit list, gzipped into the package
+│   └── node-LICENSE     Node.js, MIT, verbatim upstream
 ├── launcher/
 │   ├── rook         -> /usr/bin/rook
 │   └── ego-browser      -> /usr/bin/ego-browser
@@ -92,6 +96,7 @@ before a final `0.3.0`, so a real release upgrades over this package. The root
 /usr/share/applications/rook.desktop
 /usr/share/icons/hicolor/{48,64,128,256}x.../apps/rook.png
 /usr/share/doc/rook/{README.md,copyright,LICENSE,NOTICE}
+/usr/share/doc/rook/{sdk-LICENSE,cef-LICENSE.txt,cef-CREDITS.html.gz,node-LICENSE}
 ```
 
 Both launchers resolve `usr/lib/rook` from their own path (`readlink -f $0`),
@@ -115,13 +120,14 @@ Measured on this box, `0.3.0~m3`, amd64:
 | host `rook` | 1.4 MB | 1.0 MB | rpath rewritten, stripped |
 | `runtime/` | 188 KB | 188 KB | copied as-is |
 | `sdk/` | 1.1 MB | 1.1 MB | copied as-is |
-| **installed** | — | **444 MB** (433,288 KiB = 423 MiB) | `du -sk usr`, the `Installed-Size` field |
-| **.deb** | — | **137 MB** | xz -6 |
-| **AppImage** | — | **172 MB** | zstd squashfs |
+| licence texts | — | 0.8 MB | 4 upstream files; `CREDITS.html` gzipped |
+| **installed** | — | **444 MB** (434,040 KiB = 424 MiB) | `du -sk usr`, the `Installed-Size` field |
+| **.deb** | — | **138 MB** | xz -6 |
+| **AppImage** | — | **173 MB** | zstd squashfs |
 
-Budget is 450 MB installed (`bench/report.md`): **6.4 MB
+Budget is 450 MB installed (`bench/report.md`): **5.5 MB
 spare** if MB means 10^6 bytes (which is what `apt` prints: "After this
-operation, 444 MB of additional disk space will be used"), or **27 MiB spare**
+operation, 444 MB of additional disk space will be used"), or **26 MiB spare**
 if the line is read in `du`'s MiB. Both readings fit, but only just. The headroom is thin, and the three removable blocks, largest first, are
 Node (107 MB — cannot go: the bridge needs Node ≥ 22 and Ubuntu 24.04 ships 18),
 `resources.pak` (24 MB — CEF will not start without it) and SwANGLE
@@ -134,7 +140,7 @@ packaging trick.
 
 ```sh
 packaging/build-appimage.sh
-# -> packaging/out/rook-0.3.0~m3-x86_64.AppImage (172 MB)
+# -> packaging/out/rook-0.3.0~m3-x86_64.AppImage (173 MB)
 
 chmod +x packaging/out/rook-0.3.0~m3-x86_64.AppImage
 packaging/out/rook-0.3.0~m3-x86_64.AppImage

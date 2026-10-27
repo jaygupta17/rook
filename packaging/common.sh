@@ -15,6 +15,7 @@
 #   usr/share/applications/rook.desktop
 #   usr/share/icons/hicolor/{48,64,128,256}x.../apps/rook.png
 #   usr/share/doc/rook/{README.md,copyright,LICENSE,NOTICE}
+#   usr/share/doc/rook/{sdk-LICENSE,cef-LICENSE.txt,cef-CREDITS.html.gz,node-LICENSE}
 
 set -euo pipefail
 
@@ -35,6 +36,10 @@ fi
 
 ROOK_HOST_BIN="${ROOK_HOST_BIN:-$repo_dir/host/build/bin/rook}"
 ROOK_CEF_SOURCE="${ROOK_CEF_SOURCE:-$repo_dir/host/cef-runtime}"
+# Only used to take LICENSE.txt and CREDITS.html from the exact distribution
+# that is being shipped. packaging/assets holds the same two files, so a build
+# without the distribution still produces a package that carries them.
+ROOK_CEF_ROOT="${ROOK_CEF_ROOT:-}"
 ROOK_RUNTIME_DIR="${ROOK_RUNTIME_DIR:-$repo_dir/runtime}"
 ROOK_SDK_DIR="${ROOK_SDK_DIR:-$repo_dir/vendor/ego-browser/dist/out}"
 ROOK_LOCALES="${ROOK_LOCALES:-en-US en-GB hi}"
@@ -286,7 +291,59 @@ stage_docs() {
   install -m 0644 "$pkg_dir/assets/copyright" "$STAGE/usr/share/doc/rook/copyright"
   install -m 0644 "$repo_dir/LICENSE" "$STAGE/usr/share/doc/rook/LICENSE"
   install -m 0644 "$repo_dir/NOTICE" "$STAGE/usr/share/doc/rook/NOTICE"
-  step "docs" "/usr/share/doc/rook/{README.md,copyright,LICENSE,NOTICE}"
+  stage_licences
+  step "docs" "/usr/share/doc/rook: README.md, copyright, LICENSE, NOTICE, 4 licence texts"
+}
+
+# The licence text of every third-party thing in the payload. MIT and BSD-3
+# both require the copyright notice and the permission text to accompany the
+# distributed binary, so "the licence is in the upstream source" is not enough
+# for a package: each component's own text ships here. CEF's CREDITS.html is the
+# authoritative third-party attribution for the engine and is large; it ships
+# too, because it is the list BSD-3 asks for.
+#
+# A text that sits next to the component wins over the checked-in copy, so the
+# shipped text describes the exact bytes in the package even when the build tree
+# has moved on from packaging/assets.
+stage_licence() { # $1 = file name under /usr/share/doc/rook; $2.. = sources, best first
+  local name="$1"; shift
+  local dest="$STAGE/usr/share/doc/rook/$name" src
+  for src in "$@"; do
+    [ -n "$src" ] || continue
+    if [ -s "$src" ]; then
+      case "$name" in
+        # The engine's credit list is 5 MB of HTML and 600 KB gzipped, and
+        # /usr/share/doc prose is conventionally gzipped. Same file, same text.
+        *.gz) gzip -9nc "$src" > "$dest"; chmod 0644 "$dest" ;;
+        *)    install -m 0644 "$src" "$dest" ;;
+      esac
+      local shown="${src#"$repo_dir"/}"
+      shown="${shown#"$pkg_dir"/}"
+      step "$name" "$(awk -v b="$(bytes "$dest")" \
+        'BEGIN { if (b >= 1000000) printf "%.1f MB", b/1000000; else printf "%d B", b }') from $shown"
+      return 0
+    fi
+  done
+  die "no $name text to ship; looked in: $*"
+}
+
+stage_licences() {
+  # The SDK bundle is built from an upstream checkout, which carries the MIT
+  # text at its root; a vendored copy usually has no licence of its own.
+  stage_licence sdk-LICENSE \
+    "$ROOK_SDK_DIR/LICENSE" "$ROOK_SDK_DIR/../LICENSE" \
+    "$ROOK_SDK_DIR/../../LICENSE" "$ROOK_SDK_DIR/../../../LICENSE" \
+    "$pkg_dir/assets/sdk-LICENSE"
+  stage_licence cef-LICENSE.txt \
+    "${ROOK_CEF_ROOT:+$ROOK_CEF_ROOT/LICENSE.txt}" \
+    "$pkg_dir/assets/cef-LICENSE.txt"
+  stage_licence cef-CREDITS.html.gz \
+    "${ROOK_CEF_ROOT:+$ROOK_CEF_ROOT/CREDITS.html}" \
+    "$pkg_dir/assets/cef-CREDITS.html"
+  stage_licence node-LICENSE \
+    "$(dirname "$(dirname "$ROOK_NODE")")/LICENSE" \
+    "$pkg_dir/assets/node-LICENSE"
+  sizes[licences]=$(du -sk "$STAGE/usr/share/doc/rook" | cut -f1)
 }
 
 stage_payload() {
@@ -327,6 +384,7 @@ print_sizes() {
   else
     step "sdk" "$(awk -v k="${sizes[sdk]}" 'BEGIN{printf "%.1f MB", k/1000}')"
   fi
+  step "licences" "$(awk -v k="${sizes[licences]:-0}" 'BEGIN{printf "%.1f MB", k/1000}') (CEF CREDITS.html is most of it)"
   step "installed size" "$(awk -v k="$total_kb" 'BEGIN{printf "%.0f MB (%d KiB)", k*1.024/1000, k}')"
   if [ "$deb_bytes" -gt 0 ]; then
     step "artifact" "$(mb "$deb_bytes")"

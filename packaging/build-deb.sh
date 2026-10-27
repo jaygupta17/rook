@@ -102,6 +102,13 @@ Description: agent browser with isolated spaces for agent work
  ego-browser command runs the agent runtime on the Node.js interpreter bundled
  here, so no separate Node install is needed or used.
  .
+ The licence text of every bundled third party is installed, not merely
+ referenced: sdk-LICENSE (the MIT ego-browser SDK this package bundles a build
+ of), cef-LICENSE.txt and cef-CREDITS.html.gz (CEF and Chromium, BSD-3, with
+ the engine's full credit list), and node-LICENSE (Node.js). NOTICE records the
+ exact upstream version of each and which files are unmodified upstream
+ binaries.
+ .
  The setuid sandbox helper is installed setuid root, and the app enables
  Chromium's sandbox when that helper or unprivileged user namespaces are
  usable. A machine with neither prints a warning and runs unsandboxed. See

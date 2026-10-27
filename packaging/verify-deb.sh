@@ -1,12 +1,14 @@
 #!/usr/bin/env bash
 # Verify a built .deb without installing it.
 #
-# Four checks, because "it unpacked" proves nothing about a browser payload:
+# Five checks, because "it unpacked" proves nothing about a browser payload:
 #   1. metadata and file modes out of the archive itself (dpkg-deb -I / -c),
 #   2. layout after `dpkg-deb -x` into a throwaway root,
 #   3. the unpacked launcher renders a real page headlessly, and the window is
 #      painted by the *packaged* libcef.so (checked in /proc/<pid>/maps),
 #   4. every soname the two binaries link against is covered by Depends.
+#   5. the licence texts of every bundled third party are in the archive and
+#      contain what they are supposed to contain.
 #
 #   packaging/verify-deb.sh                       # newest deb in packaging/out
 #   packaging/verify-deb.sh path/to/file.deb
@@ -322,6 +324,44 @@ if grep -qE "$repo_dir/(host|runtime|bin)" "$work/render.log" 2>/dev/null; then
   fail "the app referenced paths in the build tree"
 fi
 ok "clean tree" "no build-tree path in the app's log"
+
+# --- 8. licences -------------------------------------------------------------
+say "licences"
+# MIT and BSD-3 both require the copyright notice and the permission text to
+# accompany the distributed binary, so a package that carries the binaries but
+# not their texts is not distributable. Checked in the archive, not in the
+# staging tree: this is what an installer actually receives.
+licence_missing=0
+for doc in LICENSE NOTICE copyright sdk-LICENSE cef-LICENSE.txt cef-CREDITS.html.gz node-LICENSE; do
+  line=$(printf '%s\n' "$files" | grep -E "usr/share/doc/rook/$doc\$" || true)
+  if [ -z "$line" ]; then
+    printf '  %-22s %s\n' "$doc" "MISSING"
+    licence_missing=$((licence_missing + 1))
+  else
+    printf '  %-22s %8s bytes\n' "$doc" "$(printf '%s' "$line" | awk '{print $3}')"
+  fi
+done
+[ "$licence_missing" -eq 0 ] || fail "$licence_missing of the 7 documentation files are not in the archive"
+
+docdir="$root/usr/share/doc/rook"
+grep -qi 'MIT License' "$docdir/sdk-LICENSE" \
+  || fail "sdk-LICENSE does not contain the MIT text"
+grep -q 'Redistribution and use in source and binary forms' "$docdir/cef-LICENSE.txt" \
+  || fail "cef-LICENSE.txt does not contain the BSD-3 text"
+# Decompress first: `zcat ... | grep -q` dies of SIGPIPE the moment grep finds a
+# match, and this script runs with pipefail, which would turn a good file into a
+# failure.
+credits="$work/cef-CREDITS.html"
+zcat "$docdir/cef-CREDITS.html.gz" > "$credits" 2>/dev/null \
+  || fail "cef-CREDITS.html.gz does not decompress"
+grep -qi 'chromium' "$credits" \
+  || fail "cef-CREDITS.html.gz does not decompress to the engine's credit list"
+grep -q 'Node.js is licensed' "$docdir/node-LICENSE" \
+  || fail "node-LICENSE does not contain Node's licence"
+grep -qi 'not affiliated' "$docdir/NOTICE" \
+  || fail "NOTICE carries no independence statement"
+ok "licences" "4 third-party texts + LICENSE/NOTICE/copyright, contents checked"
+step "credits" "$(stat -c %s "$credits") bytes decompressed, $(grep -c 'class="product"' "$credits" || true) credit entries"
 
 printf '\n\033[1m[verify] OK\033[0m  %s\n' "$deb"
 printf '        screenshot %s\n' "$png"
